@@ -1,0 +1,12 @@
+[package]
+name = "errornowatcher"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+azalea-protocol = "0.5.0"
+azalea = "0.5.0"
+toml = "0.5.10"
+serde = { version = "1.0", features = ["derive"] }
+tokio = "1.24.1"
+anyhow = "1.0.68"
