@@ -1,5 +1,8 @@
 use crate::{logging::log_error, State};
 use azalea::{pathfinder::BlockPosGoal, prelude::*, BlockPos};
+use azalea_protocol::packets::game::{
+    self, serverbound_interact_packet::InteractionHand, ServerboundGamePacket,
+};
 use chrono::{Local, TimeZone};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -7,6 +10,7 @@ use strum_macros::EnumIter;
 #[derive(Debug, Clone, PartialEq, PartialOrd, EnumIter)]
 pub enum Command {
     Help,
+    BotStatus,
     LastLocation,
     LastOnline,
     FollowPlayer,
@@ -14,6 +18,9 @@ pub enum Command {
     Goto,
     StopGoto,
     Say,
+    Slot,
+    UseItem,
+    Look,
     ToggleBotStatusMessages,
     ToggleAlertMessages,
     Unknown,
@@ -22,7 +29,7 @@ pub enum Command {
 pub async fn process_command(
     command: &String,
     executor: &String,
-    client: &Client,
+    client: &mut Client,
     state: &mut State,
 ) -> String {
     let mut segments: Vec<String> = command
@@ -36,6 +43,7 @@ pub async fn process_command(
     let mut command = Command::Unknown;
     match segments[0].to_lowercase().as_str() {
         "help" => command = Command::Help,
+        "bot_status" => command = Command::BotStatus,
         "last_location" => command = Command::LastLocation,
         "last_online" => command = Command::LastOnline,
         "follow_player" => command = Command::FollowPlayer,
@@ -43,6 +51,9 @@ pub async fn process_command(
         "goto" => command = Command::Goto,
         "stop_goto" => command = Command::StopGoto,
         "say" => command = Command::Say,
+        "slot" => command = Command::Slot,
+        "use_item" => command = Command::UseItem,
+        "look" => command = Command::Look,
         "toggle_alert_messages" => command = Command::ToggleAlertMessages,
         "toggle_bot_status_messages" => command = Command::ToggleBotStatusMessages,
         _ => (),
@@ -52,9 +63,18 @@ pub async fn process_command(
         Command::Help => {
             let mut commands = Vec::new();
             for command in Command::iter() {
-                commands.push(format!("{:?}", command));
+                if command != Command::Unknown {
+                    commands.push(format!("{:?}", command));
+                }
             }
             return "Commands: ".to_owned() + &commands.join(", ");
+        }
+        Command::BotStatus => {
+            let metadata = client.metadata();
+            return format!(
+                "Health: {}/20, Score: {}, Air Supply: {}",
+                metadata.health, metadata.score, metadata.air_supply
+            );
         }
         Command::LastLocation => {
             if segments.len() < 1 {
@@ -200,6 +220,51 @@ pub async fn process_command(
 
             log_error(client.chat(segments.join(" ").as_str()).await);
             "Successfully sent message!".to_string()
+        }
+        Command::Slot => {
+            if segments.len() < 1 {
+                return "Please give me a slot to set!".to_string();
+            }
+
+            client
+                .write_packet(ServerboundGamePacket::SetCarriedItem(
+                    game::serverbound_set_carried_item_packet::ServerboundSetCarriedItemPacket {
+                        slot: match segments[0].parse() {
+                            Ok(number) => number,
+                            Err(error) => return format!("Unable to parse slot: {}", error),
+                        },
+                    },
+                ))
+                .await
+                .unwrap();
+            "Successfully sent a `SetCarriedItem` packet to the server".to_string()
+        }
+        Command::UseItem => {
+            client
+                .write_packet(ServerboundGamePacket::UseItem(
+                    game::serverbound_use_item_packet::ServerboundUseItemPacket {
+                        hand: InteractionHand::MainHand,
+                        sequence: 0,
+                    },
+                ))
+                .await
+                .unwrap();
+            "Successfully sent a `UseItem` packet to the server".to_string()
+        }
+        Command::Look => {
+            if segments.len() < 2 {
+                return "Please give me rotation vectors to look at!".to_string();
+            }
+
+            let mut rotation: Vec<f32> = Vec::new();
+            for segment in segments {
+                rotation.push(match segment.parse() {
+                    Ok(number) => number,
+                    Err(error) => return format!("Unable to parse rotation: {}", error),
+                })
+            }
+            client.set_rotation(rotation[0], rotation[1]);
+            format!("I am now looking at {} {}!", rotation[0], rotation[1])
         }
         Command::ToggleAlertMessages => {
             if state.alert_players.lock().unwrap().contains(executor) {

@@ -158,7 +158,7 @@ pub struct State {
     bot_status_players: Arc<Mutex<Vec<String>>>,
 }
 
-async fn handle(client: Client, event: Event, mut state: State) -> anyhow::Result<()> {
+async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::Result<()> {
     match event {
         Event::Login => {
             log_message(
@@ -318,7 +318,10 @@ async fn handle(client: Client, event: Event, mut state: State) -> anyhow::Resul
         Event::Packet(packet) => match packet.as_ref() {
             ClientboundGamePacket::MoveEntityPos(packet) => {
                 let world = client.world.read();
-                let entity = world.entity(packet.entity_id).unwrap();
+                let entity = match world.entity(packet.entity_id) {
+                    Some(entity) => entity,
+                    None => return Ok(()),
+                };
                 for (uuid, player) in client.players.read().iter() {
                     if uuid.as_u128() == entity.uuid.as_u128() {
                         let position = entity.pos();
@@ -422,14 +425,12 @@ async fn handle(client: Client, event: Event, mut state: State) -> anyhow::Resul
                             ))
                             .await,
                     );
+
+                    let return_value =
+                        &bot::process_command(&command, &bot_owner, &mut client, &mut state).await;
                     log_error(
                         client
-                            .send_command_packet(&format!(
-                                "msg {} {}",
-                                bot_owner,
-                                &bot::process_command(&command, &bot_owner, &client, &mut state)
-                                    .await,
-                            ))
+                            .send_command_packet(&format!("msg {} {}", bot_owner, return_value,))
                             .await,
                     );
                 }
