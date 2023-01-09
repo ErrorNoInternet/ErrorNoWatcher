@@ -1,54 +1,31 @@
-use crate::State;
-use azalea::prelude::*;
+use crate::{logging::log_error, State};
+use azalea::{pathfinder::BlockPosGoal, prelude::*, BlockPos};
+use chrono::{Local, TimeZone};
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
-#[derive(PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, EnumIter)]
 pub enum Command {
-    Location,
+    Help,
+    LastLocation,
+    LastOnline,
+    FollowPlayer,
+    StopFollowPlayer,
     Goto,
-    Stop,
+    StopGoto,
+    Say,
+    ToggleBotStatusMessages,
+    ToggleAlertMessages,
     Unknown,
 }
 
-pub fn process_command(command: &String, _client: &Client, state: &mut State) -> String {
-    let check_command = |command: &mut Command, segment: &String| {
-        match command {
-            Command::Location => return format!("{} is somewhere", segment),
-            Command::Goto => {
-                if state.final_target.lock().unwrap().is_some()
-                    && state.final_target.lock().unwrap().clone().unwrap().len() == 3
-                {
-                    *command = Command::Unknown;
-                    let coordinates =
-                        (*state.final_target.lock().unwrap().clone().unwrap()).to_vec();
-                    return format!(
-                        "I am now going to {} {} {}...",
-                        coordinates[0], coordinates[1], coordinates[2]
-                    );
-                }
-
-                if state.final_target.lock().unwrap().is_none() {
-                    *state.final_target.lock().unwrap() = Some(Vec::new());
-                };
-                let mut new_coordinates = state.final_target.lock().unwrap().clone().unwrap();
-                new_coordinates.push(segment.parse().unwrap_or(0));
-                *state.final_target.lock().unwrap() = Some(new_coordinates);
-
-                return "".to_string();
-            }
-            Command::Stop => {
-                *state.final_target.lock().unwrap() = None;
-
-                *command = Command::Unknown;
-                return "I am no longer doing anything".to_string();
-            }
-            _ => {
-                *command = Command::Unknown;
-                return "".to_string();
-            }
-        };
-    };
-
-    let segments: Vec<String> = command
+pub async fn process_command(
+    command: &String,
+    executor: &String,
+    client: &Client,
+    state: &mut State,
+) -> String {
+    let mut segments: Vec<String> = command
         .split(" ")
         .map(|segment| segment.to_string())
         .collect();
@@ -57,24 +34,213 @@ pub fn process_command(command: &String, _client: &Client, state: &mut State) ->
     };
 
     let mut command = Command::Unknown;
-    for (_index, segment) in segments.iter().enumerate() {
-        match segment.to_lowercase().as_str() {
-            "location" => command = Command::Location,
-            "goto" => command = Command::Goto,
-            "stop" => command = Command::Stop,
-            _ => {
-                let return_value = check_command(&mut command, &segment);
-                if !return_value.is_empty() {
-                    return return_value;
+    match segments[0].to_lowercase().as_str() {
+        "help" => command = Command::Help,
+        "last_location" => command = Command::LastLocation,
+        "last_online" => command = Command::LastOnline,
+        "follow_player" => command = Command::FollowPlayer,
+        "stop_follow_player" => command = Command::StopFollowPlayer,
+        "goto" => command = Command::Goto,
+        "stop_goto" => command = Command::StopGoto,
+        "say" => command = Command::Say,
+        "toggle_alert_messages" => command = Command::ToggleAlertMessages,
+        "toggle_bot_status_messages" => command = Command::ToggleBotStatusMessages,
+        _ => (),
+    };
+    segments.remove(0);
+    let return_value = match command {
+        Command::Help => {
+            let mut commands = Vec::new();
+            for command in Command::iter() {
+                commands.push(format!("{:?}", command));
+            }
+            return "Commands: ".to_owned() + &commands.join(", ");
+        }
+        Command::LastLocation => {
+            if segments.len() < 1 {
+                return "Please tell me the name of the player!".to_string();
+            }
+
+            for (player, position_time_data) in state.player_locations.lock().unwrap().iter() {
+                if player.username == segments[0] || player.uuid.to_string() == segments[0] {
+                    return format!(
+                        "{} was last seen at {}, {}, {} ({})",
+                        segments[0],
+                        position_time_data.position[0],
+                        position_time_data.position[1],
+                        position_time_data.position[2],
+                        Local
+                            .timestamp_opt(position_time_data.time as i64, 0)
+                            .unwrap()
+                            .format("%Y/%m/%d %H:%M:%S")
+                    );
                 }
             }
-        };
-    }
-    if command != Command::Unknown {
-        let return_value = check_command(&mut command, &"".to_string());
-        if !return_value.is_empty() {
-            return return_value;
+            format!("I haven't seen {} move anywhere near me...", segments[0])
         }
+        Command::LastOnline => {
+            if segments.len() < 1 {
+                return "Please tell me the name of the player!".to_string();
+            }
+
+            for (player, player_time_data) in state.player_timestamps.lock().unwrap().iter() {
+                if player == &segments[0] {
+                    return format!(
+                        "{} - last join: {}, last chat message: {}, last leave: {}",
+                        segments[0],
+                        if player_time_data.join_time != 0 {
+                            Local
+                                .timestamp_opt(player_time_data.join_time as i64, 0)
+                                .unwrap()
+                                .format("%Y/%m/%d %H:%M:%S")
+                                .to_string()
+                        } else {
+                            "never".to_string()
+                        },
+                        if player_time_data.chat_message_time != 0 {
+                            Local
+                                .timestamp_opt(player_time_data.chat_message_time as i64, 0)
+                                .unwrap()
+                                .format("%Y/%m/%d %H:%M:%S")
+                                .to_string()
+                        } else {
+                            "never".to_string()
+                        },
+                        if player_time_data.leave_time != 0 {
+                            Local
+                                .timestamp_opt(player_time_data.leave_time as i64, 0)
+                                .unwrap()
+                                .format("%Y/%m/%d %H:%M:%S")
+                                .to_string()
+                        } else {
+                            "never".to_string()
+                        },
+                    );
+                }
+            }
+            format!("I haven't seen {} online yet...", segments[0])
+        }
+        Command::FollowPlayer => {
+            if segments.len() < 1 {
+                return "Please tell me the name of the player!".to_string();
+            };
+
+            let mut found = true;
+            for (player, _position_time_data) in state.player_locations.lock().unwrap().iter() {
+                if player.username == segments[0] || player.uuid.to_string() == segments[0] {
+                    found = true;
+                    *state.followed_player.lock().unwrap() = Some(player.to_owned());
+                }
+            }
+            if found {
+                return format!("I am now following {}...", segments[0]);
+            } else {
+                return format!("I was unable to find {}...", segments[0]);
+            }
+        }
+        Command::StopFollowPlayer => {
+            *state.followed_player.lock().unwrap() = None;
+            let current_position = client.entity().pos().clone();
+            client.goto(BlockPosGoal {
+                pos: BlockPos {
+                    x: current_position.x.round() as i32,
+                    y: current_position.y.round() as i32,
+                    z: current_position.z.round() as i32,
+                },
+            });
+            "I am no longer following anyone!".to_string()
+        }
+        Command::Goto => {
+            if segments.len() < 3 {
+                return "Please give me X, Y, and Z coordinates to go to!".to_string();
+            }
+
+            let mut coordinates: Vec<i32> = Vec::new();
+            for segment in segments {
+                coordinates.push(match segment.parse() {
+                    Ok(number) => number,
+                    Err(error) => return format!("Unable to parse coordinates: {}", error),
+                })
+            }
+            log_error(
+                client
+                    .send_command_packet(&format!(
+                        "msg {} I am now finding a path to {} {} {}...",
+                        executor, coordinates[0], coordinates[1], coordinates[2]
+                    ))
+                    .await,
+            );
+            client.goto(BlockPosGoal {
+                pos: BlockPos {
+                    x: coordinates[0],
+                    y: coordinates[1],
+                    z: coordinates[2],
+                },
+            });
+            format!(
+                "I have found the path to {} {} {}!",
+                coordinates[0], coordinates[1], coordinates[2]
+            )
+        }
+        Command::StopGoto => {
+            let current_position = client.entity().pos().clone();
+            client.goto(BlockPosGoal {
+                pos: BlockPos {
+                    x: current_position.x.round() as i32,
+                    y: current_position.y.round() as i32,
+                    z: current_position.z.round() as i32,
+                },
+            });
+            "I am no longer going anywhere!".to_string()
+        }
+        Command::Say => {
+            if segments.len() < 1 {
+                return "Please give me something to say!".to_string();
+            }
+
+            log_error(client.chat(segments.join(" ").as_str()).await);
+            "Successfully sent message!".to_string()
+        }
+        Command::ToggleAlertMessages => {
+            if state.alert_players.lock().unwrap().contains(executor) {
+                let mut players = state.alert_players.lock().unwrap().to_vec();
+                players.remove(
+                    players
+                        .iter()
+                        .position(|item| *item == executor.to_owned())
+                        .unwrap(),
+                );
+                *state.alert_players.lock().unwrap() = players;
+                "You will no longer be receiving alert messages!".to_string()
+            } else {
+                let mut players = state.alert_players.lock().unwrap().to_vec();
+                players.push(executor.to_owned());
+                *state.alert_players.lock().unwrap() = players;
+                "You will now be receiving alert messages!".to_string()
+            }
+        }
+        Command::ToggleBotStatusMessages => {
+            if state.bot_status_players.lock().unwrap().contains(executor) {
+                let mut players = state.bot_status_players.lock().unwrap().to_vec();
+                players.remove(
+                    players
+                        .iter()
+                        .position(|item| *item == executor.to_owned())
+                        .unwrap(),
+                );
+                *state.bot_status_players.lock().unwrap() = players;
+                "You will no longer be receiving bot status messages!".to_string()
+            } else {
+                let mut players = state.bot_status_players.lock().unwrap().to_vec();
+                players.push(executor.to_owned());
+                *state.bot_status_players.lock().unwrap() = players;
+                "You will now be receiving bot status messages!".to_string()
+            }
+        }
+        _ => "".to_string(),
+    };
+    if !return_value.is_empty() {
+        return return_value;
     }
 
     "Sorry, I don't know what you mean...".to_string()
