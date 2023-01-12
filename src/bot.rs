@@ -11,6 +11,9 @@ use strum_macros::EnumIter;
 pub enum Command {
     Help,
     BotStatus,
+    Whitelist,
+    WhitelistAdd,
+    WhitelistRemove,
     LastLocation,
     LastOnline,
     FollowPlayer,
@@ -21,6 +24,8 @@ pub enum Command {
     Slot,
     UseItem,
     Look,
+    Sneak,
+    Unsneak,
     ToggleBotStatusMessages,
     ToggleAlertMessages,
     Unknown,
@@ -44,6 +49,9 @@ pub async fn process_command(
     match segments[0].to_lowercase().as_str() {
         "help" => command = Command::Help,
         "bot_status" => command = Command::BotStatus,
+        "whitelist" => command = Command::Whitelist,
+        "whitelist_add" => command = Command::WhitelistAdd,
+        "whitelist_remove" => command = Command::WhitelistRemove,
         "last_location" => command = Command::LastLocation,
         "last_online" => command = Command::LastOnline,
         "follow_player" => command = Command::FollowPlayer,
@@ -54,6 +62,8 @@ pub async fn process_command(
         "slot" => command = Command::Slot,
         "use_item" => command = Command::UseItem,
         "look" => command = Command::Look,
+        "sneak" => command = Command::Sneak,
+        "unsneak" => command = Command::Unsneak,
         "toggle_alert_messages" => command = Command::ToggleAlertMessages,
         "toggle_bot_status_messages" => command = Command::ToggleBotStatusMessages,
         _ => (),
@@ -70,10 +80,60 @@ pub async fn process_command(
             return "Commands: ".to_owned() + &commands.join(", ");
         }
         Command::BotStatus => {
+            let bot_status = state.bot_status.lock().unwrap().to_owned();
             let metadata = client.metadata();
             return format!(
-                "Health: {}/20, Score: {}, Air Supply: {}",
-                metadata.health, metadata.score, metadata.air_supply
+                "Health: {:.1}/20, Food: {}/20, Saturation: {:.1}/20, Score: {}, Air Supply: {}",
+                bot_status.health,
+                bot_status.food,
+                bot_status.saturation,
+                metadata.score,
+                metadata.air_supply
+            );
+        }
+        Command::Whitelist => {
+            let whitelist = state.whitelist.lock().unwrap().join(", ");
+            if whitelist.is_empty() {
+                return "There are no whitelisted players...".to_string();
+            } else {
+                return format!("Whitelisted players: {}", whitelist);
+            }
+        }
+        Command::WhitelistAdd => {
+            if segments.len() < 1 {
+                return "Please tell me the name of the player!".to_string();
+            }
+
+            let mut whitelist = state.whitelist.lock().unwrap().to_vec();
+            if whitelist.contains(&segments[0]) {
+                return format!("{} is already whitelisted!", segments[0]);
+            }
+            whitelist.push(segments[0].to_owned());
+            *state.whitelist.lock().unwrap() = whitelist;
+            return format!(
+                "{} has been successfully added to the whitelist!",
+                segments[0]
+            );
+        }
+        Command::WhitelistRemove => {
+            if segments.len() < 1 {
+                return "Please tell me the name of the player!".to_string();
+            }
+
+            let mut whitelist = state.whitelist.lock().unwrap().to_vec();
+            if !whitelist.contains(&segments[0]) {
+                return format!("{} is not whitelisted!", segments[0]);
+            }
+            whitelist.remove(
+                whitelist
+                    .iter()
+                    .position(|item| *item == segments[0])
+                    .unwrap(),
+            );
+            *state.whitelist.lock().unwrap() = whitelist;
+            return format!(
+                "{} has been successfully removed from the whitelist!",
+                segments[0]
             );
         }
         Command::LastLocation => {
@@ -160,7 +220,7 @@ pub async fn process_command(
         }
         Command::StopFollowPlayer => {
             *state.followed_player.lock().unwrap() = None;
-            let current_position = client.entity().pos().clone();
+            let current_position = client.entity().pos().to_owned();
             client.goto(BlockPosGoal {
                 pos: BlockPos {
                     x: current_position.x.round() as i32,
@@ -203,7 +263,7 @@ pub async fn process_command(
             )
         }
         Command::StopGoto => {
-            let current_position = client.entity().pos().clone();
+            let current_position = client.entity().pos().to_owned();
             client.goto(BlockPosGoal {
                 pos: BlockPos {
                     x: current_position.x.round() as i32,
@@ -226,30 +286,32 @@ pub async fn process_command(
                 return "Please give me a slot to set!".to_string();
             }
 
-            client
-                .write_packet(ServerboundGamePacket::SetCarriedItem(
-                    game::serverbound_set_carried_item_packet::ServerboundSetCarriedItemPacket {
-                        slot: match segments[0].parse() {
-                            Ok(number) => number,
-                            Err(error) => return format!("Unable to parse slot: {}", error),
+            log_error(
+                client
+                    .write_packet(ServerboundGamePacket::SetCarriedItem(
+                        game::serverbound_set_carried_item_packet::ServerboundSetCarriedItemPacket {
+                            slot: match segments[0].parse() {
+                                Ok(number) => number,
+                                Err(error) => return format!("Unable to parse slot: {}", error),
+                            },
                         },
-                    },
-                ))
-                .await
-                .unwrap();
-            "Successfully sent a `SetCarriedItem` packet to the server".to_string()
+                    ))
+                    .await
+            );
+            "I have successfully switched slots!".to_string()
         }
         Command::UseItem => {
-            client
-                .write_packet(ServerboundGamePacket::UseItem(
-                    game::serverbound_use_item_packet::ServerboundUseItemPacket {
-                        hand: InteractionHand::MainHand,
-                        sequence: 0,
-                    },
-                ))
-                .await
-                .unwrap();
-            "Successfully sent a `UseItem` packet to the server".to_string()
+            log_error(
+                client
+                    .write_packet(ServerboundGamePacket::UseItem(
+                        game::serverbound_use_item_packet::ServerboundUseItemPacket {
+                            hand: InteractionHand::MainHand,
+                            sequence: 0,
+                        },
+                    ))
+                    .await,
+            );
+            "I have successfully used the item!".to_string()
         }
         Command::Look => {
             if segments.len() < 2 {
@@ -265,6 +327,37 @@ pub async fn process_command(
             }
             client.set_rotation(rotation[0], rotation[1]);
             format!("I am now looking at {} {}!", rotation[0], rotation[1])
+        }
+        Command::Sneak => {
+            let entity_id = client.entity_id.read().to_owned();
+            log_error(
+                client
+                    .write_packet(ServerboundGamePacket::PlayerCommand(
+                        game::serverbound_player_command_packet::ServerboundPlayerCommandPacket {
+                            id: entity_id,
+                            action: game::serverbound_player_command_packet::Action::PressShiftKey,
+                            data: 0,
+                        },
+                    ))
+                    .await,
+            );
+            return "I am now sneaking!".to_string();
+        }
+        Command::Unsneak => {
+            let entity_id = client.entity_id.read().to_owned();
+            log_error(
+                client
+                    .write_packet(ServerboundGamePacket::PlayerCommand(
+                        game::serverbound_player_command_packet::ServerboundPlayerCommandPacket {
+                            id: entity_id,
+                            action:
+                                game::serverbound_player_command_packet::Action::ReleaseShiftKey,
+                            data: 0,
+                        },
+                    ))
+                    .await,
+            );
+            return "I am no longer sneaking!".to_string();
         }
         Command::ToggleAlertMessages => {
             if state.alert_players.lock().unwrap().contains(executor) {

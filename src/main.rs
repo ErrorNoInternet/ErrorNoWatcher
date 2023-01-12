@@ -86,13 +86,13 @@ async fn main() {
                     .collect();
                 if segments.len() == 1 {
                     ServerAddress {
-                        host: segments[0].clone(),
+                        host: segments[0].to_owned(),
                         port: 25565,
                     }
                 } else if segments.len() == 2 {
                     ServerAddress {
-                        host: segments[0].clone(),
-                        port: segments[1].clone().parse().unwrap_or(25565),
+                        host: segments[0].to_owned(),
+                        port: segments[1].to_owned().parse().unwrap_or(25565),
                     }
                 } else {
                     log_message(
@@ -104,13 +104,16 @@ async fn main() {
             },
             state: State {
                 bot_configuration: bot_configuration.clone(),
+                whitelist: Arc::new(Mutex::new(bot_configuration.clone().whitelist)),
                 logged_in: Arc::new(Mutex::new(false)),
+                bot_status: Arc::new(Mutex::new(BotStatus::default())),
                 tick_counter: Arc::new(Mutex::new(0)),
                 alert_second_counter: Arc::new(Mutex::new(0)),
                 followed_player: Arc::new(Mutex::new(None)),
                 player_locations: Arc::new(Mutex::new(HashMap::new())),
                 player_timestamps: Arc::new(Mutex::new(HashMap::new())),
                 alert_players: Arc::new(Mutex::new(bot_configuration.clone().alert_players)),
+                alert_queue: Arc::new(Mutex::new(HashMap::new())),
                 bot_status_players: Arc::new(Mutex::new(Vec::new())),
             },
             plugins: plugins![],
@@ -146,15 +149,25 @@ pub struct PlayerTimeData {
 }
 
 #[derive(Default, Debug, Clone)]
+pub struct BotStatus {
+    health: f32,
+    food: u32,
+    saturation: f32,
+}
+
+#[derive(Default, Debug, Clone)]
 pub struct State {
     bot_configuration: BotConfiguration,
+    whitelist: Arc<Mutex<Vec<String>>>,
     logged_in: Arc<Mutex<bool>>,
+    bot_status: Arc<Mutex<BotStatus>>,
     tick_counter: Arc<Mutex<u8>>,
     alert_second_counter: Arc<Mutex<u8>>,
     followed_player: Arc<Mutex<Option<Player>>>,
     player_locations: Arc<Mutex<HashMap<Player, PositionTimeData>>>,
     player_timestamps: Arc<Mutex<HashMap<String, PlayerTimeData>>>,
     alert_players: Arc<Mutex<Vec<String>>>,
+    alert_queue: Arc<Mutex<HashMap<String, Vec<i32>>>>,
     bot_status_players: Arc<Mutex<Vec<String>>>,
 }
 
@@ -189,7 +202,7 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                 .await?
         }
         Event::AddPlayer(player) => {
-            let mut player_timestamps = state.player_timestamps.lock().unwrap().clone();
+            let mut player_timestamps = state.player_timestamps.lock().unwrap().to_owned();
             let mut current_player = player_timestamps
                 .get(&player.profile.name)
                 .unwrap_or(&PlayerTimeData {
@@ -206,7 +219,7 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
             *state.player_timestamps.lock().unwrap() = player_timestamps;
         }
         Event::RemovePlayer(player) => {
-            let mut player_timestamps = state.player_timestamps.lock().unwrap().clone();
+            let mut player_timestamps = state.player_timestamps.lock().unwrap().to_owned();
             let mut current_player = player_timestamps
                 .get(&player.profile.name)
                 .unwrap_or(&PlayerTimeData {
@@ -238,7 +251,7 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
 
                 let followed_player = state.followed_player.lock().unwrap().to_owned();
                 if followed_player.is_some() {
-                    let player_locations = state.player_locations.lock().unwrap().clone();
+                    let player_locations = state.player_locations.lock().unwrap().to_owned();
                     match player_locations.get(&followed_player.unwrap()) {
                         Some(position_time_data) => client.goto(BlockPosGoal {
                             pos: BlockPos {
@@ -255,82 +268,66 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
             if *state.alert_second_counter.lock().unwrap() >= 5 {
                 *state.alert_second_counter.lock().unwrap() = 0;
 
-                let player_locations = state.player_locations.lock().unwrap().clone();
-                for (player, position_time_data) in player_locations {
-                    if ((state.bot_configuration.alert_location[0]
-                        - state.bot_configuration.alert_radius)
-                        ..(state.bot_configuration.alert_location[0]
-                            + state.bot_configuration.alert_radius))
-                        .contains(&position_time_data.position[0])
-                        || ((state.bot_configuration.alert_location[1]
-                            - state.bot_configuration.alert_radius)
-                            ..(state.bot_configuration.alert_location[1]
-                                + state.bot_configuration.alert_radius))
-                            .contains(&position_time_data.position[2])
-                    {
-                        if !state.bot_configuration.whitelist.contains(&player.username) {
-                            let alert_players = state.alert_players.lock().unwrap().clone();
-                            for alert_player in alert_players {
-                                log_error(
-                                    client
-                                        .send_command_packet(&format!(
-                                            "msg {} {}",
-                                            alert_player,
-                                            format!(
-                                                "{} is near our base at {} {} {}!",
-                                                player.username,
-                                                position_time_data.position[0],
-                                                position_time_data.position[1],
-                                                position_time_data.position[2],
-                                            )
-                                        ))
-                                        .await,
-                                );
-                            }
-                            let mut alert_command = state.bot_configuration.alert_command.to_vec();
-                            for argument in alert_command.iter_mut() {
-                                *argument = argument.replace("{player_name}", &player.username);
-                                *argument = argument
-                                    .replace("{x}", &position_time_data.position[0].to_string());
-                                *argument = argument
-                                    .replace("{y}", &position_time_data.position[1].to_string());
-                                *argument = argument
-                                    .replace("{z}", &position_time_data.position[2].to_string());
-                            }
-                            if alert_command.len() >= 1 {
-                                log_message(Bot, &"Executing alert shell command...".to_string());
-                                let command_name = alert_command[0].clone();
-                                alert_command.remove(0);
-                                log_error(
-                                    std::process::Command::new(command_name)
-                                        .args(alert_command)
-                                        .stdin(std::process::Stdio::null())
-                                        .stdout(std::process::Stdio::null())
-                                        .stderr(std::process::Stdio::null())
-                                        .spawn(),
-                                );
-                            }
-                        }
+                let alert_queue = state.alert_queue.lock().unwrap().to_owned();
+                for (intruder, position) in alert_queue {
+                    let alert_players = state.alert_players.lock().unwrap().to_vec();
+                    for alert_player in alert_players {
+                        log_error(
+                            client
+                                .send_command_packet(&format!(
+                                    "msg {} {}",
+                                    alert_player,
+                                    format!(
+                                        "{} is near our base at {} {} {}!",
+                                        intruder, position[0], position[1], position[2],
+                                    )
+                                ))
+                                .await,
+                        );
+                    }
+                    let mut alert_command = state.bot_configuration.alert_command.to_vec();
+                    for argument in alert_command.iter_mut() {
+                        *argument = argument.replace("{player_name}", &intruder);
+                        *argument = argument.replace("{x}", &(position[0]).to_string());
+                        *argument = argument.replace("{y}", &(position[1]).to_string());
+                        *argument = argument.replace("{z}", &(position[2]).to_string());
+                    }
+                    if alert_command.len() >= 1 {
+                        log_message(Bot, &"Executing alert shell command...".to_string());
+                        let command_name = alert_command[0].clone();
+                        alert_command.remove(0);
+                        log_error(
+                            std::process::Command::new(command_name)
+                                .args(alert_command)
+                                .stdin(std::process::Stdio::null())
+                                .stdout(std::process::Stdio::null())
+                                .stderr(std::process::Stdio::null())
+                                .spawn(),
+                        );
                     }
                 }
+                *state.alert_queue.lock().unwrap() = HashMap::new();
             }
         }
         Event::Packet(packet) => match packet.as_ref() {
             ClientboundGamePacket::MoveEntityPos(packet) => {
-                let world = client.world.read();
-                let entity = match world.entity(packet.entity_id) {
-                    Some(entity) => entity,
-                    None => return Ok(()),
-                };
-                for (uuid, player) in client.players.read().iter() {
-                    if uuid.as_u128() == entity.uuid.as_u128() {
-                        let position = entity.pos();
-                        let mut player_locations = state.player_locations.lock().unwrap().clone();
+                let entity: (u128, u32, azalea::Vec3) =
+                    match (client.world.read()).entity(packet.entity_id) {
+                        Some(entity) => (entity.uuid.as_u128(), entity.id, entity.pos().to_owned()),
+                        None => return Ok(()),
+                    };
+                let players = client.players.read().to_owned();
+                for (uuid, player) in players.iter().map(|item| item.to_owned()) {
+                    if uuid.as_u128() == entity.0 {
+                        let position = entity.2;
+
+                        let mut player_locations =
+                            state.player_locations.lock().unwrap().to_owned();
                         player_locations.insert(
                             Player {
                                 uuid: uuid.as_u128(),
-                                entity_id: entity.id,
-                                username: player.profile.name.clone(),
+                                entity_id: entity.1,
+                                username: player.profile.name.to_owned(),
                             },
                             PositionTimeData {
                                 position: vec![
@@ -345,10 +342,41 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                             },
                         );
                         *state.player_locations.lock().unwrap() = player_locations;
+
+                        if ((state.bot_configuration.alert_location[0]
+                            - state.bot_configuration.alert_radius)
+                            ..(state.bot_configuration.alert_location[0]
+                                + state.bot_configuration.alert_radius))
+                            .contains(&(position.x as i32))
+                            && ((state.bot_configuration.alert_location[1]
+                                - state.bot_configuration.alert_radius)
+                                ..(state.bot_configuration.alert_location[1]
+                                    + state.bot_configuration.alert_radius))
+                                .contains(&(position.z as i32))
+                        {
+                            if !state
+                                .whitelist
+                                .lock()
+                                .unwrap()
+                                .contains(&player.profile.name)
+                            {
+                                let mut alert_queue = state.alert_queue.lock().unwrap().to_owned();
+                                alert_queue.insert(
+                                    player.profile.name.to_owned(),
+                                    vec![position.x as i32, position.y as i32, position.z as i32],
+                                );
+                                *state.alert_queue.lock().unwrap() = alert_queue;
+                            }
+                        }
                     }
                 }
             }
             ClientboundGamePacket::SetHealth(packet) => {
+                *state.bot_status.lock().unwrap() = BotStatus {
+                    health: packet.health,
+                    food: packet.food,
+                    saturation: packet.saturation,
+                };
                 let bot_status_players: Vec<String> = state
                     .bot_status_players
                     .lock()
@@ -404,7 +432,7 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                 return Ok(());
             }
 
-            for bot_owner in state.bot_configuration.bot_owners.clone() {
+            for bot_owner in state.bot_configuration.bot_owners.to_owned() {
                 if message
                     .message()
                     .to_string()
@@ -435,7 +463,7 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                     );
                 }
 
-                let mut player_timestamps = state.player_timestamps.lock().unwrap().clone();
+                let mut player_timestamps = state.player_timestamps.lock().unwrap().to_owned();
                 let mut current_player = player_timestamps
                     .get(&message.username().unwrap_or("Someone".to_string()))
                     .unwrap_or(&PlayerTimeData {
