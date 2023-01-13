@@ -94,13 +94,26 @@ pub async fn process_command(
     segments.remove(0);
     let return_value = match command {
         Command::Help => {
+            let mut page = 1;
+            if segments.len() > 0 {
+                page = segments[0].parse().unwrap_or(1)
+            }
+
             let mut commands = Vec::new();
             for command in Command::iter() {
                 if command != Command::Unknown {
                     commands.push(format!("{:?}", command));
                 }
             }
-            return "Commands: ".to_owned() + &commands.join(", ");
+
+            let start_index = (page - 1) * 10;
+            let end_index = page * 10;
+            if end_index >= commands.len() {
+                return format!("There are only {} pages!", commands.len() / 10);
+            } else {
+                let paged_commands = &commands[start_index..end_index];
+                return format!("Commands (page {}): {}", page, paged_commands.join(", "));
+            }
         }
         Command::BotStatus => {
             let bot_status = state.bot_status.lock().unwrap().to_owned();

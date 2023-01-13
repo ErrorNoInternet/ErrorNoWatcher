@@ -325,10 +325,14 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                     Some(raw_entity) => raw_entity,
                     None => return Ok(()),
                 };
+                let entity_type = &format!("{:?}", raw_entity.metadata)
+                    .split("(")
+                    .map(|item| item.to_owned())
+                    .collect::<Vec<String>>()[0];
                 let entity = Entity {
                     id: raw_entity.id,
                     uuid: raw_entity.uuid.as_hyphenated().to_string(),
-                    entity_type: format!("{:?}", raw_entity.metadata),
+                    entity_type: entity_type.to_lowercase(),
                 };
                 let entity_position = raw_entity.pos();
 
