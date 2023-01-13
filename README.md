@@ -10,7 +10,7 @@ cargo build --release
 The compiled executable will be at `./target/release/errornowatcher`
 
 ## Usage
-Running the bot for the first time will create the `bot_configuration.toml` file, where you can change several options:
+Running the bot will create the `bot_configuration.toml` file, where you can change several options:
 ```toml
 username = "<bot's username>"
 server_address = "<server address>"
@@ -36,3 +36,5 @@ alert_command = [
 	"<your URL here (or a service such as ntfy.sh)>",
 ]
 ```
+Run `/msg <bot username> help` to see a list of commands you can run.\
+For example, `BotStatus` = `/msg <bot username> bot_status`
