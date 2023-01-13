@@ -47,6 +47,7 @@ alert_command = [
 - `/msg ErrorNoWatcher whitelist_add Notch` - temporarily add Notch to the whitelist
 - `/msg ErrorNoWatcher sprint forward 5000` - sprint forward for 5 seconds
 - `/msg ErrorNoWatcher drop_item` - drop the current held item (or `drop_stack`)
+- `/msg ErrorNoWatcher last_location 1` - show the first page of players sorted by join time
 - `/msg ErrorNoWatcher last_location ErrorNoInternet` - display the last seen location
 - `/msg ErrorNoWatcher follow_player ErrorNoInternet` - start following ErrorNoInternet
 - `/msg ErrorNoWatcher slot 0` - switch to the first slot (0 - 8 = slots 1 - 9)
