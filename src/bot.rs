@@ -1,5 +1,8 @@
 use crate::{logging::log_error, State};
-use azalea::{pathfinder::BlockPosGoal, prelude::*, BlockPos, SprintDirection, WalkDirection};
+use azalea::{
+    pathfinder::BlockPosGoal, prelude::*, BlockPos, SprintDirection, Vec3, WalkDirection,
+};
+use azalea_core::Direction;
 use azalea_protocol::packets::game::{
     self, serverbound_interact_packet::InteractionHand, ServerboundGamePacket,
 };
@@ -26,8 +29,10 @@ pub enum Command {
     Look,
     Sneak,
     Unsneak,
-    Interact,
+    InteractBlock,
+    InteractEntity,
     Attack,
+    Jump,
     Walk,
     Sprint,
     DropItem,
@@ -70,8 +75,10 @@ pub async fn process_command(
         "look" => command = Command::Look,
         "sneak" => command = Command::Sneak,
         "unsneak" => command = Command::Unsneak,
-        "interact" => command = Command::Interact,
+        "interact_block" => command = Command::InteractBlock,
+        "interact_entity" => command = Command::InteractEntity,
         "attack" => command = Command::Attack,
+        "jump" => command = Command::Jump,
         "walk" => command = Command::Walk,
         "sprint" => command = Command::Sprint,
         "drop_item" => command = Command::DropItem,
@@ -371,7 +378,55 @@ pub async fn process_command(
             );
             return "I am no longer sneaking!".to_string();
         }
-        Command::Interact => {
+        Command::InteractBlock => {
+            if segments.len() < 4 {
+                return "Please give me block coordinates (and block faces) to interact with!"
+                    .to_string();
+            }
+
+            let mut coordinates: Vec<i32> = Vec::new();
+            for segment in &segments[0..3] {
+                coordinates.push(match segment.parse() {
+                    Ok(number) => number,
+                    Err(error) => return format!("Unable to parse coordinates: {}", error),
+                })
+            }
+            let block_face = match segments[3].to_lowercase().as_str() {
+                "up" | "top" => Direction::Up,
+                "down" | "bottom" => Direction::Down,
+                "north" => Direction::North,
+                "east" => Direction::East,
+                "south" => Direction::South,
+                "west" => Direction::West,
+                _ => return "Please give me a valid block face!".to_string(),
+            };
+            log_error(
+                client
+                    .write_packet(ServerboundGamePacket::UseItemOn(
+                        game::serverbound_use_item_on_packet::ServerboundUseItemOnPacket {
+                            hand: InteractionHand::MainHand,
+                            block_hit: game::serverbound_use_item_on_packet::BlockHitResult {
+                                block_pos: BlockPos {
+                                    x: coordinates[0],
+                                    y: coordinates[1],
+                                    z: coordinates[2],
+                                },
+                                direction: block_face,
+                                location: Vec3 {
+                                    x: coordinates[0] as f64,
+                                    y: coordinates[1] as f64,
+                                    z: coordinates[2] as f64,
+                                },
+                                inside: false,
+                            },
+                            sequence: 0,
+                        },
+                    ))
+                    .await,
+            );
+            return "I have successfully interacted with the block!".to_string();
+        }
+        Command::InteractEntity => {
             if segments.len() < 1 {
                 return "Please give me IDs to interact with!".to_string();
             }
@@ -480,6 +535,10 @@ pub async fn process_command(
             } else {
                 return "Unable to find entity!".to_string();
             }
+        }
+        Command::Jump => {
+            client.jump();
+            return "I have successfully jumped!".to_string();
         }
         Command::Walk => {
             if segments.len() < 2 {

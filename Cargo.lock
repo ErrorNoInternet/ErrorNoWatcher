@@ -667,6 +667,7 @@ dependencies = [
  "anyhow",
  "azalea",
  "azalea-block",
+ "azalea-core",
  "azalea-protocol",
  "chrono",
  "colored",
