@@ -1,4 +1,4 @@
-use crate::{logging::log_error, State};
+use crate::{logging::log_error, PlayerTimeData, State};
 use async_recursion::async_recursion;
 use azalea::{
     pathfinder::BlockPosGoal, prelude::*, BlockPos, SprintDirection, Vec3, WalkDirection,
@@ -210,7 +210,26 @@ pub async fn process_command(
         }
         Command::LastOnline => {
             if segments.len() < 1 {
-                return "Please tell me the name of the player!".to_string();
+                let mut sorted_player_time_data: Vec<PlayerTimeData> = state
+                    .player_timestamps
+                    .lock()
+                    .unwrap()
+                    .values()
+                    .map(|item| item.to_owned())
+                    .collect();
+                sorted_player_time_data.sort_by(|a, b| b.join_time.cmp(&a.join_time));
+                let mut player_timestamps = state.player_timestamps.lock().unwrap();
+                let mut players = Vec::new();
+                for player_time_data in sorted_player_time_data {
+                    for (player, original_player_time_data) in player_timestamps.clone().iter() {
+                        if player_time_data == original_player_time_data.to_owned() {
+                            players.push(player.to_owned());
+                            player_timestamps.remove(player);
+                            break;
+                        }
+                    }
+                }
+                return format!("Sorted by join time: {}", players.join(", "));
             }
 
             for (player, player_time_data) in state.player_timestamps.lock().unwrap().iter() {

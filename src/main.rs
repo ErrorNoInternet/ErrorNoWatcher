@@ -129,14 +129,14 @@ async fn main() {
     }
 }
 
-#[derive(Eq, Hash, PartialEq, PartialOrd, Debug, Clone)]
+#[derive(Eq, Hash, PartialEq, PartialOrd, Default, Debug, Clone)]
 pub struct Player {
     uuid: String,
     entity_id: u32,
     username: String,
 }
 
-#[derive(Eq, Hash, PartialEq, PartialOrd, Debug, Clone)]
+#[derive(Eq, Hash, PartialEq, PartialOrd, Default, Debug, Clone)]
 pub struct Entity {
     id: u32,
     uuid: String,
@@ -149,7 +149,7 @@ pub struct PositionTimeData {
     time: u64,
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Eq, Hash, PartialEq, PartialOrd, Default, Debug, Clone)]
 pub struct PlayerTimeData {
     join_time: u64,
     chat_message_time: u64,
