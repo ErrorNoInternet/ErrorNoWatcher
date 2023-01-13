@@ -1,5 +1,5 @@
 use crate::{logging::log_error, State};
-use azalea::{pathfinder::BlockPosGoal, prelude::*, BlockPos};
+use azalea::{pathfinder::BlockPosGoal, prelude::*, BlockPos, SprintDirection, WalkDirection};
 use azalea_protocol::packets::game::{
     self, serverbound_interact_packet::InteractionHand, ServerboundGamePacket,
 };
@@ -26,6 +26,12 @@ pub enum Command {
     Look,
     Sneak,
     Unsneak,
+    Interact,
+    Attack,
+    Walk,
+    Sprint,
+    DropItem,
+    DropStack,
     ToggleBotStatusMessages,
     ToggleAlertMessages,
     Unknown,
@@ -64,6 +70,12 @@ pub async fn process_command(
         "look" => command = Command::Look,
         "sneak" => command = Command::Sneak,
         "unsneak" => command = Command::Unsneak,
+        "interact" => command = Command::Interact,
+        "attack" => command = Command::Attack,
+        "walk" => command = Command::Walk,
+        "sprint" => command = Command::Sprint,
+        "drop_item" => command = Command::DropItem,
+        "drop_stack" => command = Command::DropStack,
         "toggle_alert_messages" => command = Command::ToggleAlertMessages,
         "toggle_bot_status_messages" => command = Command::ToggleBotStatusMessages,
         _ => (),
@@ -358,6 +370,213 @@ pub async fn process_command(
                     .await,
             );
             return "I am no longer sneaking!".to_string();
+        }
+        Command::Interact => {
+            if segments.len() < 1 {
+                return "Please give me IDs to interact with!".to_string();
+            }
+
+            let mut found = false;
+            let mob_locations = state.mob_locations.lock().unwrap().to_owned();
+            for (mob, _) in mob_locations {
+                if mob.id.to_string() == segments[0]
+                    || mob.uuid == segments[0]
+                    || mob.entity_type == segments[0]
+                {
+                    found = true;
+                    log_error(
+                        client
+                            .write_packet(ServerboundGamePacket::Interact(
+                                game::serverbound_interact_packet::ServerboundInteractPacket {
+                                    action:
+                                        game::serverbound_interact_packet::ActionType::Interact {
+                                            hand: InteractionHand::MainHand,
+                                        },
+                                    entity_id: mob.id,
+                                    using_secondary_action: false,
+                                },
+                            ))
+                            .await,
+                    );
+                }
+            }
+            let player_locations = state.player_locations.lock().unwrap().to_owned();
+            for (player, _) in player_locations {
+                if player.entity_id.to_string() == segments[0]
+                    || player.uuid == segments[0]
+                    || player.username == segments[0]
+                {
+                    found = true;
+                    log_error(
+                        client
+                            .write_packet(ServerboundGamePacket::Interact(
+                                game::serverbound_interact_packet::ServerboundInteractPacket {
+                                    action:
+                                        game::serverbound_interact_packet::ActionType::Interact {
+                                            hand: InteractionHand::MainHand,
+                                        },
+                                    entity_id: player.entity_id,
+                                    using_secondary_action: false,
+                                },
+                            ))
+                            .await,
+                    );
+                }
+            }
+            if found {
+                return "Successfully interacted with entity!".to_string();
+            } else {
+                return "Unable to find entity!".to_string();
+            }
+        }
+        Command::Attack => {
+            if segments.len() < 1 {
+                return "Please give me IDs to attack!".to_string();
+            }
+
+            let mut found = false;
+            let mob_locations = state.mob_locations.lock().unwrap().to_owned();
+            for (mob, _) in mob_locations {
+                if mob.id.to_string() == segments[0]
+                    || mob.uuid == segments[0]
+                    || mob.entity_type == segments[0]
+                {
+                    found = true;
+                    log_error(
+                        client
+                            .write_packet(ServerboundGamePacket::Interact(
+                                game::serverbound_interact_packet::ServerboundInteractPacket {
+                                    action: game::serverbound_interact_packet::ActionType::Attack,
+                                    entity_id: mob.id,
+                                    using_secondary_action: false,
+                                },
+                            ))
+                            .await,
+                    );
+                }
+            }
+            let player_locations = state.player_locations.lock().unwrap().to_owned();
+            for (player, _) in player_locations {
+                if player.entity_id.to_string() == segments[0]
+                    || player.uuid == segments[0]
+                    || player.username == segments[0]
+                {
+                    found = true;
+                    log_error(
+                        client
+                            .write_packet(ServerboundGamePacket::Interact(
+                                game::serverbound_interact_packet::ServerboundInteractPacket {
+                                    action: game::serverbound_interact_packet::ActionType::Attack,
+                                    entity_id: player.entity_id,
+                                    using_secondary_action: false,
+                                },
+                            ))
+                            .await,
+                    );
+                }
+            }
+            if found {
+                return "Successfully attacked entity!".to_string();
+            } else {
+                return "Unable to find entity!".to_string();
+            }
+        }
+        Command::Walk => {
+            if segments.len() < 2 {
+                return "Please give me a direction (and duration) to walk in!".to_string();
+            }
+
+            let direction = match segments[0].to_lowercase().as_str() {
+                "forward" => WalkDirection::Forward,
+                "forward_left" => WalkDirection::ForwardLeft,
+                "forward_right" => WalkDirection::ForwardRight,
+                "backward" => WalkDirection::Backward,
+                "backward_left" => WalkDirection::BackwardLeft,
+                "backward_right" => WalkDirection::BackwardRight,
+                "left" => WalkDirection::Left,
+                "right" => WalkDirection::Right,
+                _ => WalkDirection::None,
+            };
+            let duration = match segments[1].parse() {
+                Ok(duration) => duration,
+                Err(error) => return format!("Unable to parse duration: {}", error),
+            };
+
+            log_error(
+                client
+                    .send_command_packet(&format!(
+                        "msg {} I am now walking {} for {} ms!",
+                        executor,
+                        segments[0].to_lowercase(),
+                        duration,
+                    ))
+                    .await,
+            );
+            client.walk(direction);
+            tokio::time::sleep(std::time::Duration::from_millis(duration)).await;
+            client.walk(WalkDirection::None);
+            return "I have finished walking!".to_string();
+        }
+        Command::Sprint => {
+            if segments.len() < 2 {
+                return "Please give me a direction (and duration) to sprint in!".to_string();
+            }
+
+            let direction = match segments[0].to_lowercase().as_str() {
+                "forward" => SprintDirection::Forward,
+                "forward_left" => SprintDirection::ForwardLeft,
+                "forward_right" => SprintDirection::ForwardRight,
+                _ => return "Please give me a valid direction to sprint in!".to_string(),
+            };
+            let duration = match segments[1].parse() {
+                Ok(duration) => duration,
+                Err(error) => return format!("Unable to parse duration: {}", error),
+            };
+
+            log_error(
+                client
+                    .send_command_packet(&format!(
+                        "msg {} I am now sprinting {} for {} ms!",
+                        executor,
+                        segments[0].to_lowercase(),
+                        duration,
+                    ))
+                    .await,
+            );
+            client.sprint(direction);
+            tokio::time::sleep(std::time::Duration::from_millis(duration)).await;
+            client.walk(WalkDirection::None);
+            return "I have finished sprinting!".to_string();
+        }
+        Command::DropItem => {
+            log_error(
+                client
+                    .write_packet(ServerboundGamePacket::PlayerAction(
+                        game::serverbound_player_action_packet::ServerboundPlayerActionPacket {
+                            action: game::serverbound_player_action_packet::Action::DropItem,
+                            pos: BlockPos { x: 0, y: 0, z: 0 },
+                            direction: Default::default(),
+                            sequence: 0,
+                        },
+                    ))
+                    .await,
+            );
+            return "I have successfully dropped 1 item!".to_string();
+        }
+        Command::DropStack => {
+            log_error(
+                client
+                    .write_packet(ServerboundGamePacket::PlayerAction(
+                        game::serverbound_player_action_packet::ServerboundPlayerActionPacket {
+                            action: game::serverbound_player_action_packet::Action::DropAllItems,
+                            pos: BlockPos { x: 0, y: 0, z: 0 },
+                            direction: Default::default(),
+                            sequence: 0,
+                        },
+                    ))
+                    .await,
+            );
+            return "I have successfully dropped 1 stack!".to_string();
         }
         Command::ToggleAlertMessages => {
             if state.alert_players.lock().unwrap().contains(executor) {

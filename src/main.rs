@@ -111,6 +111,7 @@ async fn main() {
                 alert_second_counter: Arc::new(Mutex::new(0)),
                 followed_player: Arc::new(Mutex::new(None)),
                 player_locations: Arc::new(Mutex::new(HashMap::new())),
+                mob_locations: Arc::new(Mutex::new(HashMap::new())),
                 player_timestamps: Arc::new(Mutex::new(HashMap::new())),
                 alert_players: Arc::new(Mutex::new(bot_configuration.clone().alert_players)),
                 alert_queue: Arc::new(Mutex::new(HashMap::new())),
@@ -130,9 +131,16 @@ async fn main() {
 
 #[derive(Eq, Hash, PartialEq, PartialOrd, Debug, Clone)]
 pub struct Player {
-    uuid: u128,
+    uuid: String,
     entity_id: u32,
     username: String,
+}
+
+#[derive(Eq, Hash, PartialEq, PartialOrd, Debug, Clone)]
+pub struct Entity {
+    id: u32,
+    uuid: String,
+    entity_type: String,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -165,6 +173,7 @@ pub struct State {
     alert_second_counter: Arc<Mutex<u8>>,
     followed_player: Arc<Mutex<Option<Player>>>,
     player_locations: Arc<Mutex<HashMap<Player, PositionTimeData>>>,
+    mob_locations: Arc<Mutex<HashMap<Entity, PositionTimeData>>>,
     player_timestamps: Arc<Mutex<HashMap<String, PlayerTimeData>>>,
     alert_players: Arc<Mutex<Vec<String>>>,
     alert_queue: Arc<Mutex<HashMap<String, Vec<i32>>>>,
@@ -311,29 +320,37 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
         }
         Event::Packet(packet) => match packet.as_ref() {
             ClientboundGamePacket::MoveEntityPos(packet) => {
-                let entity: (u128, u32, azalea::Vec3) =
-                    match (client.world.read()).entity(packet.entity_id) {
-                        Some(entity) => (entity.uuid.as_u128(), entity.id, entity.pos().to_owned()),
-                        None => return Ok(()),
-                    };
+                let world = client.world.read();
+                let raw_entity = match world.entity(packet.entity_id) {
+                    Some(raw_entity) => raw_entity,
+                    None => return Ok(()),
+                };
+                let entity = Entity {
+                    id: raw_entity.id,
+                    uuid: raw_entity.uuid.as_hyphenated().to_string(),
+                    entity_type: format!("{:?}", raw_entity.metadata),
+                };
+                let entity_position = raw_entity.pos();
+
+                let mut is_player = false;
                 let players = client.players.read().to_owned();
                 for (uuid, player) in players.iter().map(|item| item.to_owned()) {
-                    if uuid.as_u128() == entity.0 {
-                        let position = entity.2;
+                    if uuid.as_hyphenated().to_string() == entity.uuid {
+                        is_player = true;
 
                         let mut player_locations =
                             state.player_locations.lock().unwrap().to_owned();
                         player_locations.insert(
                             Player {
-                                uuid: uuid.as_u128(),
-                                entity_id: entity.1,
+                                uuid: uuid.as_hyphenated().to_string(),
+                                entity_id: entity.id,
                                 username: player.profile.name.to_owned(),
                             },
                             PositionTimeData {
                                 position: vec![
-                                    position.x as i32,
-                                    position.y as i32,
-                                    position.z as i32,
+                                    entity_position.x as i32,
+                                    entity_position.y as i32,
+                                    entity_position.z as i32,
                                 ],
                                 time: SystemTime::now()
                                     .duration_since(UNIX_EPOCH)
@@ -347,12 +364,12 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                             - state.bot_configuration.alert_radius)
                             ..(state.bot_configuration.alert_location[0]
                                 + state.bot_configuration.alert_radius))
-                            .contains(&(position.x as i32))
+                            .contains(&(entity_position.x as i32))
                             && ((state.bot_configuration.alert_location[1]
                                 - state.bot_configuration.alert_radius)
                                 ..(state.bot_configuration.alert_location[1]
                                     + state.bot_configuration.alert_radius))
-                                .contains(&(position.z as i32))
+                                .contains(&(entity_position.z as i32))
                         {
                             if !state
                                 .whitelist
@@ -363,12 +380,35 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                                 let mut alert_queue = state.alert_queue.lock().unwrap().to_owned();
                                 alert_queue.insert(
                                     player.profile.name.to_owned(),
-                                    vec![position.x as i32, position.y as i32, position.z as i32],
+                                    vec![
+                                        entity_position.x as i32,
+                                        entity_position.y as i32,
+                                        entity_position.z as i32,
+                                    ],
                                 );
                                 *state.alert_queue.lock().unwrap() = alert_queue;
                             }
                         }
                     }
+                }
+
+                if !is_player {
+                    let mut mob_locations = state.mob_locations.lock().unwrap().to_owned();
+                    mob_locations.insert(
+                        entity,
+                        PositionTimeData {
+                            position: vec![
+                                entity_position.x as i32,
+                                entity_position.y as i32,
+                                entity_position.z as i32,
+                            ],
+                            time: SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs(),
+                        },
+                    );
+                    *state.mob_locations.lock().unwrap() = mob_locations;
                 }
             }
             ClientboundGamePacket::SetHealth(packet) => {
@@ -391,9 +431,9 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                                 "msg {} {}",
                                 player,
                                 format!(
-                                    "Health: {}/20, Food: {}/20, Saturation: {}/20",
+                                    "Health: {:.1}/20, Food: {}/20, Saturation: {:.1}/20",
                                     packet.health, packet.food, packet.saturation
-                                )
+                                ),
                             ))
                             .await,
                     );
