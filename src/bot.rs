@@ -14,6 +14,7 @@ use strum_macros::EnumIter;
 #[derive(Debug, Clone, PartialEq, PartialOrd, EnumIter)]
 pub enum Command {
     Help,
+    Wait,
     BotStatus,
     Whitelist,
     WhitelistAdd,
@@ -62,6 +63,7 @@ pub async fn process_command(
     let mut command = Command::Unknown;
     match segments[0].to_lowercase().as_str() {
         "help" => command = Command::Help,
+        "wait" => command = Command::Wait,
         "bot_status" => command = Command::BotStatus,
         "whitelist" => command = Command::Whitelist,
         "whitelist_add" => command = Command::WhitelistAdd,
@@ -114,6 +116,18 @@ pub async fn process_command(
                 let paged_commands = &commands[start_index..end_index];
                 return format!("Commands (page {}): {}", page, paged_commands.join(", "));
             }
+        }
+        Command::Wait => {
+            if segments.len() < 1 {
+                return "Please tell me how long to wait!".to_string();
+            }
+
+            let duration = match segments[0].parse() {
+                Ok(duration) => duration,
+                Err(error) => return format!("Unable to parse duration: {}", error),
+            };
+            tokio::time::sleep(std::time::Duration::from_millis(duration)).await;
+            return format!("I have successfully slept for {} ms!", duration);
         }
         Command::BotStatus => {
             let bot_status = state.bot_status.lock().unwrap().to_owned();
