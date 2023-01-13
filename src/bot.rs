@@ -7,6 +7,7 @@ use azalea_protocol::packets::game::{
     self, serverbound_interact_packet::InteractionHand, ServerboundGamePacket,
 };
 use chrono::{Local, TimeZone};
+use futures::future::{BoxFuture, FutureExt};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -37,6 +38,7 @@ pub enum Command {
     Sprint,
     DropItem,
     DropStack,
+    Script,
     ToggleBotStatusMessages,
     ToggleAlertMessages,
     Unknown,
@@ -47,7 +49,7 @@ pub async fn process_command(
     executor: &String,
     client: &mut Client,
     state: &mut State,
-) -> String {
+) -> BoxFuture<'static, String> {
     let mut segments: Vec<String> = command
         .split(" ")
         .map(|segment| segment.to_string())
@@ -83,6 +85,7 @@ pub async fn process_command(
         "sprint" => command = Command::Sprint,
         "drop_item" => command = Command::DropItem,
         "drop_stack" => command = Command::DropStack,
+        "script" => command = Command::Script,
         "toggle_alert_messages" => command = Command::ToggleAlertMessages,
         "toggle_bot_status_messages" => command = Command::ToggleBotStatusMessages,
         _ => (),
@@ -636,6 +639,24 @@ pub async fn process_command(
                     .await,
             );
             return "I have successfully dropped 1 stack!".to_string();
+        }
+        Command::Script => {
+            if segments.len() < 1 {
+                return "Please give me a script file!".to_string();
+            }
+
+            let script = match std::fs::read_to_string(segments[0].to_owned()) {
+                Ok(script) => script,
+                Err(error) => return format!("Unable to read script: {}", error),
+            };
+            async move {
+                for line in script.split("\n") {
+                    process_command(&line.to_string(), &executor, client, state).await;
+                }
+            }
+            .boxed();
+
+            return "Finished executing script!".to_string();
         }
         Command::ToggleAlertMessages => {
             if state.alert_players.lock().unwrap().contains(executor) {

@@ -671,6 +671,7 @@ dependencies = [
  "azalea-protocol",
  "chrono",
  "colored",
+ "futures",
  "serde",
  "strum",
  "strum_macros",
