@@ -37,10 +37,10 @@ alert_command = [
 ]
 ```
 
-Run `/msg <bot username> help <page>` to see a list of commands you can run.
+Example commands:
+	- `/msg ErrorNoWatcher help 1` - list the first page of commands
 
-Examples:
-	- `/msg ErrorNoWatcher bot_status` - display the bot's health, food/saturation, etc\
+	- `/msg ErrorNoWatcher bot_status` - display the bot's health, food/saturation, etc
 
 	- `/msg ErrorNoWatcher goto 20 64 10` - go to x: 20, y: 64, z: 10 (using the pathfinder)
 
