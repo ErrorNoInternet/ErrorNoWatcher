@@ -10,6 +10,7 @@ cargo build --release
 The compiled executable will be at `./target/release/errornowatcher`
 
 ## Usage
+### Configuration
 Running the bot will create the `bot_configuration.toml` file, where you can change several options:
 ```toml
 username = "<bot's username>"
@@ -36,28 +37,16 @@ alert_command = [
 	"<your URL here (or a service such as ntfy.sh)>",
 ]
 ```
-
-Example commands:
-	- `/msg ErrorNoWatcher help 1` - list the first page of commands
-
-	- `/msg ErrorNoWatcher bot_status` - display the bot's health, food/saturation, etc
-
-	- `/msg ErrorNoWatcher goto 20 64 10` - go to x: 20, y: 64, z: 10 (using the pathfinder)
-
-	- `/msg ErrorNoWatcher script sleep.txt` - run all commands in the file `sleep.txt`
-
-	- `/msg ErrorNoWatcher attack ErrorNoInternet` - attack the player named ErrorNoInternet
-
-	- `/msg ErrorNoWatcher look 180 0` - look at 180 0 (rotation values)
-
-	- `/msg ErrorNoWatcher whitelist_add Notch` - temporarily add Notch to the whitelist
-
-	- `/msg ErrorNoWatcher sprint forward 5000` - sprint forward for 5 seconds
-
-	- `/msg ErrorNoWatcher drop_item` - drop the current held item (or `drop_stack`)
-
-	- `/msg ErrorNoWatcher last_location ErrorNoInternet` - display the last seen location
-
-	- `/msg ErrorNoWatcher follow_player ErrorNoInternet` - start following ErrorNoInternet
-
-	- `/msg ErrorNoWatcher slot 0` - switch to the first slot (0 - 8 = slots 1 - 9)
+### Example commands
+- `/msg ErrorNoWatcher help 1` - list the first page of commands
+- `/msg ErrorNoWatcher bot_status` - display the bot's health, food/saturation, etc
+- `/msg ErrorNoWatcher goto 20 64 10` - go to x: 20, y: 64, z: 10 (using the pathfinder)
+- `/msg ErrorNoWatcher script sleep.txt` - run all commands in the file `sleep.txt`
+- `/msg ErrorNoWatcher attack ErrorNoInternet` - attack the player named ErrorNoInternet
+- `/msg ErrorNoWatcher look 180 0` - look at 180 0 (rotation values)
+- `/msg ErrorNoWatcher whitelist_add Notch` - temporarily add Notch to the whitelist
+- `/msg ErrorNoWatcher sprint forward 5000` - sprint forward for 5 seconds
+- `/msg ErrorNoWatcher drop_item` - drop the current held item (or `drop_stack`)
+- `/msg ErrorNoWatcher last_location ErrorNoInternet` - display the last seen location
+- `/msg ErrorNoWatcher follow_player ErrorNoInternet` - start following ErrorNoInternet
+- `/msg ErrorNoWatcher slot 0` - switch to the first slot (0 - 8 = slots 1 - 9)
