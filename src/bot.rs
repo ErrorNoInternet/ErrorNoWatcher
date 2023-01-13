@@ -100,6 +100,9 @@ pub async fn process_command(
             if segments.len() > 0 {
                 page = segments[0].parse().unwrap_or(1)
             }
+            if page < 1 {
+                page = 1
+            }
 
             let mut commands = Vec::new();
             for command in Command::iter() {
@@ -108,14 +111,16 @@ pub async fn process_command(
                 }
             }
 
-            let start_index = (page - 1) * 10;
-            let end_index = page * 10;
-            if end_index >= commands.len() {
-                return format!("There are only {} pages!", commands.len() / 10);
-            } else {
-                let paged_commands = &commands[start_index..end_index];
-                return format!("Commands (page {}): {}", page, paged_commands.join(", "));
+            let mut start_index = (page - 1) * 10;
+            let mut end_index = page * 10;
+            while start_index >= commands.len() {
+                start_index -= 1
             }
+            while end_index >= commands.len() {
+                end_index -= 1
+            }
+            let paged_commands = &commands[start_index..end_index];
+            return format!("Commands (page {}): {}", page, paged_commands.join(", "));
         }
         Command::Wait => {
             if segments.len() < 1 {
@@ -142,12 +147,30 @@ pub async fn process_command(
             );
         }
         Command::Whitelist => {
-            let whitelist = state.whitelist.lock().unwrap().join(", ");
-            if whitelist.is_empty() {
-                return "There are no whitelisted players...".to_string();
-            } else {
-                return format!("Whitelisted players: {}", whitelist);
+            let mut page = 1;
+            if segments.len() > 0 {
+                page = segments[0].parse().unwrap_or(1)
             }
+            if page < 1 {
+                page = 1
+            }
+
+            let whitelist = state.whitelist.lock().unwrap();
+
+            let mut start_index = (page - 1) * 10;
+            while start_index >= whitelist.len() {
+                start_index -= 1
+            }
+            let mut end_index = page * 10;
+            while end_index >= whitelist.len() {
+                end_index -= 1
+            }
+            let paged_whitelist = &whitelist[start_index..end_index];
+            return format!(
+                "Whitelisted players (page {}): {}",
+                page,
+                paged_whitelist.join(", ")
+            );
         }
         Command::WhitelistAdd => {
             if segments.len() < 1 {
@@ -210,15 +233,25 @@ pub async fn process_command(
         }
         Command::LastOnline => {
             if segments.len() < 1 {
+                return "Please tell me the name of the player!".to_string();
+            }
+
+            if segments[0].parse::<usize>().is_ok() {
+                let mut page: usize = segments[0].parse().unwrap();
+                if page < 1 {
+                    page = 1
+                }
+
                 let mut sorted_player_time_data: Vec<PlayerTimeData> = state
                     .player_timestamps
                     .lock()
                     .unwrap()
+                    .to_owned()
                     .values()
                     .map(|item| item.to_owned())
                     .collect();
                 sorted_player_time_data.sort_by(|a, b| b.join_time.cmp(&a.join_time));
-                let mut player_timestamps = state.player_timestamps.lock().unwrap();
+                let mut player_timestamps = state.player_timestamps.lock().unwrap().to_owned();
                 let mut players = Vec::new();
                 for player_time_data in sorted_player_time_data {
                     for (player, original_player_time_data) in player_timestamps.clone().iter() {
@@ -229,7 +262,21 @@ pub async fn process_command(
                         }
                     }
                 }
-                return format!("Sorted by join time: {}", players.join(", "));
+
+                let mut start_index = (page - 1) * 10;
+                let mut end_index = page * 10;
+                while start_index >= players.len() {
+                    start_index -= 1
+                }
+                while end_index >= players.len() {
+                    end_index -= 1
+                }
+                let paged_players = &players[start_index..end_index];
+                return format!(
+                    "Sorted by join time (page {}): {}",
+                    page,
+                    paged_players.join(", ")
+                );
             }
 
             for (player, player_time_data) in state.player_timestamps.lock().unwrap().iter() {
