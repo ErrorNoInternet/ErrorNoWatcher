@@ -7,7 +7,7 @@ git clone https://github.com/ErrorNoInternet/ErrorNoWatcher
 cd ErrorNoWatcher
 cargo build --release
 ```
-The compiled executable will be at `./target/release/errornowatcher`
+The compiled executable can be found at `./target/release/errornowatcher`
 
 ## Usage
 ### Configuration
