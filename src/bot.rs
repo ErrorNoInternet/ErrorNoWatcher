@@ -1,4 +1,5 @@
 use crate::{logging::log_error, State};
+use async_recursion::async_recursion;
 use azalea::{
     pathfinder::BlockPosGoal, prelude::*, BlockPos, SprintDirection, Vec3, WalkDirection,
 };
@@ -7,7 +8,6 @@ use azalea_protocol::packets::game::{
     self, serverbound_interact_packet::InteractionHand, ServerboundGamePacket,
 };
 use chrono::{Local, TimeZone};
-use futures::future::{BoxFuture, FutureExt};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -44,12 +44,13 @@ pub enum Command {
     Unknown,
 }
 
+#[async_recursion]
 pub async fn process_command(
     command: &String,
     executor: &String,
     client: &mut Client,
     state: &mut State,
-) -> BoxFuture<'static, String> {
+) -> String {
     let mut segments: Vec<String> = command
         .split(" ")
         .map(|segment| segment.to_string())
@@ -649,12 +650,9 @@ pub async fn process_command(
                 Ok(script) => script,
                 Err(error) => return format!("Unable to read script: {}", error),
             };
-            async move {
-                for line in script.split("\n") {
-                    process_command(&line.to_string(), &executor, client, state).await;
-                }
+            for line in script.split("\n") {
+                process_command(&line.to_string(), &executor, client, state).await;
             }
-            .boxed();
 
             return "Finished executing script!".to_string();
         }

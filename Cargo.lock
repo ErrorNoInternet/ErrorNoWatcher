@@ -665,13 +665,13 @@ name = "errornowatcher"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-recursion",
  "azalea",
  "azalea-block",
  "azalea-core",
  "azalea-protocol",
  "chrono",
  "colored",
- "futures",
  "serde",
  "strum",
  "strum_macros",
