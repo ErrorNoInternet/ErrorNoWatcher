@@ -753,7 +753,7 @@ pub async fn process_command(
         }
         Command::Script => {
             if segments.len() < 1 {
-                return "Please give me a script file!".to_string();
+                return "Please give me a script file to run!".to_string();
             }
 
             let script = match std::fs::read_to_string(segments[0].to_owned()) {
