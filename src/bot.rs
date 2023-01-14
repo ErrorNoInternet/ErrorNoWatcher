@@ -39,6 +39,7 @@ pub enum Command {
     Sprint,
     DropItem,
     DropStack,
+    LeaveBed,
     Script,
     ToggleBotStatusMessages,
     ToggleAlertMessages,
@@ -88,6 +89,7 @@ pub async fn process_command(
         "sprint" => command = Command::Sprint,
         "drop_item" => command = Command::DropItem,
         "drop_stack" => command = Command::DropStack,
+        "leave_bed" => command = Command::LeaveBed,
         "script" => command = Command::Script,
         "toggle_alert_messages" => command = Command::ToggleAlertMessages,
         "toggle_bot_status_messages" => command = Command::ToggleBotStatusMessages,
@@ -733,6 +735,21 @@ pub async fn process_command(
                     .await,
             );
             return "I have successfully dropped 1 stack!".to_string();
+        }
+        Command::LeaveBed => {
+            let entity_id = client.entity_id.read().to_owned();
+            log_error(
+                client
+                    .write_packet(ServerboundGamePacket::PlayerCommand(
+                        game::serverbound_player_command_packet::ServerboundPlayerCommandPacket {
+                            id: entity_id,
+                            action: game::serverbound_player_command_packet::Action::StopSleeping,
+                            data: 0,
+                        },
+                    ))
+                    .await,
+            );
+            return "I am no longer sleeping!".to_string();
         }
         Command::Script => {
             if segments.len() < 1 {
