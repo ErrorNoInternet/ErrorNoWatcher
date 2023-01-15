@@ -190,7 +190,8 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
             log_error(
                 client
                     .set_client_information(ClientInformation {
-                        view_distance: 2,
+                        view_distance: (state.bot_configuration.alert_radius as f32 / 16.0).ceil()
+                            as u8,
                         ..Default::default()
                     })
                     .await,
