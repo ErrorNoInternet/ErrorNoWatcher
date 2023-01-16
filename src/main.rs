@@ -125,6 +125,10 @@ async fn main() {
             Ok(_) => (),
             Err(error) => log_message(Error, &format!("An error occurred: {}", error)),
         }
+        log_message(
+            Bot,
+            &"ErrorNoWatcher has lost connection, reconnecting in 5 seconds...".to_string(),
+        );
         std::thread::sleep(std::time::Duration::from_secs(5));
     }
 }
