@@ -117,10 +117,10 @@ pub async fn process_command(
 
             let mut start_index = (page - 1) * 10;
             let mut end_index = page * 10;
-            while start_index >= commands.len() {
+            while start_index > commands.len() {
                 start_index -= 1
             }
-            while end_index >= commands.len() {
+            while end_index > commands.len() {
                 end_index -= 1
             }
             let paged_commands = &commands[start_index..end_index];
@@ -162,11 +162,11 @@ pub async fn process_command(
             let whitelist = state.whitelist.lock().unwrap();
 
             let mut start_index = (page - 1) * 10;
-            while start_index >= whitelist.len() {
+            let mut end_index = page * 10;
+            while start_index > whitelist.len() {
                 start_index -= 1
             }
-            let mut end_index = page * 10;
-            while end_index >= whitelist.len() {
+            while end_index > whitelist.len() {
                 end_index -= 1
             }
             let paged_whitelist = &whitelist[start_index..end_index];
@@ -269,10 +269,10 @@ pub async fn process_command(
 
                 let mut start_index = (page - 1) * 10;
                 let mut end_index = page * 10;
-                while start_index >= players.len() {
+                while start_index > players.len() {
                     start_index -= 1
                 }
-                while end_index >= players.len() {
+                while end_index > players.len() {
                     end_index -= 1
                 }
                 let paged_players = &players[start_index..end_index];
