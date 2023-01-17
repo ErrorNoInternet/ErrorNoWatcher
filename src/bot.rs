@@ -178,7 +178,7 @@ pub async fn process_command(
         }
         Command::WhitelistAdd => {
             if segments.len() < 1 {
-                return "Please tell me the name of the player!".to_string();
+                return "Please tell me the name of a player!".to_string();
             }
 
             let mut whitelist = state.whitelist.lock().unwrap().to_vec();
@@ -194,7 +194,7 @@ pub async fn process_command(
         }
         Command::WhitelistRemove => {
             if segments.len() < 1 {
-                return "Please tell me the name of the player!".to_string();
+                return "Please tell me the name of a player!".to_string();
             }
 
             let mut whitelist = state.whitelist.lock().unwrap().to_vec();
@@ -215,7 +215,7 @@ pub async fn process_command(
         }
         Command::LastLocation => {
             if segments.len() < 1 {
-                return "Please tell me the name of the player!".to_string();
+                return "Please tell me the name of a player!".to_string();
             }
 
             for (player, position_time_data) in state.player_locations.lock().unwrap().iter() {
@@ -237,7 +237,7 @@ pub async fn process_command(
         }
         Command::LastOnline => {
             if segments.len() < 1 {
-                return "Please tell me the name of the player!".to_string();
+                return "Please tell me a page number or the name of a player!".to_string();
             }
 
             if segments[0].parse::<usize>().is_ok() {
@@ -322,7 +322,7 @@ pub async fn process_command(
         }
         Command::FollowPlayer => {
             if segments.len() < 1 {
-                return "Please tell me the name of the player!".to_string();
+                return "Please tell me the name of a player!".to_string();
             };
 
             let mut found = true;
