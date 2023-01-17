@@ -10,6 +10,7 @@ use azalea_protocol::packets::game::ClientboundGamePacket;
 use azalea_protocol::ServerAddress;
 use logging::LogMessageType::*;
 use logging::{log_error, log_message};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -105,10 +106,9 @@ async fn main() {
             state: State {
                 bot_configuration: bot_configuration.clone(),
                 whitelist: Arc::new(Mutex::new(bot_configuration.clone().whitelist)),
-                logged_in: Arc::new(Mutex::new(false)),
                 bot_status: Arc::new(Mutex::new(BotStatus::default())),
                 tick_counter: Arc::new(Mutex::new(0)),
-                alert_second_counter: Arc::new(Mutex::new(0)),
+                second_counter: Arc::new(Mutex::new(0)),
                 followed_player: Arc::new(Mutex::new(None)),
                 player_locations: Arc::new(Mutex::new(HashMap::new())),
                 mob_locations: Arc::new(Mutex::new(HashMap::new())),
@@ -171,10 +171,9 @@ pub struct BotStatus {
 pub struct State {
     bot_configuration: BotConfiguration,
     whitelist: Arc<Mutex<Vec<String>>>,
-    logged_in: Arc<Mutex<bool>>,
     bot_status: Arc<Mutex<BotStatus>>,
     tick_counter: Arc<Mutex<u8>>,
-    alert_second_counter: Arc<Mutex<u8>>,
+    second_counter: Arc<Mutex<u8>>,
     followed_player: Arc<Mutex<Option<Player>>>,
     player_locations: Arc<Mutex<HashMap<Player, PositionTimeData>>>,
     mob_locations: Arc<Mutex<HashMap<Entity, PositionTimeData>>>,
@@ -250,18 +249,10 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
             *state.player_timestamps.lock().unwrap() = player_timestamps;
         }
         Event::Tick => {
-            if !*state.logged_in.lock().unwrap() {
-                *state.logged_in.lock().unwrap() = true;
-                log_message(
-                    Bot,
-                    &"ErrorNoWatcher has finished initializing!".to_string(),
-                );
-            }
-
             *state.tick_counter.lock().unwrap() += 1;
             if *state.tick_counter.lock().unwrap() >= 20 {
                 *state.tick_counter.lock().unwrap() = 0;
-                *state.alert_second_counter.lock().unwrap() += 1;
+                *state.second_counter.lock().unwrap() += 1;
 
                 let followed_player = state.followed_player.lock().unwrap().to_owned();
                 if followed_player.is_some() {
@@ -279,8 +270,8 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                 }
             }
 
-            if *state.alert_second_counter.lock().unwrap() >= 5 {
-                *state.alert_second_counter.lock().unwrap() = 0;
+            if *state.second_counter.lock().unwrap() >= 5 {
+                *state.second_counter.lock().unwrap() = 0;
 
                 let alert_queue = state.alert_queue.lock().unwrap().to_owned();
                 for (intruder, position) in alert_queue {
@@ -330,14 +321,20 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                     Some(raw_entity) => raw_entity,
                     None => return Ok(()),
                 };
-                let entity_type = &format!("{:?}", raw_entity.metadata)
+                let entity_type = format!("{:?}", raw_entity.metadata)
                     .split("(")
                     .map(|item| item.to_owned())
-                    .collect::<Vec<String>>()[0];
+                    .collect::<Vec<String>>()[0]
+                    .to_lowercase();
+                if entity_type != "player" {
+                    if rand::thread_rng().gen_range(0..10) > 0 {
+                        return Ok(());
+                    }
+                }
                 let entity = Entity {
                     id: raw_entity.id,
                     uuid: raw_entity.uuid.as_hyphenated().to_string(),
-                    entity_type: entity_type.to_lowercase(),
+                    entity_type,
                 };
                 let entity_position = raw_entity.pos();
 
