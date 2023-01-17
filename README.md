@@ -30,6 +30,7 @@ alert_radius = 192
 alert_command = [
 	"curl",
 	"-s",
+	"-m 5",
 	"-HTitle: Intruder Alert",
 	"-HPriority: urgent",
 	"-HTags: warning",
