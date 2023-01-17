@@ -412,8 +412,8 @@ pub async fn process_command(
                 client
                     .write_packet(ServerboundGamePacket::SetCarriedItem(
                         game::serverbound_set_carried_item_packet::ServerboundSetCarriedItemPacket {
-                            slot: match segments[0].parse() {
-                                Ok(number) => number,
+                            slot: match segments[0].parse::<i8>() {
+                                Ok(number) => (number-1) as u16,
                                 Err(error) => return format!("Unable to parse slot: {}", error),
                             },
                         },
