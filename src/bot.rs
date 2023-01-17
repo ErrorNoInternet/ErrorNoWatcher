@@ -41,6 +41,7 @@ pub enum Command {
     DropStack,
     LeaveBed,
     Script,
+    Latency,
     ToggleBotStatusMessages,
     ToggleAlertMessages,
     Unknown,
@@ -91,6 +92,7 @@ pub async fn process_command(
         "drop_stack" => command = Command::DropStack,
         "leave_bed" => command = Command::LeaveBed,
         "script" => command = Command::Script,
+        "latency" => command = Command::Latency,
         "toggle_alert_messages" => command = Command::ToggleAlertMessages,
         "toggle_bot_status_messages" => command = Command::ToggleBotStatusMessages,
         _ => (),
@@ -765,6 +767,26 @@ pub async fn process_command(
             }
 
             return "Finished executing script!".to_string();
+        }
+        Command::Latency => {
+            let mut player = &state.bot_configuration.username;
+            if segments.len() > 0 {
+                player = &segments[0]
+            }
+
+            let players = client.players.read().to_owned();
+            for (uuid, online_player) in players.iter().map(|item| item.to_owned()) {
+                if &online_player.profile.name == player
+                    || &uuid.as_hyphenated().to_string() == player
+                {
+                    return format!(
+                        "{} has a latency of {} ms!",
+                        online_player.profile.name, online_player.latency
+                    );
+                }
+            }
+
+            return format!("{} was not found!", player);
         }
         Command::ToggleAlertMessages => {
             if state.alert_players.lock().unwrap().contains(executor) {
