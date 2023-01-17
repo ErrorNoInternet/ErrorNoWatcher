@@ -42,6 +42,7 @@ pub enum Command {
     LeaveBed,
     Script,
     Latency,
+    MobLocations,
     ToggleBotStatusMessages,
     ToggleAlertMessages,
     Unknown,
@@ -93,6 +94,7 @@ pub async fn process_command(
         "leave_bed" => command = Command::LeaveBed,
         "script" => command = Command::Script,
         "latency" => command = Command::Latency,
+        "mob_locations" => command = Command::MobLocations,
         "toggle_alert_messages" => command = Command::ToggleAlertMessages,
         "toggle_bot_status_messages" => command = Command::ToggleBotStatusMessages,
         _ => (),
@@ -787,6 +789,45 @@ pub async fn process_command(
             }
 
             return format!("{} was not found!", player);
+        }
+        Command::MobLocations => {
+            if segments.len() < 1 {
+                return "Please give me the ID or type of a mob!".to_string();
+            }
+            let mut page = 1;
+            if segments.len() > 1 {
+                page = segments[1].parse().unwrap_or(1)
+            }
+            if page < 1 {
+                page = 1
+            }
+
+            let mut locations = Vec::new();
+            for (entity, position_time_data) in state.mob_locations.lock().unwrap().to_owned() {
+                if entity.id.to_string() == segments[0]
+                    || entity.uuid == segments[0]
+                    || entity.entity_type == segments[0]
+                {
+                    locations.push(format!(
+                        "{}: {} {} {}",
+                        entity.entity_type,
+                        position_time_data.position[0],
+                        position_time_data.position[1],
+                        position_time_data.position[2],
+                    ))
+                }
+            }
+
+            let mut start_index = (page - 1) * 5;
+            let mut end_index = page * 5;
+            while start_index > locations.len() {
+                start_index -= 1
+            }
+            while end_index > locations.len() {
+                end_index -= 1
+            }
+            let paged_locations = &locations[start_index..end_index];
+            return format!("Locations (page {}): {}", page, paged_locations.join(", "));
         }
         Command::ToggleAlertMessages => {
             if state.alert_players.lock().unwrap().contains(executor) {

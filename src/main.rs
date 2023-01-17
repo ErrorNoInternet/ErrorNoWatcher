@@ -108,7 +108,8 @@ async fn main() {
                 whitelist: Arc::new(Mutex::new(bot_configuration.clone().whitelist)),
                 bot_status: Arc::new(Mutex::new(BotStatus::default())),
                 tick_counter: Arc::new(Mutex::new(0)),
-                second_counter: Arc::new(Mutex::new(0)),
+                alert_second_counter: Arc::new(Mutex::new(0)),
+                cleanup_second_counter: Arc::new(Mutex::new(0)),
                 followed_player: Arc::new(Mutex::new(None)),
                 player_locations: Arc::new(Mutex::new(HashMap::new())),
                 mob_locations: Arc::new(Mutex::new(HashMap::new())),
@@ -173,7 +174,8 @@ pub struct State {
     whitelist: Arc<Mutex<Vec<String>>>,
     bot_status: Arc<Mutex<BotStatus>>,
     tick_counter: Arc<Mutex<u8>>,
-    second_counter: Arc<Mutex<u8>>,
+    alert_second_counter: Arc<Mutex<u16>>,
+    cleanup_second_counter: Arc<Mutex<u16>>,
     followed_player: Arc<Mutex<Option<Player>>>,
     player_locations: Arc<Mutex<HashMap<Player, PositionTimeData>>>,
     mob_locations: Arc<Mutex<HashMap<Entity, PositionTimeData>>>,
@@ -252,7 +254,8 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
             *state.tick_counter.lock().unwrap() += 1;
             if *state.tick_counter.lock().unwrap() >= 20 {
                 *state.tick_counter.lock().unwrap() = 0;
-                *state.second_counter.lock().unwrap() += 1;
+                *state.alert_second_counter.lock().unwrap() += 1;
+                *state.cleanup_second_counter.lock().unwrap() += 1;
 
                 let followed_player = state.followed_player.lock().unwrap().to_owned();
                 if followed_player.is_some() {
@@ -270,8 +273,8 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                 }
             }
 
-            if *state.second_counter.lock().unwrap() >= 5 {
-                *state.second_counter.lock().unwrap() = 0;
+            if *state.alert_second_counter.lock().unwrap() >= 5 {
+                *state.alert_second_counter.lock().unwrap() = 0;
 
                 let alert_queue = state.alert_queue.lock().unwrap().to_owned();
                 for (intruder, position) in alert_queue {
@@ -312,6 +315,13 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                     }
                 }
                 *state.alert_queue.lock().unwrap() = HashMap::new();
+            }
+
+            if *state.cleanup_second_counter.lock().unwrap() >= 600 {
+                *state.cleanup_second_counter.lock().unwrap() = 0;
+
+                log_message(Bot, &"Cleaning up mob locations...".to_string());
+                *state.mob_locations.lock().unwrap() = HashMap::new();
             }
         }
         Event::Packet(packet) => match packet.as_ref() {
