@@ -51,4 +51,4 @@ alert_command = [
 - `/msg ErrorNoWatcher last_location 1` - show the first page of players sorted by join time
 - `/msg ErrorNoWatcher last_location ErrorNoInternet` - display the last seen location
 - `/msg ErrorNoWatcher follow_player ErrorNoInternet` - start following ErrorNoInternet
-- `/msg ErrorNoWatcher slot 0` - switch to the first inventory slot (0 - 8 = slots 1 - 9)
+- `/msg ErrorNoWatcher slot 1` - switch to the first inventory slot (hold the item)
