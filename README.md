@@ -37,6 +37,8 @@ alert_command = [
 	"-d{player_name} is near your base! Their coordinates are {x} {y} {z}.",
 	"<your URL here (or a service such as ntfy.sh)>",
 ]
+cleanup_interval = 300
+mob_expiry = 300
 ```
 ### Example commands
 - `/msg ErrorNoWatcher help 1` - list the first page of usable commands
