@@ -39,7 +39,7 @@ alert_command = [
 ]
 cleanup_interval = 300 # the amount of seconds to wait before checking for idle entities
 mob_expiry_time = 300 # the maximum amount of time a mob can stay idle before getting cleared
-mob_packet_drop_level = 5 # the level of mob packets to drop (0 = 0%, 5 = 50%, 10 = 100%)
+mob_packet_drop_level = 5 # the amount of mob packets to drop (0 = 0%, 5 = 50%, 10 = 100%)
 ```
 ### Example commands
 - `/msg ErrorNoWatcher help 1` - list the first page of usable commands
