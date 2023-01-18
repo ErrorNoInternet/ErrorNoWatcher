@@ -28,8 +28,10 @@ struct BotConfiguration {
     whitelist: Vec<String>,
     alert_players: Vec<String>,
     alert_location: Vec<i32>,
-    alert_radius: i32,
+    alert_radius: u32,
     alert_command: Vec<String>,
+    cleanup_interval: u32,
+    mob_expiry: u64,
 }
 
 impl Default for BotConfiguration {
@@ -47,6 +49,8 @@ impl Default for BotConfiguration {
             alert_location: vec![0, 0],
             alert_radius: 100,
             alert_command: Vec::new(),
+            cleanup_interval: 300,
+            mob_expiry: 300,
         }
     }
 }
@@ -317,21 +321,34 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                 *state.alert_queue.lock().unwrap() = HashMap::new();
             }
 
-            if *state.cleanup_second_counter.lock().unwrap() >= 600 {
+            if *state.cleanup_second_counter.lock().unwrap() as u32
+                >= state.bot_configuration.cleanup_interval
+            {
                 *state.cleanup_second_counter.lock().unwrap() = 0;
 
                 log_message(Bot, &"Cleaning up mob locations...".to_string());
                 let mut mob_locations = state.mob_locations.lock().unwrap().to_owned();
+                let before_count = mob_locations.len();
                 let current_time = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_secs();
                 for (mob, position_time_data) in mob_locations.to_owned() {
-                    if current_time - position_time_data.time > 1200 {
+                    if current_time - position_time_data.time > state.bot_configuration.mob_expiry {
                         mob_locations.remove(&mob);
                     }
                 }
+                let after_count = mob_locations.len();
                 *state.mob_locations.lock().unwrap() = mob_locations;
+                log_message(
+                    Bot,
+                    &format!(
+                        "Successfully cleaned {} mobs ({} -> {})",
+                        before_count - after_count,
+                        before_count,
+                        after_count
+                    ),
+                );
             }
         }
         Event::Packet(packet) => match packet.as_ref() {
@@ -387,14 +404,14 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                         *state.player_locations.lock().unwrap() = player_locations;
 
                         if ((state.bot_configuration.alert_location[0]
-                            - state.bot_configuration.alert_radius)
+                            - state.bot_configuration.alert_radius as i32)
                             ..(state.bot_configuration.alert_location[0]
-                                + state.bot_configuration.alert_radius))
+                                + state.bot_configuration.alert_radius as i32))
                             .contains(&(entity_position.x as i32))
                             && ((state.bot_configuration.alert_location[1]
-                                - state.bot_configuration.alert_radius)
+                                - state.bot_configuration.alert_radius as i32)
                                 ..(state.bot_configuration.alert_location[1]
-                                    + state.bot_configuration.alert_radius))
+                                    + state.bot_configuration.alert_radius as i32))
                                 .contains(&(entity_position.z as i32))
                         {
                             if !state
