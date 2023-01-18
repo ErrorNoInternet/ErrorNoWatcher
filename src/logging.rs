@@ -1,3 +1,4 @@
+use chrono::Local;
 use colored::*;
 
 pub enum LogMessageType {
@@ -15,14 +16,42 @@ pub fn log_error<T, E: std::fmt::Display>(result: Result<T, E>) {
 
 pub fn log_message(message_type: LogMessageType, message: &String) {
     match message_type {
-        LogMessageType::Bot => println!("{} {}", colored_brackets(&"BOT".bold().blue()), message),
-        LogMessageType::Chat => println!("{} {}", colored_brackets(&"CHAT".bold().blue()), message),
+        LogMessageType::Bot => {
+            println!(
+                "{} {} {}",
+                current_time(),
+                colored_brackets(&"BOT".bold().blue()),
+                message
+            )
+        }
+        LogMessageType::Chat => {
+            println!(
+                "{} {} {}",
+                current_time(),
+                colored_brackets(&"CHAT".bold().blue()),
+                message
+            )
+        }
         LogMessageType::Error => println!(
-            "{} {}",
+            "{} {} {}",
+            current_time(),
             colored_brackets(&"ERROR".bold().red()),
             message.red()
         ),
     }
+}
+
+fn current_time() -> String {
+    format!(
+        "{}{}{}",
+        "[".bold().white(),
+        Local::now()
+            .format("%Y/%m/%d %H:%M:%S")
+            .to_string()
+            .bold()
+            .white(),
+        "]".bold().white()
+    )
 }
 
 fn colored_brackets(text: &ColoredString) -> String {
