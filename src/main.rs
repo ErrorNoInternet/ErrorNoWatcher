@@ -360,6 +360,28 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
             }
         }
         Event::Packet(packet) => match packet.as_ref() {
+            ClientboundGamePacket::AddEntity(packet) => {
+                if packet.entity_type.to_string() != "Player" {
+                    let entity = Entity {
+                        id: packet.id,
+                        uuid: packet.uuid.as_hyphenated().to_string(),
+                        entity_type: packet.entity_type.to_string().to_lowercase(),
+                    };
+
+                    let mut mob_locations = state.mob_locations.lock().unwrap().to_owned();
+                    mob_locations.insert(
+                        entity,
+                        PositionTimeData {
+                            position: vec![packet.x as i32, packet.y as i32, packet.z as i32],
+                            time: SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs(),
+                        },
+                    );
+                    *state.mob_locations.lock().unwrap() = mob_locations;
+                }
+            }
             ClientboundGamePacket::MoveEntityPos(packet) => {
                 let world = client.world.read();
                 let raw_entity = match world.entity(packet.entity_id) {
@@ -381,71 +403,69 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                 let entity = Entity {
                     id: raw_entity.id,
                     uuid: raw_entity.uuid.as_hyphenated().to_string(),
-                    entity_type,
+                    entity_type: entity_type.to_owned(),
                 };
                 let entity_position = raw_entity.pos();
 
-                let mut is_player = false;
-                let players = client.players.read().to_owned();
-                for (uuid, player) in players.iter().map(|item| item.to_owned()) {
-                    if uuid.as_hyphenated().to_string() == entity.uuid {
-                        is_player = true;
-
-                        let mut player_locations =
-                            state.player_locations.lock().unwrap().to_owned();
-                        player_locations.insert(
-                            Player {
-                                uuid: uuid.as_hyphenated().to_string(),
-                                entity_id: entity.id,
-                                username: player.profile.name.to_owned(),
-                            },
-                            PositionTimeData {
-                                position: vec![
-                                    entity_position.x as i32,
-                                    entity_position.y as i32,
-                                    entity_position.z as i32,
-                                ],
-                                time: SystemTime::now()
-                                    .duration_since(UNIX_EPOCH)
-                                    .unwrap()
-                                    .as_secs(),
-                            },
-                        );
-                        *state.player_locations.lock().unwrap() = player_locations;
-
-                        if ((state.bot_configuration.alert_location[0]
-                            - state.bot_configuration.alert_radius as i32)
-                            ..(state.bot_configuration.alert_location[0]
-                                + state.bot_configuration.alert_radius as i32))
-                            .contains(&(entity_position.x as i32))
-                            && ((state.bot_configuration.alert_location[1]
-                                - state.bot_configuration.alert_radius as i32)
-                                ..(state.bot_configuration.alert_location[1]
-                                    + state.bot_configuration.alert_radius as i32))
-                                .contains(&(entity_position.z as i32))
-                        {
-                            if !state
-                                .whitelist
-                                .lock()
-                                .unwrap()
-                                .contains(&player.profile.name)
-                            {
-                                let mut alert_queue = state.alert_queue.lock().unwrap().to_owned();
-                                alert_queue.insert(
-                                    player.profile.name.to_owned(),
-                                    vec![
+                if entity_type == "player" {
+                    let players = client.players.read().to_owned();
+                    for (uuid, player) in players.iter().map(|item| item.to_owned()) {
+                        if uuid.as_hyphenated().to_string() == entity.uuid {
+                            let mut player_locations =
+                                state.player_locations.lock().unwrap().to_owned();
+                            player_locations.insert(
+                                Player {
+                                    uuid: uuid.as_hyphenated().to_string(),
+                                    entity_id: entity.id,
+                                    username: player.profile.name.to_owned(),
+                                },
+                                PositionTimeData {
+                                    position: vec![
                                         entity_position.x as i32,
                                         entity_position.y as i32,
                                         entity_position.z as i32,
                                     ],
-                                );
-                                *state.alert_queue.lock().unwrap() = alert_queue;
+                                    time: SystemTime::now()
+                                        .duration_since(UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_secs(),
+                                },
+                            );
+                            *state.player_locations.lock().unwrap() = player_locations;
+
+                            if ((state.bot_configuration.alert_location[0]
+                                - state.bot_configuration.alert_radius as i32)
+                                ..(state.bot_configuration.alert_location[0]
+                                    + state.bot_configuration.alert_radius as i32))
+                                .contains(&(entity_position.x as i32))
+                                && ((state.bot_configuration.alert_location[1]
+                                    - state.bot_configuration.alert_radius as i32)
+                                    ..(state.bot_configuration.alert_location[1]
+                                        + state.bot_configuration.alert_radius as i32))
+                                    .contains(&(entity_position.z as i32))
+                            {
+                                if !state
+                                    .whitelist
+                                    .lock()
+                                    .unwrap()
+                                    .contains(&player.profile.name)
+                                {
+                                    let mut alert_queue =
+                                        state.alert_queue.lock().unwrap().to_owned();
+                                    alert_queue.insert(
+                                        player.profile.name.to_owned(),
+                                        vec![
+                                            entity_position.x as i32,
+                                            entity_position.y as i32,
+                                            entity_position.z as i32,
+                                        ],
+                                    );
+                                    *state.alert_queue.lock().unwrap() = alert_queue;
+                                }
                             }
                         }
                     }
-                }
-
-                if !is_player {
+                } else {
                     let mut mob_locations = state.mob_locations.lock().unwrap().to_owned();
                     mob_locations.insert(
                         entity,
