@@ -340,13 +340,17 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                 }
                 let after_count = mob_locations.len();
                 *state.mob_locations.lock().unwrap() = mob_locations;
+
+                let removed_count = before_count - after_count;
+                let mut label = "mobs";
+                if removed_count == 1 {
+                    label = "mob";
+                }
                 log_message(
                     Bot,
                     &format!(
-                        "Successfully cleaned {} mobs ({} -> {})",
-                        before_count - after_count,
-                        before_count,
-                        after_count
+                        "Successfully removed {} {} ({} -> {})",
+                        removed_count, label, before_count, after_count
                     ),
                 );
             }
