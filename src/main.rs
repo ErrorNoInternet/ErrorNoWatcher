@@ -31,7 +31,8 @@ struct BotConfiguration {
     alert_radius: u32,
     alert_command: Vec<String>,
     cleanup_interval: u32,
-    mob_expiry: u64,
+    mob_expiry_time: u64,
+    mob_packet_drop_level: u8,
 }
 
 impl Default for BotConfiguration {
@@ -50,7 +51,8 @@ impl Default for BotConfiguration {
             alert_radius: 100,
             alert_command: Vec::new(),
             cleanup_interval: 300,
-            mob_expiry: 300,
+            mob_expiry_time: 300,
+            mob_packet_drop_level: 5,
         }
     }
 }
@@ -334,7 +336,9 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                     .unwrap()
                     .as_secs();
                 for (mob, position_time_data) in mob_locations.to_owned() {
-                    if current_time - position_time_data.time > state.bot_configuration.mob_expiry {
+                    if current_time - position_time_data.time
+                        > state.bot_configuration.mob_expiry_time
+                    {
                         mob_locations.remove(&mob);
                     }
                 }
@@ -368,7 +372,9 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                     .collect::<Vec<String>>()[0]
                     .to_lowercase();
                 if entity_type != "player" {
-                    if rand::thread_rng().gen_range(0..10) > 0 {
+                    if rand::thread_rng().gen_range(0..10) + 1
+                        > 10 - state.bot_configuration.mob_packet_drop_level
+                    {
                         return Ok(());
                     }
                 }
