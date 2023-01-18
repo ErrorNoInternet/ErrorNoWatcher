@@ -13,7 +13,7 @@ The compiled executable can be found at `./target/release/errornowatcher`
 ### Configuration
 Running the bot will create the `bot_configuration.toml` file, where you can change several options:
 ```toml
-username = "<bot's username>"
+username = "<bot's username>" # offline username
 server_address = "<server address>"
 register_keyword = "Register using"
 register_command = "register MyPassword MyPassword"
@@ -25,8 +25,8 @@ whitelist = [
 	"<won't be triggered by the alert system>"
 ]
 alert_players = ["ErrorNoInternet", "<players to send a message to>"]
-alert_location = [0, 0]
-alert_radius = 192
+alert_location = [0, 0] # coordinates of your base (X and Y position)
+alert_radius = 192 # the radius of your base (-192, -192 to 192, 192)
 alert_command = [
 	"curl",
 	"-s",
@@ -35,10 +35,11 @@ alert_command = [
 	"-HPriority: urgent",
 	"-HTags: warning",
 	"-d{player_name} is near your base! Their coordinates are {x} {y} {z}.",
-	"<your URL here (or a service such as ntfy.sh)>",
+	"<your URL here (or a service such as ntfy.sh)>"
 ]
-cleanup_interval = 300
-mob_expiry = 300
+cleanup_interval = 300 # the amount of seconds to wait before checking for idle entities
+mob_expiry_time = 300 # the maximum amount of time a mob can stay idle before getting cleared
+mob_packet_drop_level = 5 # the level of mob packets to drop (0 = 0%, 5 = 50%, 10 = 100%)
 ```
 ### Example commands
 - `/msg ErrorNoWatcher help 1` - list the first page of usable commands
