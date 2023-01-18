@@ -260,7 +260,7 @@ pub async fn process_command(
                 let mut player_timestamps = state.player_timestamps.lock().unwrap().to_owned();
                 let mut players = Vec::new();
                 for player_time_data in sorted_player_time_data {
-                    for (player, original_player_time_data) in player_timestamps.clone().iter() {
+                    for (player, original_player_time_data) in player_timestamps.to_owned().iter() {
                         if player_time_data == original_player_time_data.to_owned() {
                             players.push(player.to_owned());
                             player_timestamps.remove(player);

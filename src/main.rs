@@ -302,7 +302,7 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                     }
                     if alert_command.len() >= 1 {
                         log_message(Bot, &"Executing alert shell command...".to_string());
-                        let command_name = alert_command[0].clone();
+                        let command_name = alert_command[0].to_owned();
                         alert_command.remove(0);
                         log_error(
                             std::process::Command::new(command_name)
@@ -321,7 +321,17 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                 *state.cleanup_second_counter.lock().unwrap() = 0;
 
                 log_message(Bot, &"Cleaning up mob locations...".to_string());
-                *state.mob_locations.lock().unwrap() = HashMap::new();
+                let mut mob_locations = state.mob_locations.lock().unwrap().to_owned();
+                let current_time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
+                for (mob, position_time_data) in mob_locations.to_owned() {
+                    if current_time - position_time_data.time > 1200 {
+                        mob_locations.remove(&mob);
+                    }
+                }
+                *state.mob_locations.lock().unwrap() = mob_locations;
             }
         }
         Event::Packet(packet) => match packet.as_ref() {
