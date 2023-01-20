@@ -284,6 +284,13 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
 
                 let alert_queue = state.alert_queue.lock().unwrap().to_owned();
                 for (intruder, position) in alert_queue {
+                    log_message(
+                        Bot,
+                        &format!(
+                            "{} is in the specified alert radius at {} {} {}!",
+                            intruder, position[0], position[1], position[2]
+                        ),
+                    );
                     let alert_players = state.alert_players.lock().unwrap().to_vec();
                     for alert_player in alert_players {
                         log_error(
