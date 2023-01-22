@@ -220,7 +220,8 @@ pub async fn process_command(
                 return "Please tell me the name of a player!".to_string();
             }
 
-            for (player, position_time_data) in state.player_locations.lock().unwrap().iter() {
+            let player_locations = state.player_locations.lock().unwrap().to_owned();
+            for (player, position_time_data) in player_locations {
                 if player.username == segments[0] || player.uuid.to_string() == segments[0] {
                     return format!(
                         "{} was last seen at {}, {}, {} ({})",
@@ -328,7 +329,8 @@ pub async fn process_command(
             };
 
             let mut found = true;
-            for (player, _position_time_data) in state.player_locations.lock().unwrap().iter() {
+            let player_locations = state.player_locations.lock().unwrap().to_owned();
+            for (player, _position_time_data) in player_locations {
                 if player.username == segments[0] || player.uuid.to_string() == segments[0] {
                     found = true;
                     *state.followed_player.lock().unwrap() = Some(player.to_owned());
