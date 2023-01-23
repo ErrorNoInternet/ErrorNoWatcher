@@ -15,6 +15,7 @@ use strum_macros::EnumIter;
 pub enum Command {
     Help,
     Wait,
+    Online,
     BotStatus,
     Whitelist,
     WhitelistAdd,
@@ -67,6 +68,7 @@ pub async fn process_command(
     match segments[0].to_lowercase().as_str() {
         "help" => command = Command::Help,
         "wait" => command = Command::Wait,
+        "online" => command = Command::Online,
         "bot_status" => command = Command::BotStatus,
         "whitelist" => command = Command::Whitelist,
         "whitelist_add" => command = Command::WhitelistAdd,
@@ -139,6 +141,37 @@ pub async fn process_command(
             };
             tokio::time::sleep(std::time::Duration::from_millis(duration)).await;
             return format!("I have successfully slept for {} ms!", duration);
+        }
+        Command::Online => {
+            let mut page = 1;
+            if segments.len() > 0 {
+                page = segments[0].parse().unwrap_or(1)
+            }
+            if page < 1 {
+                page = 1
+            }
+
+            let players: Vec<String> = client
+                .players
+                .read()
+                .values()
+                .map(|item| item.profile.name.to_owned())
+                .collect();
+
+            let mut start_index = (page - 1) * 10;
+            let mut end_index = page * 10;
+            while start_index > players.len() {
+                start_index -= 1
+            }
+            while end_index > players.len() {
+                end_index -= 1
+            }
+            let paged_players = &players[start_index..end_index];
+            return format!(
+                "Online players (page {}): {}",
+                page,
+                paged_players.join(", ")
+            );
         }
         Command::BotStatus => {
             let bot_status = state.bot_status.lock().unwrap().to_owned();
