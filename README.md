@@ -37,6 +37,7 @@ alert_command = [
 	"-d{player_name} is near your base! Their coordinates are {x} {y} {z}.",
 	"<your URL here (or a service such as ntfy.sh)>"
 ]
+alert_pause_time = 5 # the amount of seconds to wait between alert messages
 cleanup_interval = 300 # the amount of seconds to wait before checking for idle entities
 mob_expiry_time = 300 # the maximum amount of time a mob can stay idle before getting cleared
 mob_packet_drop_level = 5 # the amount of mob packets to drop (0 = 0%, 5 = 50%, 10 = 100%)

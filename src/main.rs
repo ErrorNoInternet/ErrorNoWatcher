@@ -30,6 +30,7 @@ struct BotConfiguration {
     alert_location: Vec<i32>,
     alert_radius: u32,
     alert_command: Vec<String>,
+    alert_pause_time: u32,
     cleanup_interval: u32,
     mob_expiry_time: u64,
     mob_packet_drop_level: u8,
@@ -50,6 +51,7 @@ impl Default for BotConfiguration {
             alert_location: vec![0, 0],
             alert_radius: 100,
             alert_command: Vec::new(),
+            alert_pause_time: 5,
             cleanup_interval: 300,
             mob_expiry_time: 300,
             mob_packet_drop_level: 5,
@@ -279,7 +281,9 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                 }
             }
 
-            if *state.alert_second_counter.lock().unwrap() >= 5 {
+            if *state.alert_second_counter.lock().unwrap() as u32
+                >= state.bot_configuration.alert_pause_time
+            {
                 *state.alert_second_counter.lock().unwrap() = 0;
 
                 let alert_queue = state.alert_queue.lock().unwrap().to_owned();
