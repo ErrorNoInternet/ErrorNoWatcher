@@ -366,14 +366,6 @@ pub async fn process_command(
                     Err(error) => return format!("Unable to parse coordinates: {}", error),
                 })
             }
-            log_error(
-                client
-                    .send_command_packet(&format!(
-                        "msg {} I am now finding a path to {} {} {}...",
-                        executor, coordinates[0], coordinates[1], coordinates[2]
-                    ))
-                    .await,
-            );
             client.goto(BlockPosGoal {
                 pos: BlockPos {
                     x: coordinates[0],
@@ -666,16 +658,6 @@ pub async fn process_command(
                 Err(error) => return format!("Unable to parse duration: {}", error),
             };
 
-            log_error(
-                client
-                    .send_command_packet(&format!(
-                        "msg {} I am now walking {} for {} ms!",
-                        executor,
-                        segments[0].to_lowercase(),
-                        duration,
-                    ))
-                    .await,
-            );
             client.walk(direction);
             tokio::time::sleep(std::time::Duration::from_millis(duration)).await;
             client.walk(WalkDirection::None);
@@ -697,16 +679,6 @@ pub async fn process_command(
                 Err(error) => return format!("Unable to parse duration: {}", error),
             };
 
-            log_error(
-                client
-                    .send_command_packet(&format!(
-                        "msg {} I am now sprinting {} for {} ms!",
-                        executor,
-                        segments[0].to_lowercase(),
-                        duration,
-                    ))
-                    .await,
-            );
             client.sprint(direction);
             tokio::time::sleep(std::time::Duration::from_millis(duration)).await;
             client.walk(WalkDirection::None);
