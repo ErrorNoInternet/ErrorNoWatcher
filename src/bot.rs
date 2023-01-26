@@ -16,6 +16,7 @@ pub enum Command {
     Help,
     Wait,
     Online,
+    Location,
     BotStatus,
     Whitelist,
     WhitelistAdd,
@@ -69,6 +70,7 @@ pub async fn process_command(
         "help" => command = Command::Help,
         "wait" => command = Command::Wait,
         "online" => command = Command::Online,
+        "location" => command = Command::Location,
         "bot_status" => command = Command::BotStatus,
         "whitelist" => command = Command::Whitelist,
         "whitelist_add" => command = Command::WhitelistAdd,
@@ -171,6 +173,17 @@ pub async fn process_command(
                 "Online players (page {}): {}",
                 page,
                 paged_players.join(", ")
+            );
+        }
+        Command::Location => {
+            let world = client.world.read();
+            let entity = match world.entity(client.entity_id.read().to_owned()) {
+                Some(entity) => entity,
+                None => return "Uh oh! An unknown error occurred!".to_string(),
+            };
+            return format!(
+                "I am currently at {} {} {}!",
+                entity.last_pos.x as i32, entity.last_pos.y as i32, entity.last_pos.z as i32
             );
         }
         Command::BotStatus => {
