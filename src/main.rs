@@ -424,11 +424,17 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                         if uuid.as_hyphenated().to_string() == entity.uuid {
                             let mut player_locations =
                                 state.player_locations.lock().unwrap().to_owned();
+                            let username = player.profile.name.to_owned();
+                            for (player, _) in player_locations.to_owned() {
+                                if player.username == username {
+                                    player_locations.remove(&player);
+                                }
+                            }
                             player_locations.insert(
                                 Player {
                                     uuid: uuid.as_hyphenated().to_string(),
                                     entity_id: entity.id,
-                                    username: player.profile.name.to_owned(),
+                                    username,
                                 },
                                 PositionTimeData {
                                     position: vec![
