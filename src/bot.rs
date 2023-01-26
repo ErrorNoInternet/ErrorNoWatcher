@@ -270,7 +270,7 @@ pub async fn process_command(
             for (player, position_time_data) in player_locations {
                 if player.username == segments[0] || player.uuid.to_string() == segments[0] {
                     return format!(
-                        "{} was last seen at {}, {}, {} ({})",
+                        "{} was last seen at {} {} {} ({})",
                         segments[0],
                         position_time_data.position[0],
                         position_time_data.position[1],
@@ -376,7 +376,7 @@ pub async fn process_command(
 
             let mut found = true;
             let player_locations = state.player_locations.lock().unwrap().to_owned();
-            for (player, _position_time_data) in player_locations {
+            for (player, _) in player_locations {
                 if player.username == segments[0] || player.uuid.to_string() == segments[0] {
                     found = true;
                     *state.followed_player.lock().unwrap() = Some(player.to_owned());
