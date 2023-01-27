@@ -1,3 +1,4 @@
 /target
 /scripts
-bot_configuration.toml
+/matrix-store
+/bot_configuration.toml
