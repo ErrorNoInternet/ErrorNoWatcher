@@ -18,3 +18,7 @@ strum = "0.24.1"
 strum_macros = "0.24.1"
 async-recursion = "1.0.0"
 rand = "0.8.5"
+
+[dependencies.matrix-sdk]
+path = "../../GitHub/matrix-org/matrix-rust-sdk/crates/matrix-sdk"
+version = "0.6.0"

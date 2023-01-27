@@ -1,5 +1,6 @@
 mod bot;
 mod logging;
+mod matrix;
 
 use azalea::pathfinder::BlockPosGoal;
 use azalea::{prelude::*, BlockPos, ClientInformation};
@@ -34,6 +35,15 @@ struct BotConfiguration {
     cleanup_interval: u32,
     mob_expiry_time: u64,
     mob_packet_drop_level: u8,
+    matrix: MatrixConfiguration,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct MatrixConfiguration {
+    enabled: bool,
+    homeserver_url: String,
+    username: String,
+    password: String,
 }
 
 impl Default for BotConfiguration {
@@ -55,6 +65,12 @@ impl Default for BotConfiguration {
             cleanup_interval: 300,
             mob_expiry_time: 300,
             mob_packet_drop_level: 5,
+            matrix: MatrixConfiguration {
+                enabled: false,
+                homeserver_url: "https://matrix.example.com".to_string(),
+                username: "errornowatcher".to_string(),
+                password: "MyMatrixPassword".to_string(),
+            },
         }
     }
 }
@@ -83,6 +99,20 @@ async fn main() {
             default_configuration
         }
     };
+
+    let matrix_configuration = bot_configuration.matrix.to_owned();
+    if matrix_configuration.enabled {
+        match matrix::login_and_sync(
+            matrix_configuration.homeserver_url,
+            matrix_configuration.username,
+            matrix_configuration.password,
+        )
+        .await
+        {
+            Ok(_) => (),
+            Err(error) => log_message(MatrixError, &format!("Unable to login: {}", error)),
+        }
+    }
 
     loop {
         match azalea::start(azalea::Options {

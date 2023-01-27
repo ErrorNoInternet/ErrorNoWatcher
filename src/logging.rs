@@ -4,7 +4,9 @@ use colored::*;
 pub enum LogMessageType {
     Bot,
     Chat,
+    Matrix,
     Error,
+    MatrixError,
 }
 
 pub fn log_error<T, E: std::fmt::Display>(result: Result<T, E>) {
@@ -32,10 +34,22 @@ pub fn log_message(message_type: LogMessageType, message: &String) {
                 message
             )
         }
+        LogMessageType::Matrix => println!(
+            "{} {} {}",
+            current_time(),
+            colored_brackets(&"MATRIX".bold().blue()),
+            message.red()
+        ),
         LogMessageType::Error => println!(
             "{} {} {}",
             current_time(),
             colored_brackets(&"ERROR".bold().red()),
+            message.red()
+        ),
+        LogMessageType::MatrixError => println!(
+            "{} {} {}",
+            current_time(),
+            colored_brackets(&"ERROR (Matrix)".bold().red()),
             message.red()
         ),
     }
