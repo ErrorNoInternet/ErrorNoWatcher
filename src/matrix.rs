@@ -50,7 +50,10 @@ pub async fn login_and_sync(matrix_configuration: MatrixConfiguration, bot_state
         }
     };
     let display_name = match client.account().get_display_name().await {
-        Ok(display_name) => display_name.unwrap_or(matrix_configuration.username.to_owned()),
+        Ok(display_name) => display_name.unwrap_or(match client.user_id() {
+            Some(user_id) => user_id.to_string(),
+            None => matrix_configuration.username.to_owned(),
+        }),
         Err(error) => {
             log_message(
                 MatrixError,
