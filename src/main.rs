@@ -3,7 +3,7 @@ mod logging;
 mod matrix;
 
 use azalea::pathfinder::BlockPosGoal;
-use azalea::{prelude::*, BlockPos, ClientInformation};
+use azalea::{prelude::*, BlockPos, ClientInformation, Vec3};
 use azalea_protocol::packets::game::serverbound_client_command_packet::{
     Action::PerformRespawn, ServerboundClientCommandPacket,
 };
@@ -114,6 +114,7 @@ async fn main() {
         alert_second_counter: Arc::new(Mutex::new(0)),
         cleanup_second_counter: Arc::new(Mutex::new(0)),
         followed_player: Arc::new(Mutex::new(None)),
+        looked_player: Arc::new(Mutex::new(None)),
         player_locations: Arc::new(Mutex::new(HashMap::new())),
         mob_locations: Arc::new(Mutex::new(HashMap::new())),
         player_timestamps: Arc::new(Mutex::new(HashMap::new())),
@@ -216,6 +217,7 @@ pub struct State {
     alert_second_counter: Arc<Mutex<u16>>,
     cleanup_second_counter: Arc<Mutex<u16>>,
     followed_player: Arc<Mutex<Option<Player>>>,
+    looked_player: Arc<Mutex<Option<Player>>>,
     player_locations: Arc<Mutex<HashMap<Player, PositionTimeData>>>,
     mob_locations: Arc<Mutex<HashMap<Entity, PositionTimeData>>>,
     player_timestamps: Arc<Mutex<HashMap<String, PlayerTimeData>>>,
@@ -309,6 +311,19 @@ async fn handle(mut client: Client, event: Event, state: Arc<State>) -> anyhow::
                             },
                         }),
                         None => *state.followed_player.lock().unwrap() = None,
+                    }
+                }
+
+                let looked_player = state.looked_player.lock().unwrap().to_owned();
+                if looked_player.is_some() {
+                    let player_locations = state.player_locations.lock().unwrap().to_owned();
+                    match player_locations.get(&looked_player.unwrap()) {
+                        Some(position_time_data) => client.look_at(&Vec3 {
+                            x: position_time_data.position[0] as f64,
+                            y: position_time_data.position[1] as f64,
+                            z: position_time_data.position[2] as f64,
+                        }),
+                        None => *state.looked_player.lock().unwrap() = None,
                     }
                 }
             }

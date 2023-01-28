@@ -27,6 +27,8 @@ pub enum Command {
     LastOnline,
     FollowPlayer,
     StopFollowPlayer,
+    LookPlayer,
+    StopLookPlayer,
     Goto,
     StopGoto,
     Say,
@@ -81,6 +83,8 @@ pub async fn process_command(
         "last_online" => command = Command::LastOnline,
         "follow_player" => command = Command::FollowPlayer,
         "stop_follow_player" => command = Command::StopFollowPlayer,
+        "look_player" => command = Command::LookPlayer,
+        "stop_look_player" => command = Command::StopLookPlayer,
         "goto" => command = Command::Goto,
         "stop_goto" => command = Command::StopGoto,
         "say" => command = Command::Say,
@@ -385,9 +389,9 @@ pub async fn process_command(
                 }
             }
             if found {
-                return format!("I am now following {}...", segments[0]);
+                return format!("I am now following {}!", segments[0]);
             } else {
-                return format!("I was unable to find {}...", segments[0]);
+                return format!("I was unable to find {}!", segments[0]);
             }
         }
         Command::StopFollowPlayer => {
@@ -401,6 +405,29 @@ pub async fn process_command(
                 },
             });
             "I am no longer following anyone!".to_string()
+        }
+        Command::LookPlayer => {
+            if segments.len() < 1 {
+                return "Please tell me the name of a player!".to_string();
+            };
+
+            let mut found = true;
+            let player_locations = state.player_locations.lock().unwrap().to_owned();
+            for (player, _) in player_locations {
+                if player.username == segments[0] || player.uuid.to_string() == segments[0] {
+                    found = true;
+                    *state.looked_player.lock().unwrap() = Some(player.to_owned());
+                }
+            }
+            if found {
+                return format!("I am now looking at {}!", segments[0]);
+            } else {
+                return format!("I was unable to find {}!", segments[0]);
+            }
+        }
+        Command::StopLookPlayer => {
+            *state.looked_player.lock().unwrap() = None;
+            "I am no longer looking at anyone!".to_string()
         }
         Command::Goto => {
             if segments.len() < 3 {
