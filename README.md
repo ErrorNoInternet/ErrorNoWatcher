@@ -19,7 +19,7 @@ register_keyword = "Register using"
 register_command = "register MyPassword MyPassword"
 login_keyword = "Login using"
 login_command = "login MyPassword"
-bot_owners = ["ErrorNoInternet", "<allowed to run commands>"]
+bot_owners = ["ErrorNoInternet", "<Minecraft usernames that are allowed to run commands>"]
 whitelist = [
 	"ErrorNoInternet",
 	"<won't be triggered by the alert system>"
@@ -47,7 +47,7 @@ enabled = false
 homeserver_url = "https://matrix.example.com"
 username = "errornowatcher"
 password = "MyMatrixPassword"
-bot_owners = ["@zenderking:envs.net", "<people that are allowed to run commands>"]
+bot_owners = ["@zenderking:envs.net", "<Matrix user IDs that are allowed to run commands>"]
 ```
 ### Example commands
 - `/msg ErrorNoWatcher help 1` - list the first page of usable commands
