@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{logging::log_error, PlayerTimeData, State};
 use async_recursion::async_recursion;
 use azalea::{
@@ -55,7 +57,7 @@ pub async fn process_command(
     command: &String,
     executor: &String,
     client: &mut Client,
-    state: &mut State,
+    state: Arc<State>,
 ) -> String {
     let mut segments: Vec<String> = command
         .split(" ")
@@ -785,7 +787,7 @@ pub async fn process_command(
                 Err(error) => return format!("Unable to read script: {}", error),
             };
             for line in script.split("\n") {
-                process_command(&line.to_string(), &executor, client, state).await;
+                process_command(&line.to_string(), &executor, client, state.clone()).await;
             }
 
             return "Finished executing script!".to_string();

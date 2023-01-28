@@ -11,6 +11,7 @@ use azalea_protocol::packets::game::ClientboundGamePacket;
 use azalea_protocol::ServerAddress;
 use logging::LogMessageType::*;
 use logging::{log_error, log_message};
+use matrix::login_and_sync;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -38,12 +39,13 @@ struct BotConfiguration {
     matrix: MatrixConfiguration,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-struct MatrixConfiguration {
+#[derive(Default, Debug, Clone, Deserialize, Serialize)]
+pub struct MatrixConfiguration {
     enabled: bool,
     homeserver_url: String,
     username: String,
     password: String,
+    bot_owners: Vec<String>,
 }
 
 impl Default for BotConfiguration {
@@ -70,6 +72,7 @@ impl Default for BotConfiguration {
                 homeserver_url: "https://matrix.example.com".to_string(),
                 username: "errornowatcher".to_string(),
                 password: "MyMatrixPassword".to_string(),
+                bot_owners: vec!["@zenderking:envs.net".to_string()],
             },
         }
     }
@@ -83,6 +86,8 @@ async fn main() {
         Ok(bot_configuration) => bot_configuration,
         Err(_) => {
             let default_configuration = BotConfiguration::default();
+            std::fs::copy("bot_configuration.toml", "bot_configuration.toml.bak")
+                .unwrap_or_default();
             match std::fs::write(
                 "bot_configuration.toml",
                 toml::to_string(&default_configuration).unwrap(),
@@ -100,18 +105,27 @@ async fn main() {
         }
     };
 
+    let original_state = State {
+        client: Arc::new(Mutex::new(None)),
+        bot_configuration: bot_configuration.clone(),
+        whitelist: Arc::new(Mutex::new(bot_configuration.clone().whitelist)),
+        bot_status: Arc::new(Mutex::new(BotStatus::default())),
+        tick_counter: Arc::new(Mutex::new(0)),
+        alert_second_counter: Arc::new(Mutex::new(0)),
+        cleanup_second_counter: Arc::new(Mutex::new(0)),
+        followed_player: Arc::new(Mutex::new(None)),
+        player_locations: Arc::new(Mutex::new(HashMap::new())),
+        mob_locations: Arc::new(Mutex::new(HashMap::new())),
+        player_timestamps: Arc::new(Mutex::new(HashMap::new())),
+        alert_players: Arc::new(Mutex::new(bot_configuration.clone().alert_players)),
+        alert_queue: Arc::new(Mutex::new(HashMap::new())),
+        bot_status_players: Arc::new(Mutex::new(Vec::new())),
+    };
+    let state = Arc::new(original_state);
+
     let matrix_configuration = bot_configuration.matrix.to_owned();
     if matrix_configuration.enabled {
-        match matrix::login_and_sync(
-            matrix_configuration.homeserver_url,
-            matrix_configuration.username,
-            matrix_configuration.password,
-        )
-        .await
-        {
-            Ok(_) => (),
-            Err(error) => log_message(MatrixError, &format!("Unable to login: {}", error)),
-        }
+        tokio::spawn(login_and_sync(matrix_configuration, state.clone()));
     }
 
     loop {
@@ -141,21 +155,7 @@ async fn main() {
                     return;
                 }
             },
-            state: State {
-                bot_configuration: bot_configuration.clone(),
-                whitelist: Arc::new(Mutex::new(bot_configuration.clone().whitelist)),
-                bot_status: Arc::new(Mutex::new(BotStatus::default())),
-                tick_counter: Arc::new(Mutex::new(0)),
-                alert_second_counter: Arc::new(Mutex::new(0)),
-                cleanup_second_counter: Arc::new(Mutex::new(0)),
-                followed_player: Arc::new(Mutex::new(None)),
-                player_locations: Arc::new(Mutex::new(HashMap::new())),
-                mob_locations: Arc::new(Mutex::new(HashMap::new())),
-                player_timestamps: Arc::new(Mutex::new(HashMap::new())),
-                alert_players: Arc::new(Mutex::new(bot_configuration.clone().alert_players)),
-                alert_queue: Arc::new(Mutex::new(HashMap::new())),
-                bot_status_players: Arc::new(Mutex::new(Vec::new())),
-            },
+            state: state.clone(),
             plugins: plugins![],
             handle,
         })
@@ -206,8 +206,9 @@ pub struct BotStatus {
     saturation: f32,
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Clone)]
 pub struct State {
+    client: Arc<Mutex<Option<azalea::Client>>>,
     bot_configuration: BotConfiguration,
     whitelist: Arc<Mutex<Vec<String>>>,
     bot_status: Arc<Mutex<BotStatus>>,
@@ -223,9 +224,10 @@ pub struct State {
     bot_status_players: Arc<Mutex<Vec<String>>>,
 }
 
-async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::Result<()> {
+async fn handle(mut client: Client, event: Event, state: Arc<State>) -> anyhow::Result<()> {
     match event {
         Event::Login => {
+            *state.client.lock().unwrap() = Some(client.clone());
             log_message(
                 Bot,
                 &"Successfully joined server, receiving initial data...".to_string(),
@@ -615,10 +617,11 @@ async fn handle(mut client: Client, event: Event, mut state: State) -> anyhow::R
                     );
 
                     let return_value =
-                        &bot::process_command(&command, &bot_owner, &mut client, &mut state).await;
+                        &bot::process_command(&command, &bot_owner, &mut client, state.clone())
+                            .await;
                     log_error(
                         client
-                            .send_command_packet(&format!("msg {} {}", bot_owner, return_value,))
+                            .send_command_packet(&format!("msg {} {}", bot_owner, return_value))
                             .await,
                     );
                 }
