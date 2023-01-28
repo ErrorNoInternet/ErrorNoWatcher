@@ -117,6 +117,7 @@ async fn room_message_handler(
                             &text_content
                                 .body
                                 .trim_start_matches(&state.display_name)
+                                .trim_start_matches(":")
                                 .trim()
                                 .to_string(),
                             &event.sender.to_string(),
