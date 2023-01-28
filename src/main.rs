@@ -310,7 +310,7 @@ async fn handle(mut client: Client, event: Event, state: Arc<State>) -> anyhow::
                                 z: position_time_data.position[2],
                             },
                         }),
-                        None => *state.followed_player.lock().unwrap() = None,
+                        None => (),
                     }
                 }
 
@@ -323,7 +323,7 @@ async fn handle(mut client: Client, event: Event, state: Arc<State>) -> anyhow::
                             y: position_time_data.position[1] as f64,
                             z: position_time_data.position[2] as f64,
                         }),
-                        None => *state.looked_player.lock().unwrap() = None,
+                        None => (),
                     }
                 }
             }
