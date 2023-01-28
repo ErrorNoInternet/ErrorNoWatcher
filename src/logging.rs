@@ -34,12 +34,14 @@ pub fn log_message(message_type: LogMessageType, message: &String) {
                 message
             )
         }
-        LogMessageType::Matrix => println!(
-            "{} {} {}",
-            current_time(),
-            colored_brackets(&"MATRIX".bold().blue()),
-            message.red()
-        ),
+        LogMessageType::Matrix => {
+            println!(
+                "{} {} {}",
+                current_time(),
+                colored_brackets(&"MATRIX".bold().green()),
+                message
+            )
+        }
         LogMessageType::Error => println!(
             "{} {} {}",
             current_time(),
