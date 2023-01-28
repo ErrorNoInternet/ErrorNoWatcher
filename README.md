@@ -1,5 +1,5 @@
 # ErrorNoWatcher
-ErrorNoWatcher is a Minecraft bot (written in Rust with [azalea](https://github.com/mat-1/azalea)) that alerts you when players are near your base. It also has other features such as interacting with blocks/entities, a basic pathfinder that can follow players and go to coordinates, a scripting system to run commands automatically, and much more.
+ErrorNoWatcher is a Minecraft bot (written in Rust with [azalea](https://github.com/mat-1/azalea)) that alerts you when players are near your base. It also has other features such as interacting with blocks/entities, a basic pathfinder that can follow players and go to coordinates, a scripting system to run commands automatically, the ability to accept and respond to commands from Matrix, and much more.
 
 ## Compiling
 ```sh
@@ -41,6 +41,13 @@ alert_pause_time = 5 # the amount of seconds to wait between alert messages
 cleanup_interval = 300 # the amount of seconds to wait before checking for idle entities
 mob_expiry_time = 300 # the maximum amount of time a mob can stay idle before getting cleared
 mob_packet_drop_level = 5 # the amount of mob packets to drop (0 = 0%, 5 = 50%, 10 = 100%)
+
+[matrix]
+enabled = false
+homeserver_url = "https://matrix.example.com"
+username = "errornowatcher"
+password = "MyMatrixPassword"
+bot_owners = ["@zenderking:envs.net", "<people that are allowed to run commands>"]
 ```
 ### Example commands
 - `/msg ErrorNoWatcher help 1` - list the first page of usable commands
