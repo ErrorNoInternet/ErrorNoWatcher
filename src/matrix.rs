@@ -110,16 +110,25 @@ async fn room_message_handler(
                     return;
                 }
             };
+            let command = &text_content
+                .body
+                .trim_start_matches(&state.display_name)
+                .trim_start_matches(":")
+                .trim()
+                .to_string();
+            log_message(
+                Matrix,
+                &format!(
+                    "Executing command from {}: {}",
+                    event.sender.to_string(),
+                    command
+                ),
+            );
             log_error(
                 room.send(
                     RoomMessageEventContent::text_plain(
                         &crate::bot::process_command(
-                            &text_content
-                                .body
-                                .trim_start_matches(&state.display_name)
-                                .trim_start_matches(":")
-                                .trim()
-                                .to_string(),
+                            &command,
                             &event.sender.to_string(),
                             &mut client,
                             bot_state.clone(),
