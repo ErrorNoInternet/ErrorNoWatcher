@@ -126,6 +126,7 @@ async fn main() {
 
     let matrix_configuration = bot_configuration.matrix.to_owned();
     if matrix_configuration.enabled {
+        log_message(Matrix, &"Matrix is enabled! Logging in...".to_string());
         tokio::spawn(login_and_sync(matrix_configuration, state.clone()));
     }
 

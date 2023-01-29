@@ -16,68 +16,69 @@ struct MatrixState {
 }
 
 pub async fn login_and_sync(matrix_configuration: MatrixConfiguration, bot_state: Arc<State>) {
-    log_message(Matrix, &"Matrix is enabled! Logging in...".to_string());
-    let client_builder =
-        matrix_sdk::Client::builder().homeserver_url(&matrix_configuration.homeserver_url);
-    let client = match client_builder.build().await {
-        Ok(client) => client,
-        Err(error) => {
-            log_message(MatrixError, &format!("Unable to build client: {}", error));
-            return;
-        }
-    };
-    match client
-        .login_username(
-            &matrix_configuration.username,
-            &matrix_configuration.password,
-        )
-        .device_id("ERRORNOWATCHER")
-        .initial_device_display_name("ErrorNoWatcher")
-        .send()
-        .await
-    {
-        Ok(_) => (),
-        Err(error) => {
-            log_message(MatrixError, &format!("Unable to login: {}", error));
-            return;
-        }
-    };
-    let response = match client.sync_once(SyncSettings::default()).await {
-        Ok(response) => response,
-        Err(error) => {
-            log_message(MatrixError, &format!("Unable to synchronize: {}", error));
-            return;
-        }
-    };
-    let display_name = match client.account().get_display_name().await {
-        Ok(display_name) => display_name.unwrap_or(match client.user_id() {
-            Some(user_id) => user_id.to_string(),
-            None => matrix_configuration.username.to_owned(),
-        }),
-        Err(error) => {
-            log_message(
-                MatrixError,
-                &format!("Unable to get display name: {}", error),
-            );
-            return;
-        }
-    };
-    log_message(
-        Matrix,
-        &format!("Successfully logged in as {}!", display_name),
-    );
-    let matrix_state = MatrixState {
-        bot_state,
-        matrix_configuration: matrix_configuration.clone(),
-        display_name,
-    };
-    client.add_event_handler_context(matrix_state);
-    client.add_event_handler(room_message_handler);
-    let settings = SyncSettings::default().token(response.next_batch);
-    match client.sync(settings).await {
-        Ok(_) => (),
-        Err(error) => log_message(MatrixError, &format!("Unable to synchronize: {}", error)),
-    };
+    loop {
+        let client_builder =
+            matrix_sdk::Client::builder().homeserver_url(&matrix_configuration.homeserver_url);
+        let client = match client_builder.build().await {
+            Ok(client) => client,
+            Err(error) => {
+                log_message(MatrixError, &format!("Unable to build client: {}", error));
+                return;
+            }
+        };
+        match client
+            .login_username(
+                &matrix_configuration.username,
+                &matrix_configuration.password,
+            )
+            .device_id("ERRORNOWATCHER")
+            .initial_device_display_name("ErrorNoWatcher")
+            .send()
+            .await
+        {
+            Ok(_) => (),
+            Err(error) => {
+                log_message(MatrixError, &format!("Unable to login: {}", error));
+                return;
+            }
+        };
+        let response = match client.sync_once(SyncSettings::default()).await {
+            Ok(response) => response,
+            Err(error) => {
+                log_message(MatrixError, &format!("Unable to synchronize: {}", error));
+                return;
+            }
+        };
+        let display_name = match client.account().get_display_name().await {
+            Ok(display_name) => display_name.unwrap_or(match client.user_id() {
+                Some(user_id) => user_id.to_string(),
+                None => matrix_configuration.username.to_owned(),
+            }),
+            Err(error) => {
+                log_message(
+                    MatrixError,
+                    &format!("Unable to get display name: {}", error),
+                );
+                return;
+            }
+        };
+        log_message(
+            Matrix,
+            &format!("Successfully logged in as {}!", display_name),
+        );
+        let matrix_state = MatrixState {
+            bot_state: bot_state.clone(),
+            matrix_configuration: matrix_configuration.clone(),
+            display_name,
+        };
+        client.add_event_handler_context(matrix_state);
+        client.add_event_handler(room_message_handler);
+        let settings = SyncSettings::default().token(response.next_batch);
+        match client.sync(settings).await {
+            Ok(_) => (),
+            Err(error) => log_message(MatrixError, &format!("Unable to synchronize: {}", error)),
+        };
+    }
 }
 
 async fn room_message_handler(
