@@ -291,89 +291,89 @@ pub async fn process_command(
             format!("I haven't seen {} move anywhere near me...", segments[0])
         }
         Command::LastOnline => {
-            if segments.len() < 1 {
-                return "Please tell me a page number or the name of a player!".to_string();
-            }
-
-            if segments[0].parse::<usize>().is_ok() {
-                let mut page: usize = segments[0].parse().unwrap();
-                if page < 1 {
-                    page = 1
-                }
-
-                let mut sorted_player_time_data: Vec<PlayerTimeData> = state
-                    .player_timestamps
-                    .lock()
-                    .unwrap()
-                    .to_owned()
-                    .values()
-                    .map(|item| item.to_owned())
-                    .collect();
-                sorted_player_time_data.sort_by(|a, b| b.join_time.cmp(&a.join_time));
-                let mut player_timestamps = state.player_timestamps.lock().unwrap().to_owned();
-                let mut players = Vec::new();
-                for player_time_data in sorted_player_time_data {
-                    for (player, original_player_time_data) in player_timestamps.to_owned().iter() {
-                        if player_time_data == original_player_time_data.to_owned() {
-                            players.push(player.to_owned());
-                            player_timestamps.remove(player);
-                            break;
+            let mut page = 1;
+            if segments.len() > 0 {
+                if segments[0].parse::<usize>().is_ok() {
+                    page = segments[0].parse().unwrap();
+                    if page < 1 {
+                        page = 1
+                    }
+                } else {
+                    for (player, player_time_data) in state.player_timestamps.lock().unwrap().iter()
+                    {
+                        if player == &segments[0] {
+                            return format!(
+                                "{} - last join: {}, last chat message: {}, last leave: {}",
+                                segments[0],
+                                if player_time_data.join_time != 0 {
+                                    Local
+                                        .timestamp_opt(player_time_data.join_time as i64, 0)
+                                        .unwrap()
+                                        .format("%Y/%m/%d %H:%M:%S")
+                                        .to_string()
+                                } else {
+                                    "never".to_string()
+                                },
+                                if player_time_data.chat_message_time != 0 {
+                                    Local
+                                        .timestamp_opt(player_time_data.chat_message_time as i64, 0)
+                                        .unwrap()
+                                        .format("%Y/%m/%d %H:%M:%S")
+                                        .to_string()
+                                } else {
+                                    "never".to_string()
+                                },
+                                if player_time_data.leave_time != 0 {
+                                    Local
+                                        .timestamp_opt(player_time_data.leave_time as i64, 0)
+                                        .unwrap()
+                                        .format("%Y/%m/%d %H:%M:%S")
+                                        .to_string()
+                                } else {
+                                    "never".to_string()
+                                },
+                            );
                         }
                     }
-                }
-
-                let mut start_index = (page - 1) * 10;
-                let mut end_index = page * 10;
-                while start_index > players.len() {
-                    start_index -= 1
-                }
-                while end_index > players.len() {
-                    end_index -= 1
-                }
-                let paged_players = &players[start_index..end_index];
-                return format!(
-                    "Sorted by join time (page {}): {}",
-                    page,
-                    paged_players.join(", ")
-                );
-            }
-
-            for (player, player_time_data) in state.player_timestamps.lock().unwrap().iter() {
-                if player == &segments[0] {
-                    return format!(
-                        "{} - last join: {}, last chat message: {}, last leave: {}",
-                        segments[0],
-                        if player_time_data.join_time != 0 {
-                            Local
-                                .timestamp_opt(player_time_data.join_time as i64, 0)
-                                .unwrap()
-                                .format("%Y/%m/%d %H:%M:%S")
-                                .to_string()
-                        } else {
-                            "never".to_string()
-                        },
-                        if player_time_data.chat_message_time != 0 {
-                            Local
-                                .timestamp_opt(player_time_data.chat_message_time as i64, 0)
-                                .unwrap()
-                                .format("%Y/%m/%d %H:%M:%S")
-                                .to_string()
-                        } else {
-                            "never".to_string()
-                        },
-                        if player_time_data.leave_time != 0 {
-                            Local
-                                .timestamp_opt(player_time_data.leave_time as i64, 0)
-                                .unwrap()
-                                .format("%Y/%m/%d %H:%M:%S")
-                                .to_string()
-                        } else {
-                            "never".to_string()
-                        },
-                    );
+                    return format!("I haven't seen {} online yet...", segments[0]);
                 }
             }
-            format!("I haven't seen {} online yet...", segments[0])
+
+            let mut sorted_player_time_data: Vec<PlayerTimeData> = state
+                .player_timestamps
+                .lock()
+                .unwrap()
+                .to_owned()
+                .values()
+                .map(|item| item.to_owned())
+                .collect();
+            sorted_player_time_data.sort_by(|a, b| b.join_time.cmp(&a.join_time));
+            let mut player_timestamps = state.player_timestamps.lock().unwrap().to_owned();
+            let mut players = Vec::new();
+            for player_time_data in sorted_player_time_data {
+                for (player, original_player_time_data) in player_timestamps.to_owned().iter() {
+                    if player_time_data == original_player_time_data.to_owned() {
+                        players.push(player.to_owned());
+                        player_timestamps.remove(player);
+                        break;
+                    }
+                }
+            }
+
+            let mut start_index = (page - 1) * 10;
+            let mut end_index = page * 10;
+            while start_index > players.len() {
+                start_index -= 1
+            }
+            while end_index > players.len() {
+                end_index -= 1
+            }
+            let paged_players = &players[start_index..end_index];
+            return format!(
+                "Sorted by join time (page {}): {}",
+                page,
+                paged_players.join(", ")
+            );
         }
         Command::FollowPlayer => {
             if segments.len() < 1 {
