@@ -876,7 +876,11 @@ pub async fn process_command(
                 end_index -= 1
             }
             let paged_locations = &locations[start_index..end_index];
-            return format!("Locations (page {}): {}", page, paged_locations.join(", "));
+            return format!(
+                "Mob Locations (page {}): {}",
+                page,
+                paged_locations.join(", ")
+            );
         }
         Command::ToggleAlertMessages => {
             if state.alert_players.lock().unwrap().contains(executor) {
