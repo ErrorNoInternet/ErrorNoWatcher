@@ -75,7 +75,7 @@ pub async fn process_command(
         "wait" | "sleep" | "pause" => command = Command::Wait,
         "online" | "players" => command = Command::Online,
         "location" | "position" | "coordinates" => command = Command::Location,
-        "bot_status" => command = Command::BotStatus,
+        "bot_status" | "health" | "food" | "saturation" => command = Command::BotStatus,
         "whitelist" => command = Command::Whitelist,
         "whitelist_add" => command = Command::WhitelistAdd,
         "whitelist_remove" => command = Command::WhitelistRemove,
