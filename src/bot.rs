@@ -79,7 +79,7 @@ pub async fn process_command(
         "whitelist" => command = Command::Whitelist,
         "whitelist_add" => command = Command::WhitelistAdd,
         "whitelist_remove" => command = Command::WhitelistRemove,
-        "last_location" => command = Command::LastLocation,
+        "last_location" | "last_position" => command = Command::LastLocation,
         "last_online" => command = Command::LastOnline,
         "follow_player" => command = Command::FollowPlayer,
         "stop_follow_player" => command = Command::StopFollowPlayer,
