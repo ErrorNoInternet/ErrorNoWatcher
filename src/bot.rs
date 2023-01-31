@@ -877,7 +877,7 @@ pub async fn process_command(
             }
             let paged_locations = &locations[start_index..end_index];
             return format!(
-                "Mob Locations (page {}): {}",
+                "Mob locations (page {}): {}",
                 page,
                 paged_locations.join(", ")
             );
