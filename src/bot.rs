@@ -196,7 +196,7 @@ pub async fn process_command(
             let bot_status = state.bot_status.lock().unwrap().to_owned();
             let metadata = client.metadata();
             return format!(
-                "Health: {:.1}/20, Food: {}/20, Saturation: {:.1}/20, Score: {}, Air Supply: {}",
+                "Health: {:.1}/20.0, Food: {}/20, Saturation: {:.1}/20.0, Score: {}, Air Supply: {}",
                 bot_status.health,
                 bot_status.food,
                 bot_status.saturation,

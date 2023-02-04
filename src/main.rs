@@ -569,7 +569,7 @@ async fn handle(mut client: Client, event: Event, state: Arc<State>) -> anyhow::
                                 "msg {} {}",
                                 player,
                                 format!(
-                                    "Health: {:.1}/20, Food: {}/20, Saturation: {:.1}/20",
+                                    "Health: {:.1}/20.0, Food: {}/20, Saturation: {:.1}/20.0",
                                     packet.health, packet.food, packet.saturation
                                 ),
                             ))
