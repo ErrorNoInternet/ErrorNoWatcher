@@ -19,3 +19,9 @@ strum_macros = "0.24.1"
 async-recursion = "1.0.0"
 rand = "0.8.5"
 matrix-sdk = "0.6.2"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
