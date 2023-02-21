@@ -48,6 +48,7 @@ pub enum Command {
     DropStack,
     LeaveBed,
     Script,
+    StopScript,
     Latency,
     MobLocations,
     ToggleBotStatusMessages,
@@ -105,6 +106,7 @@ pub async fn process_command(
         "drop_stack" | "throw_stack" => command = Command::DropStack,
         "leave_bed" => command = Command::LeaveBed,
         "script" | "run" => command = Command::Script,
+        "stop_script" | "stop_scripts" | "stop_run" => command = Command::StopScript,
         "latency" | "ping" => command = Command::Latency,
         "mob_locations" => command = Command::MobLocations,
         "toggle_alert_messages" => command = Command::ToggleAlertMessages,
@@ -878,10 +880,18 @@ pub async fn process_command(
                 Err(error) => return format!("Unable to read script: {}", error),
             };
             for line in script.split("\n") {
+                if *state.stop_scripts.lock().unwrap() == true {
+                    *state.stop_scripts.lock().unwrap() = false;
+                    break;
+                }
                 process_command(&line.to_string(), &executor, client, state.clone()).await;
             }
 
             return "Finished executing script!".to_string();
+        }
+        Command::StopScript => {
+            *state.stop_scripts.lock().unwrap() = true;
+            return "Successfully told all executing scripts to stop!".to_string();
         }
         Command::Latency => {
             let mut player = &state.bot_configuration.username;
