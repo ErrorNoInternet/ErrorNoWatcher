@@ -68,3 +68,4 @@ bot_owners = ["@zenderking:envs.net", "<Matrix user IDs that are allowed to run 
 - `/msg ErrorNoWatcher last_location ErrorNoInternet` - display the last seen location
 - `/msg ErrorNoWatcher follow_player ErrorNoInternet` - start following ErrorNoInternet
 - `/msg ErrorNoWatcher slot 1` - switch to the first inventory slot (hold the item)
+- `/msg ErrorNoWatcher place_block 0 64 2 top` - places a block on top of the block at 0 64 2
