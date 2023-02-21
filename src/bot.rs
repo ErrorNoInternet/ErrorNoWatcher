@@ -37,6 +37,7 @@ pub enum Command {
     Look,
     Sneak,
     Unsneak,
+    PlaceBlock,
     InteractBlock,
     InteractEntity,
     Attack,
@@ -93,6 +94,7 @@ pub async fn process_command(
         "look" => command = Command::Look,
         "sneak" | "shift" | "crouch" => command = Command::Sneak,
         "unsneak" | "unshift" | "uncrouch" => command = Command::Unsneak,
+        "place_block" | "place" => command = Command::PlaceBlock,
         "interact_block" => command = Command::InteractBlock,
         "interact_entity" => command = Command::InteractEntity,
         "attack" | "hit" => command = Command::Attack,
@@ -549,6 +551,68 @@ pub async fn process_command(
                     .await,
             );
             return "I am no longer sneaking!".to_string();
+        }
+        Command::PlaceBlock => {
+            if segments.len() < 4 {
+                return "Please give me block coordinates, block faces, and optionally cursor positions to interact with!"
+                    .to_string();
+            }
+
+            let mut coordinates: Vec<i32> = Vec::new();
+            for segment in &segments[0..3] {
+                coordinates.push(match segment.parse() {
+                    Ok(number) => number,
+                    Err(error) => return format!("Unable to parse coordinates: {}", error),
+                })
+            }
+            let block_face = match segments[3].to_lowercase().as_str() {
+                "up" | "top" => Direction::Up,
+                "down" | "bottom" => Direction::Down,
+                "north" => Direction::North,
+                "east" => Direction::East,
+                "south" => Direction::South,
+                "west" => Direction::West,
+                _ => return "Please give me a valid block face!".to_string(),
+            };
+            let mut cursor_positions: Vec<f64> = Vec::new();
+            if segments.len() >= 7 {
+                for segment in &segments[4..7] {
+                    cursor_positions.push(match segment.parse() {
+                        Ok(number) => number,
+                        Err(error) => {
+                            return format!("Unable to parse cursor positions: {}", error)
+                        }
+                    })
+                }
+            }
+            if cursor_positions.len() == 0 {
+                cursor_positions = vec![0.5, 1.0, 0.5];
+            }
+            log_error(
+                client
+                    .write_packet(ServerboundGamePacket::UseItemOn(
+                        game::serverbound_use_item_on_packet::ServerboundUseItemOnPacket {
+                            hand: InteractionHand::MainHand,
+                            block_hit: game::serverbound_use_item_on_packet::BlockHitResult {
+                                block_pos: BlockPos {
+                                    x: coordinates[0],
+                                    y: coordinates[1],
+                                    z: coordinates[2],
+                                },
+                                direction: block_face,
+                                location: Vec3 {
+                                    x: cursor_positions[0] + coordinates[0] as f64,
+                                    y: cursor_positions[1] + coordinates[1] as f64,
+                                    z: cursor_positions[2] + coordinates[2] as f64,
+                                },
+                                inside: false,
+                            },
+                            sequence: 0,
+                        },
+                    ))
+                    .await,
+            );
+            return "I have successfully interacted with the block!".to_string();
         }
         Command::InteractBlock => {
             if segments.len() < 4 {
