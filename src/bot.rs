@@ -715,6 +715,7 @@ pub async fn process_command(
                     return "Successfully interacted with player!".to_string();
                 }
             }
+            return "Unable to find entity!".to_string();
         }
         Command::Attack => {
             if segments.len() < 1 {
@@ -761,6 +762,7 @@ pub async fn process_command(
                     return "Successfully attacked player!".to_string();
                 }
             }
+            return "Unable to find entity!".to_string();
         }
         Command::Jump => {
             client.jump();
