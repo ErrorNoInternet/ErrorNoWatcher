@@ -669,14 +669,12 @@ pub async fn process_command(
                 return "Please give me IDs to interact with!".to_string();
             }
 
-            let mut found = false;
             let mob_locations = state.mob_locations.lock().unwrap().to_owned();
             for (mob, _) in mob_locations {
                 if mob.id.to_string() == segments[0]
                     || mob.uuid == segments[0]
                     || mob.entity_type == segments[0]
                 {
-                    found = true;
                     log_error(
                         client
                             .write_packet(ServerboundGamePacket::Interact(
@@ -691,10 +689,8 @@ pub async fn process_command(
                             ))
                             .await,
                     );
+                    return "Successfully interacted with mob!".to_string();
                 }
-            }
-            if found {
-                return "Successfully interacted with mob!".to_string();
             }
             let player_locations = state.player_locations.lock().unwrap().to_owned();
             for (player, _) in player_locations {
@@ -702,7 +698,6 @@ pub async fn process_command(
                     || player.uuid == segments[0]
                     || player.username == segments[0]
                 {
-                    found = true;
                     log_error(
                         client
                             .write_packet(ServerboundGamePacket::Interact(
@@ -717,12 +712,8 @@ pub async fn process_command(
                             ))
                             .await,
                     );
+                    return "Successfully interacted with player!".to_string();
                 }
-            }
-            if found {
-                return "Successfully interacted with player!".to_string();
-            } else {
-                return "Unable to find entity!".to_string();
             }
         }
         Command::Attack => {
@@ -730,14 +721,12 @@ pub async fn process_command(
                 return "Please give me IDs to attack!".to_string();
             }
 
-            let mut found = false;
             let mob_locations = state.mob_locations.lock().unwrap().to_owned();
             for (mob, _) in mob_locations {
                 if mob.id.to_string() == segments[0]
                     || mob.uuid == segments[0]
                     || mob.entity_type == segments[0]
                 {
-                    found = true;
                     log_error(
                         client
                             .write_packet(ServerboundGamePacket::Interact(
@@ -749,10 +738,8 @@ pub async fn process_command(
                             ))
                             .await,
                     );
+                    return "Successfully attacked mob!".to_string();
                 }
-            }
-            if found {
-                return "Successfully attacked mob!".to_string();
             }
             let player_locations = state.player_locations.lock().unwrap().to_owned();
             for (player, _) in player_locations {
@@ -760,7 +747,6 @@ pub async fn process_command(
                     || player.uuid == segments[0]
                     || player.username == segments[0]
                 {
-                    found = true;
                     log_error(
                         client
                             .write_packet(ServerboundGamePacket::Interact(
@@ -772,12 +758,8 @@ pub async fn process_command(
                             ))
                             .await,
                     );
+                    return "Successfully attacked player!".to_string();
                 }
-            }
-            if found {
-                return "Successfully attacked player!".to_string();
-            } else {
-                return "Unable to find entity!".to_string();
             }
         }
         Command::Jump => {
