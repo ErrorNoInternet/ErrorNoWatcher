@@ -693,6 +693,9 @@ pub async fn process_command(
                     );
                 }
             }
+            if found {
+                return "Successfully interacted with mob!".to_string();
+            }
             let player_locations = state.player_locations.lock().unwrap().to_owned();
             for (player, _) in player_locations {
                 if player.entity_id.to_string() == segments[0]
@@ -717,7 +720,7 @@ pub async fn process_command(
                 }
             }
             if found {
-                return "Successfully interacted with entity!".to_string();
+                return "Successfully interacted with player!".to_string();
             } else {
                 return "Unable to find entity!".to_string();
             }
@@ -748,6 +751,9 @@ pub async fn process_command(
                     );
                 }
             }
+            if found {
+                return "Successfully attacked mob!".to_string();
+            }
             let player_locations = state.player_locations.lock().unwrap().to_owned();
             for (player, _) in player_locations {
                 if player.entity_id.to_string() == segments[0]
@@ -769,7 +775,7 @@ pub async fn process_command(
                 }
             }
             if found {
-                return "Successfully attacked entity!".to_string();
+                return "Successfully attacked player!".to_string();
             } else {
                 return "Unable to find entity!".to_string();
             }
