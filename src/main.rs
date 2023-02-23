@@ -625,14 +625,6 @@ async fn handle(mut client: Client, event: Event, state: Arc<State>) -> anyhow::
                         .nth(1)
                         .unwrap_or("")
                         .to_string();
-                    log_error(
-                        client
-                            .send_command_packet(&format!(
-                                "msg {} Processing command...",
-                                bot_owner
-                            ))
-                            .await,
-                    );
 
                     let return_value =
                         &bot::process_command(&command, &bot_owner, &mut client, state.clone())
