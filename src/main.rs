@@ -638,7 +638,7 @@ async fn handle(mut client: Client, event: Event, state: Arc<State>) -> anyhow::
 
                 let mut player_timestamps = state.player_timestamps.lock().unwrap().to_owned();
                 let mut current_player = player_timestamps
-                    .get(&message.username().unwrap_or("Someone".to_string()))
+                    .get(&message.username().unwrap())
                     .unwrap_or(&PlayerTimeData {
                         join_time: 0,
                         chat_message_time: 0,
@@ -649,10 +649,7 @@ async fn handle(mut client: Client, event: Event, state: Arc<State>) -> anyhow::
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_secs();
-                player_timestamps.insert(
-                    message.username().unwrap_or("Someone".to_string()),
-                    current_player,
-                );
+                player_timestamps.insert(message.username().unwrap(), current_player);
                 *state.player_timestamps.lock().unwrap() = player_timestamps;
             }
         }
