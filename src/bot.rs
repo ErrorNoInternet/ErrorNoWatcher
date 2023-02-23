@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::{logging::log_error, PlayerTimeData, State};
 use async_recursion::async_recursion;
 use azalea::{
@@ -10,6 +8,10 @@ use azalea_protocol::packets::game::{
     self, serverbound_interact_packet::InteractionHand, ServerboundGamePacket,
 };
 use chrono::{Local, TimeZone};
+use std::{
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -668,13 +670,52 @@ pub async fn process_command(
             if segments.len() < 1 {
                 return "Please give me IDs to interact with!".to_string();
             }
+            let mut range = 4;
+            if segments.len() > 1 {
+                range = match segments[1].parse() {
+                    Ok(range) => range,
+                    Err(error) => return format!("Unable to parse range: {error}"),
+                };
+            }
+            let mut max_time = 30;
+            if segments.len() > 2 {
+                max_time = match segments[2].parse() {
+                    Ok(max_time) => max_time,
+                    Err(error) => return format!("Unable to parse max time: {error}"),
+                };
+            }
+            let current_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+            let entity_position =
+                match (client.world.read()).entity(client.entity_id.read().to_owned()) {
+                    Some(entity) => entity.last_pos,
+                    None => return "Uh oh! An unknown error occurred!".to_string(),
+                };
 
             let mob_locations = state.mob_locations.lock().unwrap().to_owned();
-            for (mob, _) in mob_locations {
+            for (mob, position_time_data) in mob_locations {
                 if mob.id.to_string() == segments[0]
                     || mob.uuid == segments[0]
                     || mob.entity_type == segments[0]
                 {
+                    if current_time - position_time_data.time > max_time {
+                        continue;
+                    }
+                    if !(((position_time_data.position[0] - range as i32)
+                        ..(position_time_data.position[0] + range as i32))
+                        .contains(&(entity_position.x as i32))
+                        && ((position_time_data.position[1] - range as i32)
+                            ..(position_time_data.position[1] + range as i32))
+                            .contains(&(entity_position.y as i32))
+                        && ((position_time_data.position[2] - range as i32)
+                            ..(position_time_data.position[2] + range as i32))
+                            .contains(&(entity_position.z as i32)))
+                    {
+                        continue;
+                    }
+
                     log_error(
                         client
                             .write_packet(ServerboundGamePacket::Interact(
@@ -689,15 +730,31 @@ pub async fn process_command(
                             ))
                             .await,
                     );
-                    return "Successfully interacted with mob!".to_string();
+                    return format!("Successfully interacted with {}!", mob.uuid);
                 }
             }
             let player_locations = state.player_locations.lock().unwrap().to_owned();
-            for (player, _) in player_locations {
+            for (player, position_time_data) in player_locations {
                 if player.entity_id.to_string() == segments[0]
                     || player.uuid == segments[0]
                     || player.username == segments[0]
                 {
+                    if current_time - position_time_data.time > max_time {
+                        continue;
+                    }
+                    if !(((position_time_data.position[0] - range as i32)
+                        ..(position_time_data.position[0] + range as i32))
+                        .contains(&(entity_position.x as i32))
+                        && ((position_time_data.position[1] - range as i32)
+                            ..(position_time_data.position[1] + range as i32))
+                            .contains(&(entity_position.y as i32))
+                        && ((position_time_data.position[2] - range as i32)
+                            ..(position_time_data.position[2] + range as i32))
+                            .contains(&(entity_position.z as i32)))
+                    {
+                        continue;
+                    }
+
                     log_error(
                         client
                             .write_packet(ServerboundGamePacket::Interact(
@@ -712,7 +769,7 @@ pub async fn process_command(
                             ))
                             .await,
                     );
-                    return "Successfully interacted with player!".to_string();
+                    return format!("Successfully interacted with {}!", player.username);
                 }
             }
             return "Unable to find entity!".to_string();
@@ -721,13 +778,52 @@ pub async fn process_command(
             if segments.len() < 1 {
                 return "Please give me IDs to attack!".to_string();
             }
+            let mut range = 4;
+            if segments.len() > 1 {
+                range = match segments[1].parse() {
+                    Ok(range) => range,
+                    Err(error) => return format!("Unable to parse range: {error}"),
+                };
+            }
+            let mut max_time = 30;
+            if segments.len() > 2 {
+                max_time = match segments[2].parse() {
+                    Ok(max_time) => max_time,
+                    Err(error) => return format!("Unable to parse max time: {error}"),
+                };
+            }
+            let current_time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+            let entity_position =
+                match (client.world.read()).entity(client.entity_id.read().to_owned()) {
+                    Some(entity) => entity.last_pos,
+                    None => return "Uh oh! An unknown error occurred!".to_string(),
+                };
 
             let mob_locations = state.mob_locations.lock().unwrap().to_owned();
-            for (mob, _) in mob_locations {
+            for (mob, position_time_data) in mob_locations {
                 if mob.id.to_string() == segments[0]
                     || mob.uuid == segments[0]
                     || mob.entity_type == segments[0]
                 {
+                    if current_time - position_time_data.time > max_time {
+                        continue;
+                    }
+                    if !(((position_time_data.position[0] - range as i32)
+                        ..(position_time_data.position[0] + range as i32))
+                        .contains(&(entity_position.x as i32))
+                        && ((position_time_data.position[1] - range as i32)
+                            ..(position_time_data.position[1] + range as i32))
+                            .contains(&(entity_position.y as i32))
+                        && ((position_time_data.position[2] - range as i32)
+                            ..(position_time_data.position[2] + range as i32))
+                            .contains(&(entity_position.z as i32)))
+                    {
+                        continue;
+                    }
+
                     log_error(
                         client
                             .write_packet(ServerboundGamePacket::Interact(
@@ -739,15 +835,31 @@ pub async fn process_command(
                             ))
                             .await,
                     );
-                    return "Successfully attacked mob!".to_string();
+                    return format!("Successfully attacked {}!", mob.uuid);
                 }
             }
             let player_locations = state.player_locations.lock().unwrap().to_owned();
-            for (player, _) in player_locations {
+            for (player, position_time_data) in player_locations {
                 if player.entity_id.to_string() == segments[0]
                     || player.uuid == segments[0]
                     || player.username == segments[0]
                 {
+                    if current_time - position_time_data.time > max_time {
+                        continue;
+                    }
+                    if !(((position_time_data.position[0] - range as i32)
+                        ..(position_time_data.position[0] + range as i32))
+                        .contains(&(entity_position.x as i32))
+                        && ((position_time_data.position[1] - range as i32)
+                            ..(position_time_data.position[1] + range as i32))
+                            .contains(&(entity_position.y as i32))
+                        && ((position_time_data.position[2] - range as i32)
+                            ..(position_time_data.position[2] + range as i32))
+                            .contains(&(entity_position.z as i32)))
+                    {
+                        continue;
+                    }
+
                     log_error(
                         client
                             .write_packet(ServerboundGamePacket::Interact(
@@ -759,7 +871,7 @@ pub async fn process_command(
                             ))
                             .await,
                     );
-                    return "Successfully attacked player!".to_string();
+                    return format!("Successfully attacked {}!", player.username);
                 }
             }
             return "Unable to find entity!".to_string();
