@@ -97,7 +97,7 @@ async fn room_message_handler(
             .contains(&event.sender.to_string())
             && text_content.body.starts_with(&state.display_name)
         {
-            let bot_state = &state.bot_state;
+            let bot_state = state.bot_state.clone();
             let client = bot_state.client.lock().unwrap().to_owned();
             let mut client = match client {
                 Some(client) => client,
@@ -114,7 +114,7 @@ async fn room_message_handler(
                     return;
                 }
             };
-            let command = &text_content
+            let command = text_content
                 .body
                 .trim_start_matches(&state.display_name)
                 .trim_start_matches(":")
@@ -128,21 +128,23 @@ async fn room_message_handler(
                     command
                 ),
             );
-            log_error(
-                room.send(
-                    RoomMessageEventContent::text_plain(
-                        &crate::bot::process_command(
-                            &command,
-                            &event.sender.to_string(),
-                            &mut client,
-                            bot_state.clone(),
-                        )
-                        .await,
-                    ),
-                    None,
-                )
-                .await,
-            );
+            tokio::task::spawn(async move {
+                log_error(
+                    room.send(
+                        RoomMessageEventContent::text_plain(
+                            &crate::bot::process_command(
+                                &command,
+                                &event.sender.to_string(),
+                                &mut client,
+                                bot_state.clone(),
+                            )
+                            .await,
+                        ),
+                        None,
+                    )
+                    .await,
+                );
+            });
         }
     }
 }
