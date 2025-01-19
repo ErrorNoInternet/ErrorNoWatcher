@@ -1,27 +1,25 @@
 [package]
 name = "errornowatcher"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-azalea = "0.5.0"
-azalea-protocol = "0.5.0"
-azalea-block = "0.5.0"
-azalea-core = "0.5.0"
-toml = "0.5.10"
-serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.24.2", features = ["macros", "rt-multi-thread"] }
-anyhow = "1.0.68"
-colored = "2.0.0"
-chrono = "0.4.23"
-strum = "0.24.1"
-strum_macros = "0.24.1"
-async-recursion = "1.0.0"
-rand = "0.8.5"
-matrix-sdk = "0.6.2"
+version = "0.2.0"
+edition = "2024"
 
 [profile.dev]
 opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = "abort"
+strip = true
+
+[dependencies]
+anyhow = "1"
+azalea = { git = "https://github.com/azalea-rs/azalea.git" }
+clap = { version = "4", features = ["derive"] }
+futures = "0"
+mlua = { version = "0", features = ["async", "luau", "send"] }
+parking_lot = { version = "0" }
+tokio = { version = "1", features = ["macros"] }
