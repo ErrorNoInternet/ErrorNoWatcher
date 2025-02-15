@@ -6,6 +6,8 @@
 	</p>
 </p>
 
+**:warning: ErrorNoWatcher is undergoing a major rewrite with Lua scripting support (`v0.2.0` branch)**
+
 ## Compiling
 ```sh
 git clone https://github.com/ErrorNoInternet/ErrorNoWatcher
