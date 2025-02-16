@@ -2,8 +2,8 @@ use crate::{State, commands::CommandSource, http::serve, scripting};
 use azalea::prelude::*;
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
-use mlua::Function;
 use log::{debug, error, info, trace};
+use mlua::{Function, IntoLuaMulti, Table};
 use tokio::net::TcpListener;
 
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
@@ -11,7 +11,8 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
 
     match event {
         Event::Chat(message) => {
-            info!("{}", message.message().to_ansi());
+            let formatted_message = message.message();
+            info!("{}", formatted_message.to_ansi());
 
             let owners = globals.get::<Vec<String>>("OWNERS")?;
             if message.is_whisper()
@@ -35,7 +36,18 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                     .reply(&format!("{error:?}"));
                 }
             }
+
+            call_lua_handler(&globals, "on_chat", ());
         }
+        Event::Death(Some(packet)) => {
+            let death_data = state.lua.lock().create_table()?;
+            death_data.set("message", packet.message.to_string())?;
+            death_data.set("player_id", packet.player_id)?;
+
+            call_lua_handler(&globals, "on_death", death_data);
+        }
+        Event::Tick => call_lua_handler(&globals, "on_tick", ()),
+        Event::Login => call_lua_handler(&globals, "on_login", ()),
         Event::Init => {
             debug!("client initialized");
 
@@ -45,11 +57,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                     inner: Some(client),
                 },
             )?;
-            if let Ok(on_init) = globals.get::<Function>("on_init")
-                && let Err(error) = on_init.call::<()>(())
-            {
-                error!("failed to call lua on_init function: {error:?}");
-            };
+            call_lua_handler(&globals, "on_init", ());
 
             if let Some(address) = state.http_address {
                 let listener = TcpListener::bind(address).await.map_err(|error| {
@@ -83,4 +91,12 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
     }
 
     Ok(())
+}
+
+fn call_lua_handler<T: IntoLuaMulti>(globals: &Table, name: &str, data: T) {
+    if let Ok(handler) = globals.get::<Function>(name)
+        && let Err(error) = handler.call::<()>(data)
+    {
+        error!("failed to call lua {name} function: {error:?}");
+    }
 }
