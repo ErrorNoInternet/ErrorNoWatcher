@@ -1,4 +1,4 @@
-use super::position::Position;
+use super::vec3::Vec3;
 use mlua::{FromLua, IntoLua, Lua, Result, Value};
 
 #[derive(Clone)]
@@ -6,7 +6,7 @@ pub struct Entity {
     pub id: u32,
     pub uuid: String,
     pub kind: String,
-    pub position: Position,
+    pub position: Vec3,
     pub custom_name: Option<String>,
 }
 

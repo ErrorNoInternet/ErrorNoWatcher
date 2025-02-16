@@ -1,7 +1,7 @@
 use log::{debug, error, info, trace, warn};
 use mlua::{Lua, Result, Table};
 
-pub fn register(lua: &Lua, globals: &Table) -> Result<()> {
+pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
     globals.set(
         "error",
         lua.create_function(|_, message: String| {
@@ -37,5 +37,6 @@ pub fn register(lua: &Lua, globals: &Table) -> Result<()> {
             Ok(())
         })?,
     )?;
+
     Ok(())
 }

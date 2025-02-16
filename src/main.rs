@@ -34,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
     let username = globals.get::<String>("USERNAME")?;
 
     globals.set("script_path", script_path)?;
-    scripting::logging::register(&lua, &globals)?;
+    scripting::register_functions(&lua, &globals)?;
 
     let mut commands = CommandDispatcher::new();
     register(&mut commands);

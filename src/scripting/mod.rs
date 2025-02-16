@@ -1,9 +1,11 @@
 pub mod client;
+pub mod direction;
 pub mod entity;
+pub mod hunger;
 pub mod logging;
-pub mod position;
+pub mod vec3;
 
-use mlua::Lua;
+use mlua::{Lua, Table};
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -13,6 +15,18 @@ pub enum Error {
     LoadChunk(mlua::Error),
     MissingPath(mlua::Error),
     ReadFile(std::io::Error),
+}
+
+pub fn register_functions(lua: &Lua, globals: &Table) -> mlua::Result<()> {
+    globals.set(
+        "sleep",
+        lua.create_async_function(async |_, duration: u64| {
+            tokio::time::sleep(std::time::Duration::from_millis(duration)).await;
+            Ok(())
+        })?,
+    )?;
+
+    logging::register_functions(lua, globals)
 }
 
 pub fn reload(lua: &Lua) -> Result<(), Error> {
