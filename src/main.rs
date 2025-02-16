@@ -50,13 +50,8 @@ async fn main() -> ExitCode {
         eprintln!("failed to set config_path in lua globals: {error:?}");
         return ExitCode::FAILURE;
     };
-
-    let Ok(server) = globals.get::<String>("Server") else {
-        eprintln!("no server defined in lua globals!");
-        return ExitCode::FAILURE;
-    };
-    let Ok(username) = globals.get::<String>("Username") else {
-        eprintln!("no username defined in lua globals!");
+    if let Err(error) = scripting::logging::init(&lua, &globals) {
+        eprintln!("failed to set up logging wrappers: {error:?}");
         return ExitCode::FAILURE;
     };
 

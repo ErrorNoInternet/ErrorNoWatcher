@@ -1,5 +1,6 @@
 use crate::{State, commands::CommandSource, scripting};
 use azalea::prelude::*;
+use log::info;
 use mlua::Function;
 
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
@@ -7,7 +8,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
 
     match event {
         Event::Chat(message) => {
-            println!("{}", message.message().to_ansi());
+            info!("{}", message.message().to_ansi());
 
             let owners = globals.get::<Vec<String>>("OWNERS")?;
             if message.is_whisper()

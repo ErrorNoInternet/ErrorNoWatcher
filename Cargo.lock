@@ -1180,6 +1180,7 @@ dependencies = [
  "azalea",
  "clap",
  "futures",
+ "log",
  "mlua",
  "parking_lot",
  "tokio",
