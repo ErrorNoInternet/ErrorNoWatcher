@@ -10,15 +10,15 @@ use azalea::{brigadier::prelude::CommandDispatcher, prelude::*};
 use clap::Parser;
 use commands::{CommandSource, register};
 use events::handle_event;
+use futures::lock::Mutex;
 use mlua::Lua;
-use parking_lot::Mutex;
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
 #[derive(Default, Clone, Component)]
 pub struct State {
-    commands: Arc<CommandDispatcher<Mutex<CommandSource>>>,
-    lua: Arc<Mutex<Lua>>,
+    lua: Lua,
     http_address: Option<SocketAddr>,
+    commands: Arc<CommandDispatcher<Mutex<CommandSource>>>,
 }
 
 #[tokio::main]
@@ -42,9 +42,9 @@ async fn main() -> anyhow::Result<()> {
     let Err(error) = ClientBuilder::new()
         .set_handler(handle_event)
         .set_state(State {
-            commands: Arc::new(commands),
-            lua: Arc::new(Mutex::new(lua)),
+            lua,
             http_address: args.http_address,
+            commands: Arc::new(commands),
         })
         .start(
             if username.contains('@') {

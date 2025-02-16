@@ -28,10 +28,13 @@ pub fn reload(lua: &Lua) -> Result<(), Error> {
     .map_err(Error::LoadChunk)
 }
 
-pub fn eval(lua: &Lua, code: &str) -> Result<String, Error> {
-    lua.load(code).eval::<String>().map_err(Error::EvalChunk)
+pub async fn eval(lua: &Lua, code: &str) -> Result<String, Error> {
+    lua.load(code)
+        .eval_async::<String>()
+        .await
+        .map_err(Error::EvalChunk)
 }
 
-pub fn exec(lua: &Lua, code: &str) -> Result<(), Error> {
-    lua.load(code).exec().map_err(Error::ExecChunk)
+pub async fn exec(lua: &Lua, code: &str) -> Result<(), Error> {
+    lua.load(code).exec_async().await.map_err(Error::ExecChunk)
 }

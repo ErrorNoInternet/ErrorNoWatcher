@@ -7,7 +7,7 @@ use mlua::{Function, IntoLuaMulti, Table};
 use tokio::net::TcpListener;
 
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
-    let globals = state.lua.lock().globals();
+    let globals = state.lua.globals();
 
     match event {
         Event::Chat(message) => {
@@ -40,7 +40,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             call_lua_handler(&globals, "on_chat", ());
         }
         Event::Death(Some(packet)) => {
-            let death_data = state.lua.lock().create_table()?;
+            let death_data = state.lua.create_table()?;
             death_data.set("message", packet.message.to_string())?;
             death_data.set("player_id", packet.player_id)?;
 

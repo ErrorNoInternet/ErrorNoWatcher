@@ -12,7 +12,7 @@ pub async fn serve(
     let path = request.uri().path().to_owned();
 
     Ok(match (request.method(), path.as_str()) {
-        (&Method::POST, "/reload") => match reload(&state.lua.lock()) {
+        (&Method::POST, "/reload") => match reload(&state.lua) {
             Ok(()) => Response::new(empty()),
             Err(error) => status_code_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -23,14 +23,11 @@ pub async fn serve(
         (&Method::POST, "/eval" | "/exec") => {
             let bytes = request.into_body().collect().await?.to_bytes();
             match std::str::from_utf8(&bytes) {
-                Ok(code) => {
-                    let lua = state.lua.lock();
-                    Response::new(full(match path.as_str() {
-                        "/eval" => format!("{:?}", eval(&lua, code)),
-                        "/exec" => format!("{:?}", exec(&lua, code)),
-                        _ => unreachable!(),
-                    }))
-                }
+                Ok(code) => Response::new(full(match path.as_str() {
+                    "/eval" => format!("{:?}", eval(&state.lua, code).await),
+                    "/exec" => format!("{:?}", exec(&state.lua, code).await),
+                    _ => unreachable!(),
+                })),
                 Err(error) => status_code_response(
                     StatusCode::BAD_REQUEST,
                     full(format!("invalid utf-8 data received: {error:?}")),

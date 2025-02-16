@@ -1179,12 +1179,12 @@ dependencies = [
  "anyhow",
  "azalea",
  "clap",
+ "futures",
  "http-body-util",
  "hyper",
  "hyper-util",
  "log",
  "mlua",
- "parking_lot",
  "tokio",
 ]
 

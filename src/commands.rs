@@ -7,7 +7,7 @@ use azalea::{
     prelude::*,
 };
 use bevy_ecs::{entity::Entity, query::With};
-use parking_lot::Mutex;
+use futures::lock::Mutex;
 
 pub type Ctx<'a> = CommandContext<Mutex<CommandSource>>;
 
@@ -40,35 +40,43 @@ impl CommandSource {
 
 pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
     commands.register(literal("reload").executes(|ctx: &Ctx| {
-        let source = ctx.source.lock();
-        source.reply(&format!("{:?}", reload(&source.state.lua.lock())));
+        let source = ctx.source.clone();
+        tokio::spawn(async move {
+            let source = source.lock().await;
+            source.reply(&format!("{:?}", reload(&source.state.lua)));
+        });
         1
     }));
 
     commands.register(
         literal("eval").then(argument("code", string()).executes(|ctx: &Ctx| {
-            let source = ctx.source.lock();
-            source.reply(&format!(
-                "{:?}",
-                eval(&source.state.lua.lock(), &get_string(ctx, "code").unwrap())
-            ));
+            let source = ctx.source.clone();
+            let code = get_string(ctx, "code").unwrap();
+            tokio::spawn(async move {
+                let source = source.lock().await;
+                source.reply(&format!("{:?}", eval(&source.state.lua, &code).await));
+            });
             1
         })),
     );
 
     commands.register(
         literal("exec").then(argument("code", string()).executes(|ctx: &Ctx| {
-            let source = ctx.source.lock();
-            source.reply(&format!(
-                "{:?}",
-                exec(&source.state.lua.lock(), &get_string(ctx, "code").unwrap())
-            ));
+            let source = ctx.source.clone();
+            let code = get_string(ctx, "code").unwrap();
+            tokio::spawn(async move {
+                let source = source.lock().await;
+                source.reply(&format!("{:?}", exec(&source.state.lua, &code).await));
+            });
             1
         })),
     );
 
     commands.register(literal("ping").executes(|ctx: &Ctx| {
-        ctx.source.lock().reply("pong!");
+        let source = ctx.source.clone();
+        tokio::spawn(async move {
+            source.lock().await.reply("pong!");
+        });
         1
     }));
 }
