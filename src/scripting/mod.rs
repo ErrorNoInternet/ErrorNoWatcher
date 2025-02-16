@@ -1,6 +1,8 @@
+pub mod block;
 pub mod client;
 pub mod direction;
 pub mod entity;
+pub mod fluid_state;
 pub mod hunger;
 pub mod logging;
 pub mod vec3;

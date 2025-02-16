@@ -1,18 +1,17 @@
 mod interaction;
 mod movement;
 mod state;
+mod world;
 
-use super::{direction::Direction, entity::Entity, hunger::Hunger, vec3::Vec3};
+use super::{
+    block::Block, direction::Direction, entity::Entity, fluid_state::FluidState, hunger::Hunger,
+    vec3::Vec3,
+};
 use azalea::{
     Client as AzaleaClient,
-    ecs::query::Without,
-    entity::{
-        Dead, EntityKind, EntityUuid, Position as AzaleaPosition,
-        metadata::{AirSupply, CustomName, Score},
-    },
-    world::MinecraftEntityId,
+    entity::metadata::{AirSupply, Score},
 };
-use mlua::{Function, Lua, Result, UserData, UserDataFields, UserDataMethods};
+use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
 
 pub struct Client {
     pub inner: Option<AzaleaClient>,
@@ -87,7 +86,11 @@ impl UserData for Client {
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
         m.add_async_method("set_client_information", state::set_client_information);
         m.add_method("chat", chat);
-        m.add_method("find_entities", find_entities);
+        m.add_method("find_blocks", world::find_blocks);
+        m.add_method("find_entities", world::find_entities);
+        m.add_method("get_block_from_state", world::get_block_from_state);
+        m.add_method("get_block_state", world::get_block_state);
+        m.add_method("get_fluid_state", world::get_fluid_state);
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
         m.add_method_mut("attack", interaction::attack);
         m.add_method_mut("block_interact", interaction::block_interact);
@@ -100,39 +103,6 @@ impl UserData for Client {
         m.add_method_mut("sprint", movement::sprint);
         m.add_method_mut("walk", movement::walk);
     }
-}
-
-fn find_entities(_lua: &Lua, client: &Client, filter_fn: Function) -> Result<Vec<Entity>> {
-    let mut matched = Vec::new();
-
-    let mut ecs = client.inner.as_ref().unwrap().ecs.lock();
-    let mut query = ecs.query_filtered::<(
-        &MinecraftEntityId,
-        &EntityUuid,
-        &EntityKind,
-        &AzaleaPosition,
-        &CustomName,
-    ), Without<Dead>>();
-
-    for (&id, uuid, kind, position, custom_name) in query.iter(&ecs) {
-        let entity = Entity {
-            id: id.0,
-            uuid: uuid.to_string(),
-            kind: kind.to_string(),
-            position: Vec3 {
-                x: position.x,
-                y: position.y,
-                z: position.z,
-            },
-            custom_name: custom_name.as_ref().map(ToString::to_string),
-        };
-
-        if filter_fn.call::<bool>(entity.clone()).unwrap() {
-            matched.push(entity);
-        }
-    }
-
-    Ok(matched)
 }
 
 fn chat(_lua: &Lua, client: &Client, message: String) -> Result<()> {
