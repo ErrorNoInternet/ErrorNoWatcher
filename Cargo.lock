@@ -1179,7 +1179,6 @@ dependencies = [
  "anyhow",
  "azalea",
  "clap",
- "futures",
  "http-body-util",
  "hyper",
  "hyper-util",

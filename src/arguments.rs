@@ -9,6 +9,6 @@ pub struct Arguments {
     pub script: Option<PathBuf>,
 
     /// Socket address to bind HTTP server to
-    #[arg(short, long)]
-    pub address: Option<SocketAddr>,
+    #[arg(short = 'a', long)]
+    pub http_address: Option<SocketAddr>,
 }

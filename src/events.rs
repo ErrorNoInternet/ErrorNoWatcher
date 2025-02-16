@@ -1,9 +1,9 @@
-use crate::{State, commands::CommandSource, http::handle, scripting};
+use crate::{State, commands::CommandSource, http::serve, scripting};
 use azalea::prelude::*;
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
-use log::{error, info};
 use mlua::Function;
+use log::{debug, error, info, trace};
 use tokio::net::TcpListener;
 
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
@@ -33,38 +33,54 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                         state,
                     }
                     .reply(&format!("{error:?}"));
-                };
+                }
             }
         }
         Event::Init => {
+            debug!("client initialized");
+
             globals.set(
                 "client",
                 scripting::client::Client {
                     inner: Some(client),
                 },
             )?;
-            globals.get::<Function>("Init")?.call::<()>(())?;
+            if let Ok(on_init) = globals.get::<Function>("on_init")
+                && let Err(error) = on_init.call::<()>(())
+            {
+                error!("failed to call lua on_init function: {error:?}");
+            };
 
-            if let Some(address) = state.address {
-                let listener = TcpListener::bind(address).await?;
+            if let Some(address) = state.http_address {
+                let listener = TcpListener::bind(address).await.map_err(|error| {
+                    error!("failed to listen on {address}: {error:?}");
+                    error
+                })?;
+                debug!("http server listening on {address}");
+
                 loop {
-                    let (stream, _) = listener.accept().await?;
-                    let io = TokioIo::new(stream);
+                    let (stream, peer) = listener.accept().await?;
+                    trace!("http server got connection from {peer}");
 
-                    let state = state.clone();
+                    let conn_state = state.clone();
                     let service = service_fn(move |request| {
-                        let state = state.clone();
-                        async move { handle(request, state).await }
+                        let request_state = conn_state.clone();
+                        async move { serve(request, request_state).await }
                     });
 
-                    if let Err(error) = http1::Builder::new().serve_connection(io, service).await {
-                        error!("failed to serve connection: {error:?}");
-                    }
+                    tokio::task::spawn(async move {
+                        if let Err(error) = http1::Builder::new()
+                            .serve_connection(TokioIo::new(stream), service)
+                            .await
+                        {
+                            error!("failed to serve connection: {error:?}");
+                        }
+                    });
                 }
             }
         }
         _ => (),
-    };
+    }
 
     Ok(())
 }
