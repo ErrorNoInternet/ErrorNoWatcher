@@ -3,6 +3,7 @@
 mod arguments;
 mod commands;
 mod events;
+mod http;
 mod scripting;
 
 use azalea::{brigadier::prelude::CommandDispatcher, prelude::*};
@@ -11,12 +12,13 @@ use commands::{CommandSource, register};
 use events::handle_event;
 use mlua::Lua;
 use parking_lot::Mutex;
-use std::{path::PathBuf, process::ExitCode, sync::Arc};
+use std::{net::SocketAddr, path::PathBuf, process::ExitCode, sync::Arc};
 
 #[derive(Default, Clone, Component)]
 pub struct State {
-    lua: Arc<Mutex<Lua>>,
     commands: Arc<CommandDispatcher<Mutex<CommandSource>>>,
+    lua: Arc<Mutex<Lua>>,
+    address: Option<SocketAddr>,
 }
 
 #[tokio::main]
@@ -73,8 +75,9 @@ async fn main() -> ExitCode {
     let Err(error) = ClientBuilder::new()
         .set_handler(handle_event)
         .set_state(State {
-            lua: Arc::new(Mutex::new(lua)),
             commands: Arc::new(commands),
+            lua: Arc::new(Mutex::new(lua)),
+            address: args.address,
         })
         .start(account, server.as_ref())
         .await;

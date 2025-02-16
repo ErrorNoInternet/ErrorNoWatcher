@@ -1,7 +1,10 @@
-use crate::{State, commands::CommandSource, scripting};
+use crate::{State, commands::CommandSource, http::handle, scripting};
 use azalea::prelude::*;
-use log::info;
+use hyper::{server::conn::http1, service::service_fn};
+use hyper_util::rt::TokioIo;
+use log::{error, info};
 use mlua::Function;
+use tokio::net::TcpListener;
 
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
     let globals = state.lua.lock().globals();
@@ -40,7 +43,25 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                     inner: Some(client),
                 },
             )?;
-            globals.get::<Function>("Init")?.call::<()>(())?
+            globals.get::<Function>("Init")?.call::<()>(())?;
+
+            if let Some(address) = state.address {
+                let listener = TcpListener::bind(address).await?;
+                loop {
+                    let (stream, _) = listener.accept().await?;
+                    let io = TokioIo::new(stream);
+
+                    let state = state.clone();
+                    let service = service_fn(move |request| {
+                        let state = state.clone();
+                        async move { handle(request, state).await }
+                    });
+
+                    if let Err(error) = http1::Builder::new().serve_connection(io, service).await {
+                        error!("failed to serve connection: {error:?}");
+                    }
+                }
+            }
         }
         _ => (),
     };
