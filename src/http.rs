@@ -1,6 +1,6 @@
 use crate::{
     State,
-    scripting::{eval, exec, reload},
+    lua::{eval, exec, reload},
 };
 use http_body_util::{BodyExt, Empty, Full, combinators::BoxBody};
 use hyper::{Method, Request, Response, StatusCode, body::Bytes};

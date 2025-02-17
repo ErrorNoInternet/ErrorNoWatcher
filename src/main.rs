@@ -4,7 +4,7 @@ mod arguments;
 mod commands;
 mod events;
 mod http;
-mod scripting;
+mod lua;
 
 use azalea::{brigadier::prelude::CommandDispatcher, prelude::*};
 use clap::Parser;
@@ -34,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
     let username = globals.get::<String>("USERNAME")?;
 
     globals.set("script_path", script_path)?;
-    scripting::register_functions(&lua, &globals)?;
+    lua::register_functions(&lua, &globals)?;
 
     let mut commands = CommandDispatcher::new();
     register(&mut commands);

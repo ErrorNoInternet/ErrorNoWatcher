@@ -1,4 +1,4 @@
-use crate::{State, commands::CommandSource, http::serve, scripting};
+use crate::{State, commands::CommandSource, http::serve, lua};
 use azalea::prelude::*;
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
@@ -53,7 +53,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
 
             globals.set(
                 "client",
-                scripting::client::Client {
+                lua::client::Client {
                     inner: Some(client),
                 },
             )?;

@@ -1,6 +1,6 @@
 use crate::{
     State,
-    scripting::{eval, exec, reload},
+    lua::{eval, exec, reload},
 };
 use azalea::{
     GameProfileComponent, brigadier::prelude::*, chat::ChatPacket, entity::metadata::Player,

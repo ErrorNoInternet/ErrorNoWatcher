@@ -9,7 +9,7 @@ for _, module in
 		"utils",
 	}
 do
-	module = "lua/" .. module
+	module = "lib/" .. module
 	package.loaded[module] = nil
 	require(module)
 end
