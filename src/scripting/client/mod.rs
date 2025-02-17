@@ -7,13 +7,8 @@ use super::{
     block::Block, direction::Direction, entity::Entity, fluid_state::FluidState, hunger::Hunger,
     vec3::Vec3,
 };
-use azalea::{
-    Client as AzaleaClient,
-    entity::metadata::{AirSupply, Score},
-    interact::HitResultComponent,
-    pathfinder::{ExecutingPath, Pathfinder},
-};
-use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
+use azalea::Client as AzaleaClient;
+use mlua::{Lua, Result, Table, UserData, UserDataFields, UserDataMethods};
 
 pub struct Client {
     pub inner: Option<AzaleaClient>,
@@ -21,123 +16,17 @@ pub struct Client {
 
 impl UserData for Client {
     fn add_fields<F: UserDataFields<Self>>(f: &mut F) {
-        f.add_field_method_get("air_supply", |_, this| {
-            Ok(this.inner.as_ref().unwrap().component::<AirSupply>().0)
-        });
-
-        f.add_field_method_get("direction", |_, this| {
-            let d = this.inner.as_ref().unwrap().direction();
-            Ok(Direction { x: d.0, y: d.1 })
-        });
-
-        f.add_field_method_get("eye_position", |_, this| {
-            let p = this.inner.as_ref().unwrap().eye_position();
-            Ok(Vec3 {
-                x: p.x,
-                y: p.y,
-                z: p.z,
-            })
-        });
-
-        f.add_field_method_get("health", |_, this| {
-            Ok(this.inner.as_ref().unwrap().health())
-        });
-
-        f.add_field_method_get("hunger", |_, this| {
-            let h = this.inner.as_ref().unwrap().hunger();
-            Ok(Hunger {
-                food: h.food,
-                saturation: h.saturation,
-            })
-        });
-
-        f.add_field_method_get("looking_at", |lua, this| {
-            let hr = this
-                .inner
-                .as_ref()
-                .unwrap()
-                .component::<HitResultComponent>();
-            Ok(if hr.miss {
-                None
-            } else {
-                let result = lua.create_table()?;
-                result.set(
-                    "position",
-                    Vec3 {
-                        x: f64::from(hr.block_pos.x),
-                        y: f64::from(hr.block_pos.y),
-                        z: f64::from(hr.block_pos.z),
-                    },
-                )?;
-                result.set("inside", hr.inside)?;
-                result.set("world_border", hr.world_border)?;
-                Some(result)
-            })
-        });
-
-        f.add_field_method_get("pathfinder", |lua, this| {
-            let client = this.inner.as_ref().unwrap();
-            let pathfinder = lua.create_table()?;
-            pathfinder.set(
-                "is_calculating",
-                client.component::<Pathfinder>().is_calculating,
-            )?;
-            pathfinder.set(
-                "is_executing",
-                if let Some(p) = client.get_component::<ExecutingPath>() {
-                    pathfinder.set(
-                        "last_reached_node",
-                        Vec3 {
-                            x: f64::from(p.last_reached_node.x),
-                            y: f64::from(p.last_reached_node.y),
-                            z: f64::from(p.last_reached_node.z),
-                        },
-                    )?;
-                    pathfinder.set(
-                        "last_node_reach_elapsed",
-                        p.last_node_reached_at.elapsed().as_millis(),
-                    )?;
-                    pathfinder.set("is_path_partial", p.is_path_partial)?;
-                    true
-                } else {
-                    false
-                },
-            )?;
-            Ok(pathfinder)
-        });
-
-        f.add_field_method_get("position", |_, this| {
-            let p = this.inner.as_ref().unwrap().position();
-            Ok(Vec3 {
-                x: p.x,
-                y: p.y,
-                z: p.z,
-            })
-        });
-
-        f.add_field_method_get("score", |_, this| {
-            Ok(this.inner.as_ref().unwrap().component::<Score>().0)
-        });
-
-        f.add_field_method_get("tab_list", |lua, this| {
-            let tab_list = lua.create_table()?;
-            for (uuid, player_info) in this.inner.as_ref().unwrap().tab_list() {
-                let player = lua.create_table()?;
-                player.set("gamemode", player_info.gamemode.name())?;
-                player.set("latency", player_info.latency)?;
-                player.set("name", player_info.profile.name)?;
-                player.set(
-                    "display_name",
-                    player_info.display_name.map(|n| n.to_string()),
-                )?;
-                tab_list.set(uuid.to_string(), player)?;
-            }
-            Ok(tab_list)
-        });
-
-        f.add_field_method_get("uuid", |_, this| {
-            Ok(this.inner.as_ref().unwrap().uuid().to_string())
-        });
+        f.add_field_method_get("air_supply", state::air_supply);
+        f.add_field_method_get("direction", movement::direction);
+        f.add_field_method_get("eye_position", movement::eye_position);
+        f.add_field_method_get("health", state::health);
+        f.add_field_method_get("hunger", state::hunger);
+        f.add_field_method_get("looking_at", movement::looking_at);
+        f.add_field_method_get("pathfinder", movement::pathfinder);
+        f.add_field_method_get("position", movement::position);
+        f.add_field_method_get("score", state::score);
+        f.add_field_method_get("tab_list", tab_list);
+        f.add_field_method_get("uuid", uuid);
     }
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
@@ -162,6 +51,26 @@ impl UserData for Client {
         m.add_method_mut("start_mining", interaction::start_mining);
         m.add_method_mut("walk", movement::walk);
     }
+}
+
+fn tab_list(lua: &Lua, client: &Client) -> Result<Table> {
+    let tab_list = lua.create_table()?;
+    for (uuid, player_info) in client.inner.as_ref().unwrap().tab_list() {
+        let player = lua.create_table()?;
+        player.set("gamemode", player_info.gamemode.name())?;
+        player.set("latency", player_info.latency)?;
+        player.set("name", player_info.profile.name)?;
+        player.set(
+            "display_name",
+            player_info.display_name.map(|n| n.to_string()),
+        )?;
+        tab_list.set(uuid.to_string(), player)?;
+    }
+    Ok(tab_list)
+}
+
+fn uuid(_lua: &Lua, client: &Client) -> Result<String> {
+    Ok(client.inner.as_ref().unwrap().uuid().to_string())
 }
 
 fn chat(_lua: &Lua, client: &Client, message: String) -> Result<()> {

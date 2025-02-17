@@ -1,16 +1,26 @@
-use super::{Client, Vec3};
+use super::{Client, Direction, Vec3};
 use azalea::{
     BlockPos, BotClientExt, Client as AzaleaClient, SprintDirection, WalkDirection,
+    interact::HitResultComponent,
     pathfinder::{
-        PathfinderClientExt,
+        ExecutingPath, Pathfinder, PathfinderClientExt,
         goals::{BlockPosGoal, Goal, RadiusGoal, ReachBlockPosGoal, XZGoal, YGoal},
     },
 };
 use mlua::{FromLua, Lua, Result, Table, Value};
 
-pub fn stop_pathfinding(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
-    client.inner.as_ref().unwrap().stop_pathfinding();
-    Ok(())
+pub fn direction(_lua: &Lua, client: &Client) -> Result<Direction> {
+    let d = client.inner.as_ref().unwrap().direction();
+    Ok(Direction { x: d.0, y: d.1 })
+}
+
+pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
+    let p = client.inner.as_ref().unwrap().eye_position();
+    Ok(Vec3 {
+        x: p.x,
+        y: p.y,
+        z: p.z,
+    })
 }
 
 pub fn goto(
@@ -102,6 +112,30 @@ pub fn jump(_lua: &Lua, client: &mut Client, _: ()) -> Result<()> {
     Ok(())
 }
 
+pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
+    let hr = client
+        .inner
+        .as_ref()
+        .unwrap()
+        .component::<HitResultComponent>();
+    Ok(if hr.miss {
+        None
+    } else {
+        let result = lua.create_table()?;
+        result.set(
+            "position",
+            Vec3 {
+                x: f64::from(hr.block_pos.x),
+                y: f64::from(hr.block_pos.y),
+                z: f64::from(hr.block_pos.z),
+            },
+        )?;
+        result.set("inside", hr.inside)?;
+        result.set("world_border", hr.world_border)?;
+        Some(result)
+    })
+}
+
 pub fn look_at(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
     client
         .inner
@@ -109,6 +143,46 @@ pub fn look_at(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
         .unwrap()
         .look_at(azalea::Vec3::new(position.x, position.y, position.z));
     Ok(())
+}
+
+pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
+    let client = client.inner.as_ref().unwrap();
+    let pathfinder = lua.create_table()?;
+    pathfinder.set(
+        "is_calculating",
+        client.component::<Pathfinder>().is_calculating,
+    )?;
+    pathfinder.set(
+        "is_executing",
+        if let Some(p) = client.get_component::<ExecutingPath>() {
+            pathfinder.set(
+                "last_reached_node",
+                Vec3 {
+                    x: f64::from(p.last_reached_node.x),
+                    y: f64::from(p.last_reached_node.y),
+                    z: f64::from(p.last_reached_node.z),
+                },
+            )?;
+            pathfinder.set(
+                "last_node_reach_elapsed",
+                p.last_node_reached_at.elapsed().as_millis(),
+            )?;
+            pathfinder.set("is_path_partial", p.is_path_partial)?;
+            true
+        } else {
+            false
+        },
+    )?;
+    Ok(pathfinder)
+}
+
+pub fn position(_lua: &Lua, client: &Client) -> Result<Vec3> {
+    let p = client.inner.as_ref().unwrap().position();
+    Ok(Vec3 {
+        x: p.x,
+        y: p.y,
+        z: p.z,
+    })
 }
 
 pub fn set_direction(_lua: &Lua, client: &mut Client, direction: (f32, f32)) -> Result<()> {
@@ -131,6 +205,11 @@ pub fn sprint(_lua: &Lua, client: &mut Client, direction: u8) -> Result<()> {
         6 => SprintDirection::ForwardLeft,
         _ => SprintDirection::Forward,
     });
+    Ok(())
+}
+
+pub fn stop_pathfinding(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
+    client.inner.as_ref().unwrap().stop_pathfinding();
     Ok(())
 }
 
