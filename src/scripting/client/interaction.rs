@@ -1,6 +1,6 @@
 use super::{Client, Vec3};
 use azalea::{BlockPos, BotClientExt, world::MinecraftEntityId};
-use mlua::{Lua, Result, UserDataRefMut};
+use mlua::{Lua, Result, UserDataRef};
 
 pub fn attack(_lua: &Lua, client: &mut Client, entity_id: u32) -> Result<()> {
     client
@@ -21,11 +21,11 @@ pub fn block_interact(_lua: &Lua, client: &mut Client, position: Vec3) -> Result
     Ok(())
 }
 
-pub async fn mine(_lua: Lua, mut client: UserDataRefMut<Client>, position: Vec3) -> Result<()> {
+pub async fn mine(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Result<()> {
     #[allow(clippy::cast_possible_truncation)]
     client
         .inner
-        .as_mut()
+        .clone()
         .unwrap()
         .mine(BlockPos::new(
             position.x as i32,

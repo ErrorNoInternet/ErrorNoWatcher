@@ -30,8 +30,8 @@ impl UserData for Client {
     }
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
+        m.add_async_method("mine", interaction::mine);
         m.add_async_method("set_client_information", state::set_client_information);
-        m.add_async_method_mut("mine", interaction::mine);
         m.add_method("chat", chat);
         m.add_method("find_blocks", world::find_blocks);
         m.add_method("find_entities", world::find_entities);
