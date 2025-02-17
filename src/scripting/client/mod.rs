@@ -11,6 +11,7 @@ use azalea::{
     Client as AzaleaClient,
     entity::metadata::{AirSupply, Score},
     interact::HitResultComponent,
+    pathfinder::{ExecutingPath, Pathfinder},
 };
 use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
 
@@ -72,6 +73,37 @@ impl UserData for Client {
                 result.set("world_border", hr.world_border)?;
                 Some(result)
             })
+        });
+
+        f.add_field_method_get("pathfinder", |lua, this| {
+            let client = this.inner.as_ref().unwrap();
+            let pathfinder = lua.create_table()?;
+            pathfinder.set(
+                "is_calculating",
+                client.component::<Pathfinder>().is_calculating,
+            )?;
+            pathfinder.set(
+                "is_executing",
+                if let Some(p) = client.get_component::<ExecutingPath>() {
+                    pathfinder.set(
+                        "last_reached_node",
+                        Vec3 {
+                            x: f64::from(p.last_reached_node.x),
+                            y: f64::from(p.last_reached_node.y),
+                            z: f64::from(p.last_reached_node.z),
+                        },
+                    )?;
+                    pathfinder.set(
+                        "last_node_reach_elapsed",
+                        p.last_node_reached_at.elapsed().as_millis(),
+                    )?;
+                    pathfinder.set("is_path_partial", p.is_path_partial)?;
+                    true
+                } else {
+                    false
+                },
+            )?;
+            Ok(pathfinder)
         });
 
         f.add_field_method_get("position", |_, this| {
