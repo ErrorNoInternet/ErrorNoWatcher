@@ -1,17 +1,47 @@
 use super::{Block, Client, Entity, FluidState, Vec3};
 use azalea::{
     BlockPos,
+    auto_tool::AutoToolClientExt,
     blocks::{Block as AzaleaBlock, BlockState, BlockStates},
     ecs::query::Without,
     entity::{Dead, EntityKind, EntityUuid, Position as AzaleaPosition, metadata::CustomName},
     world::MinecraftEntityId,
 };
-use mlua::{Function, Lua, Result};
+use mlua::{Function, Lua, Result, Table};
+
+pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Result<Table> {
+    let tr = client
+        .inner
+        .as_ref()
+        .unwrap()
+        .best_tool_in_hotbar_for_block(BlockState { id: block_state });
+
+    let tool_result = lua.create_table()?;
+    tool_result.set("index", tr.index)?;
+    tool_result.set("percentage_per_tick", tr.percentage_per_tick)?;
+    Ok(tool_result)
+}
+
+pub fn block_names_to_states(
+    _lua: &Lua,
+    _client: &Client,
+    block_names: Vec<String>,
+) -> Result<Vec<u16>> {
+    Ok(block_names
+        .iter()
+        .flat_map(|n| {
+            (u32::MIN..u32::MAX)
+                .map_while(|i| BlockState::try_from(i).ok())
+                .filter(move |&b| n == Into::<Box<dyn AzaleaBlock>>::into(b).id())
+                .map(|b| b.id)
+        })
+        .collect())
+}
 
 pub fn find_blocks(
     _lua: &Lua,
     client: &Client,
-    (nearest_to, block_names): (Vec3, Vec<String>),
+    (nearest_to, block_states): (Vec3, Vec<u16>),
 ) -> Result<Vec<Vec3>> {
     #[allow(clippy::cast_possible_truncation)]
     Ok(client
@@ -27,14 +57,7 @@ pub fn find_blocks(
                 nearest_to.z as i32,
             ),
             &BlockStates {
-                set: block_names
-                    .iter()
-                    .flat_map(|n| {
-                        (u32::MIN..u32::MAX)
-                            .map_while(|i| BlockState::try_from(i).ok())
-                            .filter(move |&b| n == Into::<Box<dyn AzaleaBlock>>::into(b).id())
-                    })
-                    .collect(),
+                set: block_states.iter().map(|&id| BlockState { id }).collect(),
             },
         )
         .map(|p| Vec3 {

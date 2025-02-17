@@ -1,10 +1,17 @@
+mod container;
 mod interaction;
 mod movement;
 mod state;
 mod world;
 
 use super::{
-    block::Block, direction::Direction, entity::Entity, fluid_state::FluidState, hunger::Hunger,
+    block::Block,
+    container::item_stack::ItemStack,
+    container::{Container, ContainerRef},
+    direction::Direction,
+    entity::Entity,
+    fluid_state::FluidState,
+    hunger::Hunger,
     vec3::Vec3,
 };
 use azalea::Client as AzaleaClient;
@@ -20,8 +27,11 @@ impl UserData for Client {
         f.add_field_method_get("direction", movement::direction);
         f.add_field_method_get("eye_position", movement::eye_position);
         f.add_field_method_get("health", state::health);
+        f.add_field_method_get("held_item", container::held_item);
+        f.add_field_method_get("held_slot", container::held_slot);
         f.add_field_method_get("hunger", state::hunger);
         f.add_field_method_get("looking_at", movement::looking_at);
+        f.add_field_method_get("open_container", container::open_container);
         f.add_field_method_get("pathfinder", movement::pathfinder);
         f.add_field_method_get("position", movement::position);
         f.add_field_method_get("score", state::score);
@@ -31,13 +41,17 @@ impl UserData for Client {
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
         m.add_async_method("mine", interaction::mine);
+        m.add_async_method("open_container_at", container::open_container_at);
         m.add_async_method("set_client_information", state::set_client_information);
+        m.add_method("best_tool_for_block", world::best_tool_for_block);
+        m.add_method("block_names_to_states", world::block_names_to_states);
         m.add_method("chat", chat);
         m.add_method("find_blocks", world::find_blocks);
         m.add_method("find_entities", world::find_entities);
         m.add_method("get_block_from_state", world::get_block_from_state);
         m.add_method("get_block_state", world::get_block_state);
         m.add_method("get_fluid_state", world::get_fluid_state);
+        m.add_method("set_held_slot", container::set_held_slot);
         m.add_method("set_mining", interaction::set_mining);
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
         m.add_method_mut("attack", interaction::attack);
@@ -45,6 +59,7 @@ impl UserData for Client {
         m.add_method_mut("goto", movement::goto);
         m.add_method_mut("jump", movement::jump);
         m.add_method_mut("look_at", movement::look_at);
+        m.add_method_mut("open_inventory", container::open_inventory);
         m.add_method_mut("set_direction", movement::set_direction);
         m.add_method_mut("set_jumping", movement::set_jumping);
         m.add_method_mut("sprint", movement::sprint);
