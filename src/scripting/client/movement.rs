@@ -1,39 +1,99 @@
 use super::{Client, Vec3};
 use azalea::{
-    BlockPos, SprintDirection, WalkDirection, pathfinder::goals::BlockPosGoal, prelude::*,
+    BlockPos, BotClientExt, Client as AzaleaClient, SprintDirection, WalkDirection,
+    pathfinder::{
+        PathfinderClientExt,
+        goals::{BlockPosGoal, Goal, RadiusGoal, ReachBlockPosGoal, XZGoal, YGoal},
+    },
 };
-use mlua::{Lua, Result};
+use mlua::{FromLua, Lua, Result, Table, Value};
 
 pub fn stop_pathfinding(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
     client.inner.as_ref().unwrap().stop_pathfinding();
     Ok(())
 }
 
-pub fn goto(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
-    #[allow(clippy::cast_possible_truncation)]
-    client
-        .inner
-        .as_ref()
-        .unwrap()
-        .goto(BlockPosGoal(BlockPos::new(
-            position.x as i32,
-            position.y as i32,
-            position.z as i32,
-        )));
-    Ok(())
-}
+pub fn goto(
+    lua: &Lua,
+    client: &mut Client,
+    (data, metadata): (Value, Option<Table>),
+) -> Result<()> {
+    fn g(client: &AzaleaClient, without_mining: bool, goal: impl Goal + Send + Sync + 'static) {
+        if without_mining {
+            client.goto_without_mining(goal);
+        } else {
+            client.goto(goal);
+        }
+    }
 
-pub fn goto_without_mining(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
+    let error = mlua::Error::FromLuaConversionError {
+        from: data.type_name(),
+        to: "Table".to_string(),
+        message: None,
+    };
+    let client = client.inner.as_ref().unwrap();
+    let (goal_type, without_mining) = metadata
+        .map(|t| {
+            (
+                t.get("type").unwrap_or_default(),
+                t.get("without_mining").unwrap_or_default(),
+            )
+        })
+        .unwrap_or_default();
+
     #[allow(clippy::cast_possible_truncation)]
-    client
-        .inner
-        .as_ref()
-        .unwrap()
-        .goto_without_mining(BlockPosGoal(BlockPos::new(
-            position.x as i32,
-            position.y as i32,
-            position.z as i32,
-        )));
+    match goal_type {
+        1 => {
+            let t = data.as_table().ok_or(error)?;
+            let p = Vec3::from_lua(t.get("position")?, lua)?;
+            g(
+                client,
+                without_mining,
+                RadiusGoal {
+                    pos: azalea::Vec3::new(p.x, p.y, p.z),
+                    radius: t.get("radius")?,
+                },
+            );
+        }
+        2 => {
+            let p = Vec3::from_lua(data, lua)?;
+            g(
+                client,
+                without_mining,
+                ReachBlockPosGoal {
+                    pos: BlockPos::new(p.x as i32, p.y as i32, p.z as i32),
+                    chunk_storage: client.world().read().chunks.clone(),
+                },
+            );
+        }
+        3 => {
+            let t = data.as_table().ok_or(error)?;
+            g(
+                client,
+                without_mining,
+                XZGoal {
+                    x: t.get("x")?,
+                    z: t.get("z")?,
+                },
+            );
+        }
+        4 => g(
+            client,
+            without_mining,
+            YGoal {
+                y: data.as_integer().ok_or(error)?,
+            },
+        ),
+        _ => {
+            let p = Vec3::from_lua(data, lua)?;
+            g(
+                client,
+                without_mining,
+                BlockPosGoal(BlockPos::new(p.x as i32, p.y as i32, p.z as i32)),
+            );
+        }
+    }
+
     Ok(())
 }
 

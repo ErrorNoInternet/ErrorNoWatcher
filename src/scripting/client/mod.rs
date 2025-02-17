@@ -122,7 +122,6 @@ impl UserData for Client {
         m.add_method_mut("attack", interaction::attack);
         m.add_method_mut("block_interact", interaction::block_interact);
         m.add_method_mut("goto", movement::goto);
-        m.add_method_mut("goto_without_mining", movement::goto_without_mining);
         m.add_method_mut("jump", movement::jump);
         m.add_method_mut("look_at", movement::look_at);
         m.add_method_mut("set_direction", movement::set_direction);
