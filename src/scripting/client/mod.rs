@@ -85,12 +85,14 @@ impl UserData for Client {
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
         m.add_async_method("set_client_information", state::set_client_information);
+        m.add_async_method_mut("mine", interaction::mine);
         m.add_method("chat", chat);
         m.add_method("find_blocks", world::find_blocks);
         m.add_method("find_entities", world::find_entities);
         m.add_method("get_block_from_state", world::get_block_from_state);
         m.add_method("get_block_state", world::get_block_state);
         m.add_method("get_fluid_state", world::get_fluid_state);
+        m.add_method("set_mining", interaction::set_mining);
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
         m.add_method_mut("attack", interaction::attack);
         m.add_method_mut("block_interact", interaction::block_interact);
@@ -101,6 +103,7 @@ impl UserData for Client {
         m.add_method_mut("set_direction", movement::set_direction);
         m.add_method_mut("set_jumping", movement::set_jumping);
         m.add_method_mut("sprint", movement::sprint);
+        m.add_method_mut("start_mining", interaction::start_mining);
         m.add_method_mut("walk", movement::walk);
     }
 }
