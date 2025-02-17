@@ -3,11 +3,11 @@ use azalea::{
     BlockPos, BotClientExt, Client as AzaleaClient, SprintDirection, WalkDirection,
     interact::HitResultComponent,
     pathfinder::{
-        ExecutingPath, Pathfinder, PathfinderClientExt,
+        ExecutingPath, GotoEvent, Pathfinder, PathfinderClientExt,
         goals::{BlockPosGoal, Goal, RadiusGoal, ReachBlockPosGoal, XZGoal, YGoal},
     },
 };
-use mlua::{FromLua, Lua, Result, Table, Value};
+use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
 
 pub fn direction(_lua: &Lua, client: &Client) -> Result<Direction> {
     let d = client.inner.as_ref().unwrap().direction();
@@ -23,9 +23,9 @@ pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
     })
 }
 
-pub fn goto(
-    lua: &Lua,
-    client: &mut Client,
+pub async fn goto(
+    lua: Lua,
+    client: UserDataRef<Client>,
     (data, metadata): (Value, Option<Table>),
 ) -> Result<()> {
     fn g(client: &AzaleaClient, without_mining: bool, goal: impl Goal + Send + Sync + 'static) {
@@ -55,7 +55,7 @@ pub fn goto(
     match goal_type {
         1 => {
             let t = data.as_table().ok_or(error)?;
-            let p = Vec3::from_lua(t.get("position")?, lua)?;
+            let p = Vec3::from_lua(t.get("position")?, &lua)?;
             g(
                 client,
                 without_mining,
@@ -66,7 +66,7 @@ pub fn goto(
             );
         }
         2 => {
-            let p = Vec3::from_lua(data, lua)?;
+            let p = Vec3::from_lua(data, &lua)?;
             g(
                 client,
                 without_mining,
@@ -95,12 +95,18 @@ pub fn goto(
             },
         ),
         _ => {
-            let p = Vec3::from_lua(data, lua)?;
+            let p = Vec3::from_lua(data, &lua)?;
             g(
                 client,
                 without_mining,
                 BlockPosGoal(BlockPos::new(p.x as i32, p.y as i32, p.z as i32)),
             );
+        }
+    }
+
+    while client.get_tick_broadcaster().recv().await.is_ok() {
+        if client.ecs.lock().get::<GotoEvent>(client.entity).is_none() {
+            break;
         }
     }
 

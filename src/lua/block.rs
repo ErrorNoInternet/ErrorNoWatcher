@@ -1,4 +1,8 @@
-use mlua::{FromLua, IntoLua, Lua, Result, Value};
+use azalea::blocks::{
+    Block as AzaleaBlock, BlockState,
+    properties::{ChestType, Facing, LightLevel},
+};
+use mlua::{FromLua, Function, IntoLua, Lua, Result, Table, Value};
 
 #[derive(Clone)]
 pub struct Block {
@@ -45,4 +49,58 @@ impl FromLua for Block {
             })
         }
     }
+}
+
+pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
+    globals.set(
+        "get_block_from_state",
+        lua.create_function(get_block_from_state)?,
+    )?;
+    globals.set("get_block_states", lua.create_function(get_block_states)?)?;
+
+    Ok(())
+}
+
+pub fn get_block_from_state(_lua: &Lua, state: u32) -> Result<Option<Block>> {
+    let Ok(state) = BlockState::try_from(state) else {
+        return Ok(None);
+    };
+    let block: Box<dyn AzaleaBlock> = state.into();
+    let behavior = block.behavior();
+
+    Ok(Some(Block {
+        id: block.id().to_string(),
+        friction: behavior.friction,
+        jump_factor: behavior.jump_factor,
+        destroy_time: behavior.destroy_time,
+        explosion_resistance: behavior.explosion_resistance,
+        requires_correct_tool_for_drops: behavior.requires_correct_tool_for_drops,
+    }))
+}
+
+pub fn get_block_states(
+    lua: &Lua,
+    (block_names, filter_fn): (Vec<String>, Option<Function>),
+) -> Result<Vec<u16>> {
+    let mut matched = Vec::new();
+    for block_name in block_names {
+        for b in
+            (u32::MIN..u32::MAX).map_while(|possible_id| BlockState::try_from(possible_id).ok())
+        {
+            if block_name == Into::<Box<dyn AzaleaBlock>>::into(b).id()
+                && (if let Some(filter_fn) = &filter_fn {
+                    let p = lua.create_table()?;
+                    p.set("chest_type", b.property::<ChestType>().map(|v| v as u8))?;
+                    p.set("facing", b.property::<Facing>().map(|v| v as u8))?;
+                    p.set("light_level", b.property::<LightLevel>().map(|v| v as u8))?;
+                    filter_fn.call::<bool>(p.clone())?
+                } else {
+                    true
+                })
+            {
+                matched.push(b.id);
+            }
+        }
+    }
+    Ok(matched)
 }

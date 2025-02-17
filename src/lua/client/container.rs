@@ -6,6 +6,15 @@ use azalea::{
 use log::error;
 use mlua::{Lua, Result, UserDataRef};
 
+pub fn container(_lua: &Lua, client: &Client) -> Result<Option<ContainerRef>> {
+    Ok(client
+        .inner
+        .as_ref()
+        .unwrap()
+        .get_open_container()
+        .map(|c| ContainerRef { inner: c }))
+}
+
 pub fn held_item(_lua: &Lua, client: &Client) -> Result<ItemStack> {
     Ok(ItemStack {
         inner: client
@@ -24,15 +33,6 @@ pub fn held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
         .unwrap()
         .component::<Inventory>()
         .selected_hotbar_slot)
-}
-
-pub fn open_container(_lua: &Lua, client: &Client) -> Result<Option<ContainerRef>> {
-    Ok(client
-        .inner
-        .as_ref()
-        .unwrap()
-        .get_open_container()
-        .map(|c| ContainerRef { inner: c }))
 }
 
 pub async fn open_container_at(

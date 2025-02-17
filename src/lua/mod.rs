@@ -29,7 +29,8 @@ pub fn register_functions(lua: &Lua, globals: &Table) -> mlua::Result<()> {
         })?,
     )?;
 
-    logging::register_functions(lua, globals)
+    logging::register_functions(lua, globals)?;
+    block::register_functions(lua, globals)
 }
 
 pub fn reload(lua: &Lua) -> Result<(), Error> {

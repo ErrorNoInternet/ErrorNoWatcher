@@ -7,6 +7,7 @@ use mlua::{Function, IntoLuaMulti, Table};
 use tokio::net::TcpListener;
 
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
+    state.lua.gc_stop();
     let globals = state.lua.globals();
 
     match event {

@@ -12,17 +12,16 @@ opt-level = 3
 [profile.release]
 codegen-units = 1
 lto = true
-panic = "abort"
 strip = true
 
 [dependencies]
 anyhow = "1"
 azalea = { git = "https://github.com/azalea-rs/azalea.git" }
 clap = { version = "4", features = ["derive"] }
+futures = "0"
 http-body-util = "0"
 hyper = { version = "1", features = ["server"] }
 hyper-util = "0"
 log = { version = "0" }
 mlua = { version = "0", features = ["async", "luau", "send"] }
 tokio = { version = "1", features = ["macros"] }
-futures = "0"

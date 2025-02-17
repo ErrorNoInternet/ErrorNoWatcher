@@ -6,6 +6,8 @@ for _, module in
 	{
 		"enum",
 		"events",
+		"inventory",
+		"movement",
 		"utils",
 	}
 do

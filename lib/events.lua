@@ -1,5 +1,5 @@
 local center = { x = 0, z = 0 }
-local radius = 50
+local radius = 100
 
 function on_tick()
 	local entities = client:find_entities(function(e)
@@ -15,6 +15,10 @@ function on_tick()
 end
 
 function on_init()
-	info("client initialized, setting client information")
+	info("client initialized, setting information...")
 	client:set_client_information({ view_distance = 16 })
+end
+
+function on_login()
+	info("player successfully logged in!")
 end

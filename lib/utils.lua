@@ -1,3 +1,17 @@
+function get_player(name)
+	local target_uuid = nil
+	for uuid, player in client.tab_list do
+		if player.name == name then
+			target_uuid = uuid
+			break
+		end
+	end
+
+	return client:find_entities(function(e)
+		return e.kind == "minecraft:player" and e.uuid == target_uuid
+	end)[1]
+end
+
 function dump(object)
 	if type(object) == "table" then
 		local string = "{ "

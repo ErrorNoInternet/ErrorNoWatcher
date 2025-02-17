@@ -1,8 +1,8 @@
-use super::{Block, Client, Entity, FluidState, Vec3};
+use super::{Client, Entity, FluidState, Vec3};
 use azalea::{
     BlockPos,
     auto_tool::AutoToolClientExt,
-    blocks::{Block as AzaleaBlock, BlockState, BlockStates},
+    blocks::{BlockState, BlockStates},
     ecs::query::Without,
     entity::{Dead, EntityKind, EntityUuid, Position as AzaleaPosition, metadata::CustomName},
     world::MinecraftEntityId,
@@ -20,22 +20,6 @@ pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Resu
     tool_result.set("index", tr.index)?;
     tool_result.set("percentage_per_tick", tr.percentage_per_tick)?;
     Ok(tool_result)
-}
-
-pub fn block_names_to_states(
-    _lua: &Lua,
-    _client: &Client,
-    block_names: Vec<String>,
-) -> Result<Vec<u16>> {
-    Ok(block_names
-        .iter()
-        .flat_map(|n| {
-            (u32::MIN..u32::MAX)
-                .map_while(|i| BlockState::try_from(i).ok())
-                .filter(move |&b| n == Into::<Box<dyn AzaleaBlock>>::into(b).id())
-                .map(|b| b.id)
-        })
-        .collect())
 }
 
 pub fn find_blocks(
@@ -93,29 +77,12 @@ pub fn find_entities(_lua: &Lua, client: &Client, filter_fn: Function) -> Result
             custom_name: custom_name.as_ref().map(ToString::to_string),
         };
 
-        if filter_fn.call::<bool>(entity.clone()).unwrap() {
+        if filter_fn.call::<bool>(entity.clone())? {
             matched.push(entity);
         }
     }
 
     Ok(matched)
-}
-
-pub fn get_block_from_state(_lua: &Lua, _client: &Client, state: u32) -> Result<Option<Block>> {
-    let Ok(state) = BlockState::try_from(state) else {
-        return Ok(None);
-    };
-    let block: Box<dyn AzaleaBlock> = state.into();
-    let behavior = block.behavior();
-
-    Ok(Some(Block {
-        id: block.id().to_string(),
-        friction: behavior.friction,
-        jump_factor: behavior.jump_factor,
-        destroy_time: behavior.destroy_time,
-        explosion_resistance: behavior.explosion_resistance,
-        requires_correct_tool_for_drops: behavior.requires_correct_tool_for_drops,
-    }))
 }
 
 pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Option<u16>> {

@@ -5,7 +5,6 @@ mod state;
 mod world;
 
 use super::{
-    block::Block,
     container::item_stack::ItemStack,
     container::{Container, ContainerRef},
     direction::Direction,
@@ -24,6 +23,7 @@ pub struct Client {
 impl UserData for Client {
     fn add_fields<F: UserDataFields<Self>>(f: &mut F) {
         f.add_field_method_get("air_supply", state::air_supply);
+        f.add_field_method_get("container", container::container);
         f.add_field_method_get("direction", movement::direction);
         f.add_field_method_get("eye_position", movement::eye_position);
         f.add_field_method_get("has_attack_cooldown", interaction::has_attack_cooldown);
@@ -32,7 +32,6 @@ impl UserData for Client {
         f.add_field_method_get("held_slot", container::held_slot);
         f.add_field_method_get("hunger", state::hunger);
         f.add_field_method_get("looking_at", movement::looking_at);
-        f.add_field_method_get("open_container", container::open_container);
         f.add_field_method_get("pathfinder", movement::pathfinder);
         f.add_field_method_get("position", movement::position);
         f.add_field_method_get("score", state::score);
@@ -41,16 +40,15 @@ impl UserData for Client {
     }
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
+        m.add_async_method("goto", movement::goto);
         m.add_async_method("mine", interaction::mine);
         m.add_async_method("open_container_at", container::open_container_at);
         m.add_async_method("set_client_information", state::set_client_information);
         m.add_method("best_tool_for_block", world::best_tool_for_block);
-        m.add_method("block_names_to_states", world::block_names_to_states);
         m.add_method("chat", chat);
         m.add_method("disconnect", disconnect);
         m.add_method("find_blocks", world::find_blocks);
         m.add_method("find_entities", world::find_entities);
-        m.add_method("get_block_from_state", world::get_block_from_state);
         m.add_method("get_block_state", world::get_block_state);
         m.add_method("get_fluid_state", world::get_fluid_state);
         m.add_method("set_held_slot", container::set_held_slot);
@@ -58,7 +56,6 @@ impl UserData for Client {
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
         m.add_method_mut("attack", interaction::attack);
         m.add_method_mut("block_interact", interaction::block_interact);
-        m.add_method_mut("goto", movement::goto);
         m.add_method_mut("jump", movement::jump);
         m.add_method_mut("look_at", movement::look_at);
         m.add_method_mut("open_inventory", container::open_inventory);
