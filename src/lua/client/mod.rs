@@ -26,6 +26,7 @@ impl UserData for Client {
         f.add_field_method_get("air_supply", state::air_supply);
         f.add_field_method_get("direction", movement::direction);
         f.add_field_method_get("eye_position", movement::eye_position);
+        f.add_field_method_get("has_attack_cooldown", interaction::has_attack_cooldown);
         f.add_field_method_get("health", state::health);
         f.add_field_method_get("held_item", container::held_item);
         f.add_field_method_get("held_slot", container::held_slot);
@@ -46,6 +47,7 @@ impl UserData for Client {
         m.add_method("best_tool_for_block", world::best_tool_for_block);
         m.add_method("block_names_to_states", world::block_names_to_states);
         m.add_method("chat", chat);
+        m.add_method("disconnect", disconnect);
         m.add_method("find_blocks", world::find_blocks);
         m.add_method("find_entities", world::find_entities);
         m.add_method("get_block_from_state", world::get_block_from_state);
@@ -68,6 +70,16 @@ impl UserData for Client {
     }
 }
 
+fn chat(_lua: &Lua, client: &Client, message: String) -> Result<()> {
+    client.inner.as_ref().unwrap().chat(&message);
+    Ok(())
+}
+
+fn disconnect(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
+    client.inner.as_ref().unwrap().disconnect();
+    Ok(())
+}
+
 fn tab_list(lua: &Lua, client: &Client) -> Result<Table> {
     let tab_list = lua.create_table()?;
     for (uuid, player_info) in client.inner.as_ref().unwrap().tab_list() {
@@ -86,9 +98,4 @@ fn tab_list(lua: &Lua, client: &Client) -> Result<Table> {
 
 fn uuid(_lua: &Lua, client: &Client) -> Result<String> {
     Ok(client.inner.as_ref().unwrap().uuid().to_string())
-}
-
-fn chat(_lua: &Lua, client: &Client, message: String) -> Result<()> {
-    client.inner.as_ref().unwrap().chat(&message);
-    Ok(())
 }

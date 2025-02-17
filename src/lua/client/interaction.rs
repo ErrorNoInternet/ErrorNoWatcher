@@ -21,6 +21,10 @@ pub fn block_interact(_lua: &Lua, client: &mut Client, position: Vec3) -> Result
     Ok(())
 }
 
+pub fn has_attack_cooldown(_lua: &Lua, client: &Client) -> Result<bool> {
+    Ok(client.inner.as_ref().unwrap().has_attack_cooldown())
+}
+
 pub async fn mine(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Result<()> {
     #[allow(clippy::cast_possible_truncation)]
     client
