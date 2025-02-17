@@ -10,6 +10,7 @@ use super::{
 use azalea::{
     Client as AzaleaClient,
     entity::metadata::{AirSupply, Score},
+    interact::HitResultComponent,
 };
 use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
 
@@ -46,6 +47,30 @@ impl UserData for Client {
             Ok(Hunger {
                 food: h.food,
                 saturation: h.saturation,
+            })
+        });
+
+        f.add_field_method_get("looking_at", |lua, this| {
+            let hr = this
+                .inner
+                .as_ref()
+                .unwrap()
+                .component::<HitResultComponent>();
+            Ok(if hr.miss {
+                None
+            } else {
+                let result = lua.create_table()?;
+                result.set(
+                    "position",
+                    Vec3 {
+                        x: f64::from(hr.block_pos.x),
+                        y: f64::from(hr.block_pos.y),
+                        z: f64::from(hr.block_pos.z),
+                    },
+                )?;
+                result.set("inside", hr.inside)?;
+                result.set("world_border", hr.world_border)?;
+                Some(result)
             })
         });
 
