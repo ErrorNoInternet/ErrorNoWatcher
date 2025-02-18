@@ -18,9 +18,13 @@ impl IntoLua for Direction {
 impl FromLua for Direction {
     fn from_lua(value: Value, _lua: &Lua) -> Result<Self> {
         if let Value::Table(table) = value {
-            Ok(Self {
-                x: table.get("x")?,
-                y: table.get("y")?,
+            Ok(if let (Ok(x), Ok(y)) = (table.get(1), table.get(2)) {
+                Self { x, y }
+            } else {
+                Self {
+                    x: table.get("x")?,
+                    y: table.get("y")?,
+                }
             })
         } else {
             Err(mlua::Error::FromLuaConversionError {

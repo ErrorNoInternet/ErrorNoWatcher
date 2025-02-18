@@ -19,18 +19,28 @@ impl IntoLua for Vec3 {
 
 impl FromLua for Vec3 {
     fn from_lua(value: Value, _lua: &Lua) -> Result<Self> {
-        if let Value::Table(table) = value {
-            Ok(Self {
-                x: table.get("x")?,
-                y: table.get("y")?,
-                z: table.get("z")?,
-            })
-        } else {
-            Err(mlua::Error::FromLuaConversionError {
+        match value {
+            Value::Table(table) => Ok(
+                if let (Ok(x), Ok(y), Ok(z)) = (table.get(1), table.get(2), table.get(3)) {
+                    Self { x, y, z }
+                } else {
+                    Self {
+                        x: table.get("x")?,
+                        y: table.get("y")?,
+                        z: table.get("z")?,
+                    }
+                },
+            ),
+            Value::Vector(vector) => Ok(Self {
+                x: vector.x().into(),
+                y: vector.y().into(),
+                z: vector.z().into(),
+            }),
+            _ => Err(mlua::Error::FromLuaConversionError {
                 from: value.type_name(),
                 to: "Vec3".to_string(),
                 message: None,
-            })
+            }),
         }
     }
 }
