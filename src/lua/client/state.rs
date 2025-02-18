@@ -1,4 +1,4 @@
-use super::{Client, Hunger};
+use super::Client;
 use azalea::{
     ClientInformation,
     entity::metadata::{AirSupply, Score},
@@ -13,12 +13,13 @@ pub fn health(_lua: &Lua, client: &Client) -> Result<f32> {
     Ok(client.inner.as_ref().unwrap().health())
 }
 
-pub fn hunger(_lua: &Lua, client: &Client) -> Result<Hunger> {
+pub fn hunger(lua: &Lua, client: &Client) -> Result<Table> {
     let h = client.inner.as_ref().unwrap().hunger();
-    Ok(Hunger {
-        food: h.food,
-        saturation: h.saturation,
-    })
+
+    let hunger = lua.create_table()?;
+    hunger.set("food", h.food)?;
+    hunger.set("saturation", h.saturation)?;
+    Ok(hunger)
 }
 
 pub fn score(_lua: &Lua, client: &Client) -> Result<i32> {

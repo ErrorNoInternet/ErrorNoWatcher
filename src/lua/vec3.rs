@@ -28,7 +28,7 @@ impl FromLua for Vec3 {
         } else {
             Err(mlua::Error::FromLuaConversionError {
                 from: value.type_name(),
-                to: "Position".to_string(),
+                to: "Vec3".to_string(),
                 message: None,
             })
         }

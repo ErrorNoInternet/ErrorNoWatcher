@@ -1,4 +1,4 @@
-use super::{Client, Entity, FluidState, Vec3};
+use super::{Client, Vec3};
 use azalea::{
     BlockPos,
     auto_tool::AutoToolClientExt,
@@ -52,7 +52,7 @@ pub fn find_blocks(
         .collect())
 }
 
-pub fn find_entities(_lua: &Lua, client: &Client, filter_fn: Function) -> Result<Vec<Entity>> {
+pub fn find_entities(lua: &Lua, client: &Client, filter_fn: Function) -> Result<Vec<Table>> {
     let mut matched = Vec::new();
 
     let mut ecs = client.inner.as_ref().unwrap().ecs.lock();
@@ -65,19 +65,21 @@ pub fn find_entities(_lua: &Lua, client: &Client, filter_fn: Function) -> Result
     ), Without<Dead>>();
 
     for (&id, uuid, kind, position, custom_name) in query.iter(&ecs) {
-        let entity = Entity {
-            id: id.0,
-            uuid: uuid.to_string(),
-            kind: kind.to_string(),
-            position: Vec3 {
+        let entity = lua.create_table()?;
+        entity.set("id", id.0)?;
+        entity.set("uuid", uuid.to_string())?;
+        entity.set("kind", kind.to_string())?;
+        entity.set(
+            "position",
+            Vec3 {
                 x: position.x,
                 y: position.y,
                 z: position.z,
             },
-            custom_name: custom_name.as_ref().map(ToString::to_string),
-        };
+        )?;
+        entity.set("custom_name", custom_name.as_ref().map(ToString::to_string))?;
 
-        if filter_fn.call::<bool>(entity.clone())? {
+        if filter_fn.call::<bool>(&entity)? {
             matched.push(entity);
         }
     }
@@ -101,22 +103,28 @@ pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Op
         .map(|b| b.id))
 }
 
-pub fn get_fluid_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Option<FluidState>> {
+pub fn get_fluid_state(lua: &Lua, client: &Client, position: Vec3) -> Result<Option<Table>> {
     #[allow(clippy::cast_possible_truncation)]
-    Ok(client
-        .inner
-        .as_ref()
-        .unwrap()
-        .world()
-        .read()
-        .get_fluid_state(&BlockPos::new(
-            position.x as i32,
-            position.y as i32,
-            position.z as i32,
-        ))
-        .map(|f| FluidState {
-            kind: f.kind as u8,
-            amount: f.amount,
-            falling: f.falling,
-        }))
+    Ok(
+        if let Some(fs) = client
+            .inner
+            .as_ref()
+            .unwrap()
+            .world()
+            .read()
+            .get_fluid_state(&BlockPos::new(
+                position.x as i32,
+                position.y as i32,
+                position.z as i32,
+            ))
+        {
+            let fluid_state = lua.create_table()?;
+            fluid_state.set("kind", fs.kind as u8)?;
+            fluid_state.set("amount", fs.amount)?;
+            fluid_state.set("falling", fs.falling)?;
+            Some(fluid_state)
+        } else {
+            None
+        },
+    )
 }

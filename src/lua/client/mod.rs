@@ -8,9 +8,6 @@ use super::{
     container::item_stack::ItemStack,
     container::{Container, ContainerRef},
     direction::Direction,
-    entity::Entity,
-    fluid_state::FluidState,
-    hunger::Hunger,
     vec3::Vec3,
 };
 use azalea::Client as AzaleaClient;

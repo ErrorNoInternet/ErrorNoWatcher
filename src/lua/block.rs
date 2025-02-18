@@ -2,54 +2,7 @@ use azalea::blocks::{
     Block as AzaleaBlock, BlockState,
     properties::{ChestType, Facing, LightLevel},
 };
-use mlua::{FromLua, Function, IntoLua, Lua, Result, Table, Value};
-
-#[derive(Clone)]
-pub struct Block {
-    pub id: String,
-    pub friction: f32,
-    pub jump_factor: f32,
-    pub destroy_time: f32,
-    pub explosion_resistance: f32,
-    pub requires_correct_tool_for_drops: bool,
-}
-
-impl IntoLua for Block {
-    fn into_lua(self, lua: &Lua) -> Result<Value> {
-        let table = lua.create_table()?;
-        table.set("id", self.id)?;
-        table.set("friction", self.friction)?;
-        table.set("jump_factor", self.jump_factor)?;
-        table.set("destroy_time", self.destroy_time)?;
-        table.set("explosion_resistance", self.explosion_resistance)?;
-        table.set(
-            "requires_correct_tool_for_drops",
-            self.requires_correct_tool_for_drops,
-        )?;
-        Ok(Value::Table(table))
-    }
-}
-
-impl FromLua for Block {
-    fn from_lua(value: Value, _lua: &Lua) -> Result<Self> {
-        if let Value::Table(table) = value {
-            Ok(Self {
-                id: table.get("id")?,
-                friction: table.get("friction")?,
-                jump_factor: table.get("jump_factor")?,
-                destroy_time: table.get("destroy_time")?,
-                explosion_resistance: table.get("explosion_resistance")?,
-                requires_correct_tool_for_drops: table.get("requires_correct_tool_for_drops")?,
-            })
-        } else {
-            Err(mlua::Error::FromLuaConversionError {
-                from: value.type_name(),
-                to: "Block".to_string(),
-                message: None,
-            })
-        }
-    }
-}
+use mlua::{Function, Lua, Result, Table};
 
 pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
     globals.set(
@@ -61,21 +14,24 @@ pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
     Ok(())
 }
 
-pub fn get_block_from_state(_lua: &Lua, state: u32) -> Result<Option<Block>> {
+pub fn get_block_from_state(lua: &Lua, state: u32) -> Result<Option<Table>> {
     let Ok(state) = BlockState::try_from(state) else {
         return Ok(None);
     };
-    let block: Box<dyn AzaleaBlock> = state.into();
-    let behavior = block.behavior();
+    let b: Box<dyn AzaleaBlock> = state.into();
+    let bh = b.behavior();
 
-    Ok(Some(Block {
-        id: block.id().to_string(),
-        friction: behavior.friction,
-        jump_factor: behavior.jump_factor,
-        destroy_time: behavior.destroy_time,
-        explosion_resistance: behavior.explosion_resistance,
-        requires_correct_tool_for_drops: behavior.requires_correct_tool_for_drops,
-    }))
+    let block = lua.create_table()?;
+    block.set("id", b.id())?;
+    block.set("friction", bh.friction)?;
+    block.set("jump_factor", bh.jump_factor)?;
+    block.set("destroy_time", bh.destroy_time)?;
+    block.set("explosion_resistance", bh.explosion_resistance)?;
+    block.set(
+        "requires_correct_tool_for_drops",
+        bh.requires_correct_tool_for_drops,
+    )?;
+    Ok(Some(block))
 }
 
 pub fn get_block_states(
