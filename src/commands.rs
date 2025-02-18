@@ -19,14 +19,22 @@ pub struct CommandSource {
 
 impl CommandSource {
     pub fn reply(&self, message: &str) {
-        let response = if self.message.is_whisper()
-            && let Some(username) = self.message.username()
+        for chunk in message
+            .chars()
+            .collect::<Vec<char>>()
+            .chunks(236)
+            .map(|chars| chars.iter().collect::<String>())
         {
-            &format!("/w {username} {message}")
-        } else {
-            message
-        };
-        self.client.chat(response);
+            self.client.chat(
+                &(if self.message.is_whisper()
+                    && let Some(username) = self.message.username()
+                {
+                    format!("/w {username} {chunk}")
+                } else {
+                    chunk
+                }),
+            );
+        }
     }
 
     pub fn _entity(&mut self) -> Option<Entity> {
