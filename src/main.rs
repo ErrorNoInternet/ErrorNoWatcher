@@ -14,6 +14,8 @@ use futures::lock::Mutex;
 use mlua::Lua;
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
+const DEFAULT_SCRIPT_PATH: &str = "errornowatcher.lua";
+
 #[derive(Default, Clone, Component)]
 pub struct State {
     lua: Lua,
@@ -24,14 +26,22 @@ pub struct State {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = arguments::Arguments::parse();
-    let script_path = args.script.unwrap_or(PathBuf::from("errornowatcher.lua"));
+    let script_path = args.script.unwrap_or(PathBuf::from(DEFAULT_SCRIPT_PATH));
 
     let lua = Lua::new();
-    lua.load(std::fs::read_to_string(&script_path)?).exec()?;
+    lua.load(
+        std::fs::read_to_string(&script_path)
+            .expect(&(DEFAULT_SCRIPT_PATH.to_owned() + " should be in current directory")),
+    )
+    .exec()?;
 
     let globals = lua.globals();
-    let server = globals.get::<String>("SERVER")?;
-    let username = globals.get::<String>("USERNAME")?;
+    let server = globals
+        .get::<String>("SERVER")
+        .expect("SERVER should be in lua globals");
+    let username = globals
+        .get::<String>("USERNAME")
+        .expect("USERNAME should be in lua globals");
 
     globals.set("script_path", script_path)?;
     lua::register_functions(&lua, &globals)?;

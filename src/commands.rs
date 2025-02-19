@@ -9,7 +9,7 @@ use azalea::{
 use bevy_ecs::{entity::Entity, query::With};
 use futures::lock::Mutex;
 
-pub type Ctx<'a> = CommandContext<Mutex<CommandSource>>;
+pub type Ctx = CommandContext<Mutex<CommandSource>>;
 
 pub struct CommandSource {
     pub client: Client,

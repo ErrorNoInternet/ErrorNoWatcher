@@ -1,6 +1,7 @@
 use super::{Client, Direction, Vec3};
 use azalea::{
     BlockPos, BotClientExt, LookAtEvent, SprintDirection, WalkDirection,
+    entity::Position,
     interact::HitResultComponent,
     pathfinder::{
         ExecutingPath, GotoEvent, Pathfinder, PathfinderClientExt,
@@ -187,7 +188,7 @@ pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
 }
 
 pub fn position(_lua: &Lua, client: &Client) -> Result<Vec3> {
-    let p = client.position();
+    let p = client.component::<Position>();
     Ok(Vec3 {
         x: p.x,
         y: p.y,
