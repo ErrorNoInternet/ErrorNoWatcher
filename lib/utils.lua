@@ -12,6 +12,10 @@ function get_player(name)
 	end)[1]
 end
 
+function distance(p1, p2)
+	return math.sqrt((p2.x - p1.x) ^ 2 + (p2.y - p1.y) ^ 2 + (p2.z - p1.z) ^ 2)
+end
+
 function dump(object)
 	if type(object) == "table" then
 		local string = "{ "
