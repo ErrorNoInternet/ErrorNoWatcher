@@ -5,16 +5,34 @@ mod state;
 mod world;
 
 use super::{
-    container::item_stack::ItemStack,
-    container::{Container, ContainerRef},
+    container::{Container, ContainerRef, item_stack::ItemStack},
     direction::Direction,
     vec3::Vec3,
 };
 use azalea::Client as AzaleaClient;
 use mlua::{Lua, Result, Table, UserData, UserDataFields, UserDataMethods};
+use std::ops::{Deref, DerefMut};
 
 pub struct Client {
     pub inner: Option<AzaleaClient>,
+}
+
+impl Deref for Client {
+    type Target = AzaleaClient;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner
+            .as_ref()
+            .expect("should have received init event")
+    }
+}
+
+impl DerefMut for Client {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.inner
+            .as_mut()
+            .expect("should have received init event")
+    }
 }
 
 impl UserData for Client {
@@ -65,18 +83,18 @@ impl UserData for Client {
 }
 
 fn chat(_lua: &Lua, client: &Client, message: String) -> Result<()> {
-    client.inner.as_ref().unwrap().chat(&message);
+    client.chat(&message);
     Ok(())
 }
 
 fn disconnect(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
-    client.inner.as_ref().unwrap().disconnect();
+    client.disconnect();
     Ok(())
 }
 
 fn tab_list(lua: &Lua, client: &Client) -> Result<Table> {
     let tab_list = lua.create_table()?;
-    for (uuid, player_info) in client.inner.as_ref().unwrap().tab_list() {
+    for (uuid, player_info) in client.tab_list() {
         let player = lua.create_table()?;
         player.set("gamemode", player_info.gamemode.name())?;
         player.set("latency", player_info.latency)?;
@@ -91,5 +109,5 @@ fn tab_list(lua: &Lua, client: &Client) -> Result<Table> {
 }
 
 fn uuid(_lua: &Lua, client: &Client) -> Result<String> {
-    Ok(client.inner.as_ref().unwrap().uuid().to_string())
+    Ok(client.uuid().to_string())
 }

@@ -1,6 +1,6 @@
 use super::{Client, Direction, Vec3};
 use azalea::{
-    BlockPos, BotClientExt, Client as AzaleaClient, SprintDirection, WalkDirection,
+    BlockPos, BotClientExt, SprintDirection, WalkDirection,
     interact::HitResultComponent,
     pathfinder::{
         ExecutingPath, GotoEvent, Pathfinder, PathfinderClientExt,
@@ -10,12 +10,12 @@ use azalea::{
 use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
 
 pub fn direction(_lua: &Lua, client: &Client) -> Result<Direction> {
-    let d = client.inner.as_ref().unwrap().direction();
+    let d = client.direction();
     Ok(Direction { x: d.0, y: d.1 })
 }
 
 pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
-    let p = client.inner.as_ref().unwrap().eye_position();
+    let p = client.eye_position();
     Ok(Vec3 {
         x: p.x,
         y: p.y,
@@ -28,7 +28,7 @@ pub async fn goto(
     client: UserDataRef<Client>,
     (data, metadata): (Value, Option<Table>),
 ) -> Result<()> {
-    fn g(client: &AzaleaClient, without_mining: bool, goal: impl Goal + Send + Sync + 'static) {
+    fn g(client: &Client, without_mining: bool, goal: impl Goal + Send + Sync + 'static) {
         if without_mining {
             client.goto_without_mining(goal);
         } else {
@@ -41,7 +41,6 @@ pub async fn goto(
         to: "Table".to_string(),
         message: None,
     };
-    let client = client.inner.as_ref().unwrap();
     let (goal_type, without_mining) = metadata
         .map(|t| {
             (
@@ -57,7 +56,7 @@ pub async fn goto(
             let t = data.as_table().ok_or(error)?;
             let p = Vec3::from_lua(t.get("position")?, &lua)?;
             g(
-                client,
+                &client,
                 without_mining,
                 RadiusGoal {
                     pos: azalea::Vec3::new(p.x, p.y, p.z),
@@ -68,7 +67,7 @@ pub async fn goto(
         2 => {
             let p = Vec3::from_lua(data, &lua)?;
             g(
-                client,
+                &client,
                 without_mining,
                 ReachBlockPosGoal {
                     pos: BlockPos::new(p.x as i32, p.y as i32, p.z as i32),
@@ -79,7 +78,7 @@ pub async fn goto(
         3 => {
             let t = data.as_table().ok_or(error)?;
             g(
-                client,
+                &client,
                 without_mining,
                 XZGoal {
                     x: t.get("x")?,
@@ -88,7 +87,7 @@ pub async fn goto(
             );
         }
         4 => g(
-            client,
+            &client,
             without_mining,
             YGoal {
                 y: data.as_integer().ok_or(error)?,
@@ -97,7 +96,7 @@ pub async fn goto(
         _ => {
             let p = Vec3::from_lua(data, &lua)?;
             g(
-                client,
+                &client,
                 without_mining,
                 BlockPosGoal(BlockPos::new(p.x as i32, p.y as i32, p.z as i32)),
             );
@@ -114,16 +113,12 @@ pub async fn goto(
 }
 
 pub fn jump(_lua: &Lua, client: &mut Client, _: ()) -> Result<()> {
-    client.inner.as_mut().unwrap().jump();
+    client.jump();
     Ok(())
 }
 
 pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
-    let hr = client
-        .inner
-        .as_ref()
-        .unwrap()
-        .component::<HitResultComponent>();
+    let hr = client.component::<HitResultComponent>();
     Ok(if hr.miss {
         None
     } else {
@@ -143,16 +138,11 @@ pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
 }
 
 pub fn look_at(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
-    client
-        .inner
-        .as_mut()
-        .unwrap()
-        .look_at(azalea::Vec3::new(position.x, position.y, position.z));
+    client.look_at(azalea::Vec3::new(position.x, position.y, position.z));
     Ok(())
 }
 
 pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
-    let client = client.inner.as_ref().unwrap();
     let pathfinder = lua.create_table()?;
     pathfinder.set(
         "is_calculating",
@@ -183,7 +173,7 @@ pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
 }
 
 pub fn position(_lua: &Lua, client: &Client) -> Result<Vec3> {
-    let p = client.inner.as_ref().unwrap().position();
+    let p = client.position();
     Ok(Vec3 {
         x: p.x,
         y: p.y,
@@ -192,21 +182,17 @@ pub fn position(_lua: &Lua, client: &Client) -> Result<Vec3> {
 }
 
 pub fn set_direction(_lua: &Lua, client: &mut Client, direction: (f32, f32)) -> Result<()> {
-    client
-        .inner
-        .as_mut()
-        .unwrap()
-        .set_direction(direction.0, direction.1);
+    client.set_direction(direction.0, direction.1);
     Ok(())
 }
 
 pub fn set_jumping(_lua: &Lua, client: &mut Client, jumping: bool) -> Result<()> {
-    client.inner.as_mut().unwrap().set_jumping(jumping);
+    client.set_jumping(jumping);
     Ok(())
 }
 
 pub fn sprint(_lua: &Lua, client: &mut Client, direction: u8) -> Result<()> {
-    client.inner.as_mut().unwrap().sprint(match direction {
+    client.sprint(match direction {
         5 => SprintDirection::ForwardRight,
         6 => SprintDirection::ForwardLeft,
         _ => SprintDirection::Forward,
@@ -215,12 +201,12 @@ pub fn sprint(_lua: &Lua, client: &mut Client, direction: u8) -> Result<()> {
 }
 
 pub fn stop_pathfinding(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
-    client.inner.as_ref().unwrap().stop_pathfinding();
+    client.stop_pathfinding();
     Ok(())
 }
 
 pub fn walk(_lua: &Lua, client: &mut Client, direction: u8) -> Result<()> {
-    client.inner.as_mut().unwrap().walk(match direction {
+    client.walk(match direction {
         1 => WalkDirection::Forward,
         2 => WalkDirection::Backward,
         3 => WalkDirection::Left,

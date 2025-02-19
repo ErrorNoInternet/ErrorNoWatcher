@@ -10,11 +10,7 @@ use azalea::{
 use mlua::{Function, Lua, Result, Table};
 
 pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Result<Table> {
-    let tr = client
-        .inner
-        .as_ref()
-        .unwrap()
-        .best_tool_in_hotbar_for_block(BlockState { id: block_state });
+    let tr = client.best_tool_in_hotbar_for_block(BlockState { id: block_state });
 
     let tool_result = lua.create_table()?;
     tool_result.set("index", tr.index)?;
@@ -29,9 +25,6 @@ pub fn find_blocks(
 ) -> Result<Vec<Vec3>> {
     #[allow(clippy::cast_possible_truncation)]
     Ok(client
-        .inner
-        .as_ref()
-        .unwrap()
         .world()
         .read()
         .find_blocks(
@@ -55,7 +48,7 @@ pub fn find_blocks(
 pub fn find_entities(lua: &Lua, client: &Client, filter_fn: Function) -> Result<Vec<Table>> {
     let mut matched = Vec::new();
 
-    let mut ecs = client.inner.as_ref().unwrap().ecs.lock();
+    let mut ecs = client.ecs.lock();
     let mut query = ecs.query_filtered::<(
         &MinecraftEntityId,
         &EntityUuid,
@@ -90,9 +83,6 @@ pub fn find_entities(lua: &Lua, client: &Client, filter_fn: Function) -> Result<
 pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Option<u16>> {
     #[allow(clippy::cast_possible_truncation)]
     Ok(client
-        .inner
-        .as_ref()
-        .unwrap()
         .world()
         .read()
         .get_block_state(&BlockPos::new(
@@ -106,18 +96,11 @@ pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Op
 pub fn get_fluid_state(lua: &Lua, client: &Client, position: Vec3) -> Result<Option<Table>> {
     #[allow(clippy::cast_possible_truncation)]
     Ok(
-        if let Some(fs) = client
-            .inner
-            .as_ref()
-            .unwrap()
-            .world()
-            .read()
-            .get_fluid_state(&BlockPos::new(
-                position.x as i32,
-                position.y as i32,
-                position.z as i32,
-            ))
-        {
+        if let Some(fs) = client.world().read().get_fluid_state(&BlockPos::new(
+            position.x as i32,
+            position.y as i32,
+            position.z as i32,
+        )) {
             let fluid_state = lua.create_table()?;
             fluid_state.set("kind", fs.kind as u8)?;
             fluid_state.set("amount", fs.amount)?;
