@@ -55,7 +55,9 @@ impl UserData for Client {
     }
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
+        m.add_async_method("attack", interaction::attack);
         m.add_async_method("goto", movement::goto);
+        m.add_async_method("look_at", movement::look_at);
         m.add_async_method("mine", interaction::mine);
         m.add_async_method("open_container_at", container::open_container_at);
         m.add_async_method("set_client_information", state::set_client_information);
@@ -69,10 +71,8 @@ impl UserData for Client {
         m.add_method("set_held_slot", container::set_held_slot);
         m.add_method("set_mining", interaction::set_mining);
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
-        m.add_method_mut("attack", interaction::attack);
         m.add_method_mut("block_interact", interaction::block_interact);
         m.add_method_mut("jump", movement::jump);
-        m.add_method_mut("look_at", movement::look_at);
         m.add_method_mut("open_inventory", container::open_inventory);
         m.add_method_mut("set_direction", movement::set_direction);
         m.add_method_mut("set_jumping", movement::set_jumping);

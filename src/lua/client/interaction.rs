@@ -1,9 +1,21 @@
 use super::{Client, Vec3};
-use azalea::{BlockPos, BotClientExt, world::MinecraftEntityId};
+use azalea::{BlockPos, BotClientExt, attack::AttackEvent, world::MinecraftEntityId};
 use mlua::{Lua, Result, UserDataRef};
 
-pub fn attack(_lua: &Lua, client: &mut Client, entity_id: u32) -> Result<()> {
-    client.attack(MinecraftEntityId(entity_id));
+pub async fn attack(_lua: Lua, client: UserDataRef<Client>, entity_id: u32) -> Result<()> {
+    client.clone().attack(MinecraftEntityId(entity_id));
+
+    while client.get_tick_broadcaster().recv().await.is_ok() {
+        if client
+            .ecs
+            .lock()
+            .get::<AttackEvent>(client.entity)
+            .is_none()
+        {
+            break;
+        }
+    }
+
     Ok(())
 }
 
