@@ -11,16 +11,19 @@ use clap::Parser;
 use commands::{CommandSource, register};
 use events::handle_event;
 use futures::lock::Mutex;
-use mlua::Lua;
-use std::{net::SocketAddr, path::PathBuf, sync::Arc};
+use mlua::{Function, Lua};
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 
 const DEFAULT_SCRIPT_PATH: &str = "errornowatcher.lua";
+
+type ListenerMap = HashMap<String, Vec<(String, Function)>>;
 
 #[derive(Default, Clone, Component)]
 pub struct State {
     lua: Lua,
-    http_address: Option<SocketAddr>,
+    event_listeners: Arc<Mutex<ListenerMap>>,
     commands: Arc<CommandDispatcher<Mutex<CommandSource>>>,
+    http_address: Option<SocketAddr>,
 }
 
 #[tokio::main]
@@ -53,8 +56,9 @@ async fn main() -> anyhow::Result<()> {
         .set_handler(handle_event)
         .set_state(State {
             lua,
-            http_address: args.http_address,
+            event_listeners: Arc::new(Mutex::new(HashMap::new())),
             commands: Arc::new(commands),
+            http_address: args.http_address,
         })
         .start(
             if username.contains('@') {

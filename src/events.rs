@@ -1,9 +1,14 @@
-use crate::{State, commands::CommandSource, http::serve, lua};
+use crate::{
+    State,
+    commands::CommandSource,
+    http::serve,
+    lua::{self, events::register_functions},
+};
 use azalea::prelude::*;
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
-use mlua::{Function, IntoLuaMulti, Table};
+use mlua::{Function, IntoLuaMulti};
 use tokio::net::TcpListener;
 
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
@@ -32,23 +37,22 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                     CommandSource {
                         client,
                         message,
-                        state,
+                        state: state.clone(),
                     }
                     .reply(&format!("{error:?}"));
                 }
             }
 
-            call_lua_handler(&globals, "on_chat", ());
+            call_listeners(&state, "chat", formatted_message.to_string()).await;
         }
         Event::Death(Some(packet)) => {
             let death_data = state.lua.create_table()?;
             death_data.set("message", packet.message.to_string())?;
             death_data.set("player_id", packet.player_id)?;
-
-            call_lua_handler(&globals, "on_death", death_data);
+            call_listeners(&state, "death", death_data).await;
         }
-        Event::Tick => call_lua_handler(&globals, "on_tick", ()),
-        Event::Login => call_lua_handler(&globals, "on_login", ()),
+        Event::Login => call_listeners(&state, "login", ()).await,
+        Event::Tick => call_listeners(&state, "tick", ()).await,
         Event::Init => {
             debug!("client initialized");
 
@@ -58,7 +62,12 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                     inner: Some(client),
                 },
             )?;
-            call_lua_handler(&globals, "on_init", ());
+            register_functions(&state.lua, &globals, state.clone()).await?;
+            if let Ok(on_init) = globals.get::<Function>("on_init")
+                && let Err(error) = on_init.call::<()>(())
+            {
+                error!("failed to call lua on_init function: {error:?}");
+            }
 
             if let Some(address) = state.http_address {
                 let listener = TcpListener::bind(address).await.map_err(|error| {
@@ -77,7 +86,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                         async move { serve(request, request_state).await }
                     });
 
-                    tokio::task::spawn(async move {
+                    tokio::spawn(async move {
                         if let Err(error) = http1::Builder::new()
                             .serve_connection(TokioIo::new(stream), service)
                             .await
@@ -94,10 +103,12 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
     Ok(())
 }
 
-fn call_lua_handler<T: IntoLuaMulti>(globals: &Table, name: &str, data: T) {
-    if let Ok(handler) = globals.get::<Function>(name)
-        && let Err(error) = handler.call::<()>(data)
-    {
-        error!("failed to call lua {name} function: {error:?}");
+async fn call_listeners<T: Clone + IntoLuaMulti>(state: &State, event_type: &str, data: T) {
+    if let Some(listeners) = state.event_listeners.lock().await.get(event_type) {
+        for (_, listener) in listeners {
+            if let Err(error) = listener.call_async::<()>(data.clone()).await {
+                error!("failed to call lua event listener for {event_type}: {error:?}");
+            }
+        }
     }
 }

@@ -2,6 +2,7 @@ pub mod block;
 pub mod client;
 pub mod container;
 pub mod direction;
+pub mod events;
 pub mod logging;
 pub mod vec3;
 
@@ -26,8 +27,8 @@ pub fn register_functions(lua: &Lua, globals: &Table) -> mlua::Result<()> {
         })?,
     )?;
 
-    logging::register_functions(lua, globals)?;
-    block::register_functions(lua, globals)
+    block::register_functions(lua, globals)?;
+    logging::register_functions(lua, globals)
 }
 
 pub fn reload(lua: &Lua) -> Result<(), Error> {
