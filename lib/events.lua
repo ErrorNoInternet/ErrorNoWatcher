@@ -23,7 +23,7 @@ function on_init()
 	end)
 
 	add_listener("death", function()
-		warn("player died!")
+		warn(string.format("player died at %.1f %.1f %.1f!", client.position.x, client.position.y, client.position.z))
 	end, "warn_player_died")
 
 	add_listener("tick", log_player_positions)
