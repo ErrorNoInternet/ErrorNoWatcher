@@ -1,3 +1,2 @@
-/target
-/scripts
-/bot_configuration.toml
+.luarc.json
+target
