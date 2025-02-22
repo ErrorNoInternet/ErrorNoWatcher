@@ -4,6 +4,7 @@ pub mod container;
 pub mod direction;
 pub mod events;
 pub mod logging;
+pub mod player;
 pub mod vec3;
 
 use mlua::{Lua, Table};

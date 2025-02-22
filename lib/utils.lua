@@ -1,8 +1,8 @@
 function get_player(name)
 	local target_uuid = nil
-	for uuid, player in client.tab_list do
+	for _, player in client.tab_list do
 		if player.name == name then
-			target_uuid = uuid
+			target_uuid = player.uuid
 			break
 		end
 	end

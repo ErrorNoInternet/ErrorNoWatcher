@@ -7,10 +7,11 @@ mod world;
 use super::{
     container::{Container, ContainerRef, item_stack::ItemStack},
     direction::Direction,
+    player::Player,
     vec3::Vec3,
 };
 use azalea::Client as AzaleaClient;
-use mlua::{Lua, Result, Table, UserData, UserDataFields, UserDataMethods};
+use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
 use std::ops::{Deref, DerefMut};
 
 pub struct Client {
@@ -92,18 +93,10 @@ fn disconnect(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
     Ok(())
 }
 
-fn tab_list(lua: &Lua, client: &Client) -> Result<Table> {
-    let tab_list = lua.create_table()?;
-    for (uuid, player_info) in client.tab_list() {
-        let player = lua.create_table()?;
-        player.set("gamemode", player_info.gamemode.name())?;
-        player.set("latency", player_info.latency)?;
-        player.set("name", player_info.profile.name)?;
-        player.set(
-            "display_name",
-            player_info.display_name.map(|n| n.to_string()),
-        )?;
-        tab_list.set(uuid.to_string(), player)?;
+fn tab_list(_lua: &Lua, client: &Client) -> Result<Vec<Player>> {
+    let mut tab_list = Vec::new();
+    for (_, player_info) in client.tab_list() {
+        tab_list.push(Player::from(player_info));
     }
     Ok(tab_list)
 }
