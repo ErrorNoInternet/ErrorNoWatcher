@@ -2,11 +2,7 @@ use crate::{
     State,
     lua::{eval, exec, reload},
 };
-use azalea::{
-    GameProfileComponent, brigadier::prelude::*, chat::ChatPacket, entity::metadata::Player,
-    prelude::*,
-};
-use bevy_ecs::{entity::Entity, query::With};
+use azalea::{brigadier::prelude::*, chat::ChatPacket, prelude::*};
 use futures::lock::Mutex;
 
 pub type Ctx = CommandContext<Mutex<CommandSource>>;
@@ -36,14 +32,6 @@ impl CommandSource {
             );
         }
     }
-
-    pub fn _entity(&mut self) -> Option<Entity> {
-        let username = self.message.username()?;
-        self.client
-            .entity_by::<With<Player>, &GameProfileComponent>(|profile: &&GameProfileComponent| {
-                profile.name == username
-            })
-    }
 }
 
 pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
@@ -51,7 +39,10 @@ pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
         let source = ctx.source.clone();
         tokio::spawn(async move {
             let source = source.lock().await;
-            source.reply(&format!("{:?}", reload(&source.state.lua)));
+            source.reply(&format!(
+                "{:?}",
+                reload(&source.state.lua, source.message.username())
+            ));
         });
         1
     }));
@@ -62,7 +53,10 @@ pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
             let code = get_string(ctx, "code").expect("argument should exist");
             tokio::spawn(async move {
                 let source = source.lock().await;
-                source.reply(&format!("{:?}", eval(&source.state.lua, &code).await));
+                source.reply(&format!(
+                    "{:?}",
+                    eval(&source.state.lua, &code, source.message.username()).await
+                ));
             });
             1
         })),
@@ -74,7 +68,10 @@ pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
             let code = get_string(ctx, "code").expect("argument should exist");
             tokio::spawn(async move {
                 let source = source.lock().await;
-                source.reply(&format!("{:?}", exec(&source.state.lua, &code).await));
+                source.reply(&format!(
+                    "{:?}",
+                    exec(&source.state.lua, &code, source.message.username()).await
+                ));
             });
             1
         })),

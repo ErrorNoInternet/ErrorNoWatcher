@@ -12,7 +12,7 @@ pub async fn serve(
     let path = request.uri().path().to_owned();
 
     Ok(match (request.method(), path.as_str()) {
-        (&Method::POST, "/reload") => match reload(&state.lua) {
+        (&Method::POST, "/reload") => match reload(&state.lua, None) {
             Ok(()) => Response::new(empty()),
             Err(error) => status_code_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -24,8 +24,8 @@ pub async fn serve(
             let bytes = request.into_body().collect().await?.to_bytes();
             match std::str::from_utf8(&bytes) {
                 Ok(code) => Response::new(full(match path.as_str() {
-                    "/eval" => format!("{:#?}", eval(&state.lua, code).await),
-                    "/exec" => format!("{:#?}", exec(&state.lua, code).await),
+                    "/eval" => format!("{:#?}", eval(&state.lua, code, None).await),
+                    "/exec" => format!("{:#?}", exec(&state.lua, code, None).await),
                     _ => unreachable!(),
                 })),
                 Err(error) => status_code_response(
