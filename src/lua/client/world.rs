@@ -1,10 +1,13 @@
-use super::{Client, Vec3};
+use super::{Client, Direction, Vec3};
 use azalea::{
     BlockPos,
     auto_tool::AutoToolClientExt,
     blocks::{BlockState, BlockStates},
     ecs::query::Without,
-    entity::{Dead, EntityKind, EntityUuid, Position as AzaleaPosition, metadata::CustomName},
+    entity::{
+        Dead, EntityKind, EntityUuid, LookDirection, Position as AzaleaPosition,
+        metadata::CustomName,
+    },
     world::{InstanceName, MinecraftEntityId},
 };
 use mlua::{Function, Lua, Result, Table};
@@ -54,15 +57,17 @@ pub fn find_entities(lua: &Lua, client: &Client, filter_fn: Function) -> Result<
         &EntityUuid,
         &EntityKind,
         &AzaleaPosition,
+        &LookDirection,
         &CustomName,
     ), Without<Dead>>();
 
-    for (&id, uuid, kind, position, custom_name) in query.iter(&ecs) {
+    for (&id, uuid, kind, position, direction, custom_name) in query.iter(&ecs) {
         let entity = lua.create_table()?;
         entity.set("id", id.0)?;
         entity.set("uuid", uuid.to_string())?;
         entity.set("kind", kind.to_string())?;
         entity.set("position", Vec3::from(position))?;
+        entity.set("direction", Direction::from(direction))?;
         entity.set("custom_name", custom_name.as_ref().map(ToString::to_string))?;
 
         if filter_fn.call::<bool>(&entity)? {

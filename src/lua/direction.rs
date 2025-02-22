@@ -1,9 +1,19 @@
+use azalea::entity::LookDirection;
 use mlua::{FromLua, IntoLua, Lua, Result, Value};
 
 #[derive(Clone)]
 pub struct Direction {
     pub x: f32,
     pub y: f32,
+}
+
+impl From<&LookDirection> for Direction {
+    fn from(d: &LookDirection) -> Self {
+        Self {
+            x: d.x_rot,
+            y: d.y_rot,
+        }
+    }
 }
 
 impl IntoLua for Direction {

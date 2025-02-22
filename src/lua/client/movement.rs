@@ -175,8 +175,8 @@ pub fn position(_lua: &Lua, client: &Client) -> Result<Vec3> {
     Ok(Vec3::from(&client.component::<Position>()))
 }
 
-pub fn set_direction(_lua: &Lua, client: &mut Client, direction: (f32, f32)) -> Result<()> {
-    client.set_direction(direction.0, direction.1);
+pub fn set_direction(_lua: &Lua, client: &mut Client, direction: Direction) -> Result<()> {
+    client.set_direction(direction.y, direction.x);
     Ok(())
 }
 
