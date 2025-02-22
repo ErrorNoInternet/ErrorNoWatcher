@@ -40,6 +40,7 @@ impl UserData for Client {
     fn add_fields<F: UserDataFields<Self>>(f: &mut F) {
         f.add_field_method_get("air_supply", state::air_supply);
         f.add_field_method_get("container", container::container);
+        f.add_field_method_get("dimension", world::dimension);
         f.add_field_method_get("direction", movement::direction);
         f.add_field_method_get("eye_position", movement::eye_position);
         f.add_field_method_get("has_attack_cooldown", interaction::has_attack_cooldown);

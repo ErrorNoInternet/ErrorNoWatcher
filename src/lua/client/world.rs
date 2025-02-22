@@ -5,7 +5,7 @@ use azalea::{
     blocks::{BlockState, BlockStates},
     ecs::query::Without,
     entity::{Dead, EntityKind, EntityUuid, Position as AzaleaPosition, metadata::CustomName},
-    world::MinecraftEntityId,
+    world::{InstanceName, MinecraftEntityId},
 };
 use mlua::{Function, Lua, Result, Table};
 
@@ -16,6 +16,10 @@ pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Resu
     tool_result.set("index", tr.index)?;
     tool_result.set("percentage_per_tick", tr.percentage_per_tick)?;
     Ok(tool_result)
+}
+
+pub fn dimension(_lua: &Lua, client: &Client) -> Result<String> {
+    Ok(client.component::<InstanceName>().to_string())
 }
 
 pub fn find_blocks(
