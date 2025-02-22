@@ -5,7 +5,7 @@ use azalea::{
     blocks::{BlockState, BlockStates},
     ecs::query::Without,
     entity::{
-        Dead, EntityKind, EntityUuid, LookDirection, Position as AzaleaPosition,
+        Dead, EntityKind, EntityUuid, LookDirection, Pose, Position as AzaleaPosition,
         metadata::CustomName,
     },
     world::{InstanceName, MinecraftEntityId},
@@ -56,19 +56,21 @@ pub fn find_entities(lua: &Lua, client: &Client, filter_fn: Function) -> Result<
         &MinecraftEntityId,
         &EntityUuid,
         &EntityKind,
+        &CustomName,
         &AzaleaPosition,
         &LookDirection,
-        &CustomName,
+        &Pose,
     ), Without<Dead>>();
 
-    for (&id, uuid, kind, position, direction, custom_name) in query.iter(&ecs) {
+    for (&id, uuid, kind, custom_name, position, direction, pose) in query.iter(&ecs) {
         let entity = lua.create_table()?;
         entity.set("id", id.0)?;
         entity.set("uuid", uuid.to_string())?;
         entity.set("kind", kind.to_string())?;
+        entity.set("custom_name", custom_name.as_ref().map(ToString::to_string))?;
         entity.set("position", Vec3::from(position))?;
         entity.set("direction", Direction::from(direction))?;
-        entity.set("custom_name", custom_name.as_ref().map(ToString::to_string))?;
+        entity.set("pose", *pose as u8)?;
 
         if filter_fn.call::<bool>(&entity)? {
             matched.push(entity);
