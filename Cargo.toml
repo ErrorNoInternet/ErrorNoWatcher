@@ -23,5 +23,5 @@ http-body-util = "0"
 hyper = { version = "1", features = ["server"] }
 hyper-util = "0"
 log = { version = "0" }
-mlua = { version = "0", features = ["async", "luau", "send"] }
+mlua = { version = "0", features = ["async", "luau-jit", "send"] }
 tokio = { version = "1", features = ["macros"] }
