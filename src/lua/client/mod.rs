@@ -72,6 +72,7 @@ impl UserData for Client {
         m.add_method("get_fluid_state", world::get_fluid_state);
         m.add_method("set_held_slot", container::set_held_slot);
         m.add_method("set_mining", interaction::set_mining);
+        m.add_method("set_position", movement::set_position);
         m.add_method("set_sneaking", movement::set_sneaking);
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
         m.add_method("stop_sleeping", movement::stop_sleeping);

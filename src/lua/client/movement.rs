@@ -185,6 +185,15 @@ pub fn set_jumping(_lua: &Lua, client: &mut Client, jumping: bool) -> Result<()>
     Ok(())
 }
 
+pub fn set_position(_lua: &Lua, client: &Client, new_position: Vec3) -> Result<()> {
+    let mut ecs = client.ecs.lock();
+    let mut position = client.query::<&mut Position>(&mut ecs);
+    position.x = new_position.x;
+    position.y = new_position.y;
+    position.z = new_position.z;
+    Ok(())
+}
+
 pub fn set_sneaking(_lua: &Lua, client: &Client, sneaking: bool) -> Result<()> {
     if let Err(error) = client.write_packet(ServerboundPlayerCommand {
         id: client.component::<MinecraftEntityId>(),
