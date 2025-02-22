@@ -7,7 +7,9 @@ use azalea::{
         ExecutingPath, GotoEvent, Pathfinder, PathfinderClientExt,
         goals::{BlockPosGoal, Goal, RadiusGoal, ReachBlockPosGoal, XZGoal, YGoal},
     },
+    protocol::packets::game::{ServerboundPlayerCommand, s_player_command::Action},
 };
+use log::error;
 use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
 
 pub fn direction(_lua: &Lua, client: &Client) -> Result<Direction> {
@@ -182,6 +184,21 @@ pub fn set_jumping(_lua: &Lua, client: &mut Client, jumping: bool) -> Result<()>
     Ok(())
 }
 
+pub fn set_sneaking(_lua: &Lua, client: &Client, sneaking: bool) -> Result<()> {
+    if let Err(error) = client.write_packet(ServerboundPlayerCommand {
+        id: client.entity.index(),
+        action: if sneaking {
+            Action::PressShiftKey
+        } else {
+            Action::ReleaseShiftKey
+        },
+        data: 0,
+    }) {
+        error!("failed to send PlayerCommand packet: {error:?}");
+    }
+    Ok(())
+}
+
 pub fn sprint(_lua: &Lua, client: &mut Client, direction: u8) -> Result<()> {
     client.sprint(match direction {
         5 => SprintDirection::ForwardRight,
@@ -193,6 +210,17 @@ pub fn sprint(_lua: &Lua, client: &mut Client, direction: u8) -> Result<()> {
 
 pub fn stop_pathfinding(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
     client.stop_pathfinding();
+    Ok(())
+}
+
+pub fn stop_sleeping(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
+    if let Err(error) = client.write_packet(ServerboundPlayerCommand {
+        id: client.entity.index(),
+        action: Action::StopSleeping,
+        data: 0,
+    }) {
+        error!("failed to send PlayerCommand packet: {error:?}");
+    }
     Ok(())
 }
 
