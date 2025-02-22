@@ -5,6 +5,7 @@ pub mod direction;
 pub mod events;
 pub mod logging;
 pub mod player;
+pub mod utils;
 pub mod vec3;
 
 use mlua::{Lua, Table};
@@ -30,7 +31,8 @@ pub fn register_functions(lua: &Lua, globals: &Table) -> mlua::Result<()> {
     )?;
 
     block::register_functions(lua, globals)?;
-    logging::register_functions(lua, globals)
+    logging::register_functions(lua, globals)?;
+    utils::register_functions(lua, globals)
 }
 
 pub fn reload(lua: &Lua, sender: Option<String>) -> Result<(), Error> {
