@@ -2,7 +2,7 @@ use crate::{
     State,
     commands::CommandSource,
     http::serve,
-    lua::{self, events::register_functions},
+    lua::{self, events::register_functions, player::Player},
 };
 use azalea::prelude::*;
 use hyper::{server::conn::http1, service::service_fn};
@@ -16,6 +16,9 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
     let globals = state.lua.globals();
 
     match event {
+        Event::AddPlayer(player_info) => {
+            call_listeners(&state, "add_player", Player::from(player_info)).await;
+        }
         Event::Chat(message) => {
             let formatted_message = message.message();
             info!("{}", formatted_message.to_ansi());
@@ -51,8 +54,17 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             death_data.set("player_id", packet.player_id)?;
             call_listeners(&state, "death", death_data).await;
         }
+        Event::Disconnect(message) => {
+            call_listeners(&state, "disconnect", message.map(|m| m.to_string())).await;
+        }
         Event::Login => call_listeners(&state, "login", ()).await,
+        Event::RemovePlayer(player_info) => {
+            call_listeners(&state, "remove_player", Player::from(player_info)).await;
+        }
         Event::Tick => call_listeners(&state, "tick", ()).await,
+        Event::UpdatePlayer(player_info) => {
+            call_listeners(&state, "update_player", Player::from(player_info)).await;
+        }
         Event::Init => {
             debug!("client initialized");
 
