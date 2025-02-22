@@ -6,7 +6,7 @@ use crate::{
     http::serve,
     lua::{self, events::register_functions, player::Player},
 };
-use azalea::prelude::*;
+use azalea::{prelude::*, protocol::packets::game::ClientboundGamePacket};
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
@@ -51,10 +51,10 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             call_listeners(&state, "chat", formatted_message.to_string()).await;
         }
         Event::Death(Some(packet)) => {
-            let death_data = state.lua.create_table()?;
-            death_data.set("message", packet.message.to_string())?;
-            death_data.set("player_id", packet.player_id.0)?;
-            call_listeners(&state, "death", death_data).await;
+            let table = state.lua.create_table()?;
+            table.set("message", packet.message.to_string())?;
+            table.set("player_id", packet.player_id.0)?;
+            call_listeners(&state, "death", table).await;
         }
         Event::Disconnect(message) => {
             call_listeners(&state, "disconnect", message.map(|m| m.to_string())).await;
@@ -67,6 +67,14 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
         Event::Tick => call_listeners(&state, "tick", ()).await,
         Event::UpdatePlayer(player_info) => {
             call_listeners(&state, "update_player", Player::from(player_info)).await;
+        }
+        Event::Packet(packet) => {
+            if let ClientboundGamePacket::SetPassengers(packet) = packet.as_ref() {
+                let table = state.lua.create_table()?;
+                table.set("vehicle", packet.vehicle)?;
+                table.set("passengers", &*packet.passengers)?;
+                call_listeners(&state, "set_passengers", table).await;
+            }
         }
         Event::Init => {
             debug!("client initialized");
