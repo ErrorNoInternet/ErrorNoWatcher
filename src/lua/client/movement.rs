@@ -8,6 +8,7 @@ use azalea::{
         goals::{BlockPosGoal, Goal, RadiusGoal, ReachBlockPosGoal, XZGoal, YGoal},
     },
     protocol::packets::game::{ServerboundPlayerCommand, s_player_command::Action},
+    world::MinecraftEntityId,
 };
 use log::error;
 use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
@@ -186,7 +187,7 @@ pub fn set_jumping(_lua: &Lua, client: &mut Client, jumping: bool) -> Result<()>
 
 pub fn set_sneaking(_lua: &Lua, client: &Client, sneaking: bool) -> Result<()> {
     if let Err(error) = client.write_packet(ServerboundPlayerCommand {
-        id: client.entity.index(),
+        id: client.component::<MinecraftEntityId>(),
         action: if sneaking {
             Action::PressShiftKey
         } else {
@@ -215,7 +216,7 @@ pub fn stop_pathfinding(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
 
 pub fn stop_sleeping(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
     if let Err(error) = client.write_packet(ServerboundPlayerCommand {
-        id: client.entity.index(),
+        id: client.component::<MinecraftEntityId>(),
         action: Action::StopSleeping,
         data: 0,
     }) {

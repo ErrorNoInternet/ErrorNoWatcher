@@ -8,7 +8,7 @@ use azalea::{
 use log::error;
 use mlua::{Lua, Result, UserDataRef};
 
-pub async fn attack(_lua: Lua, client: UserDataRef<Client>, entity_id: u32) -> Result<()> {
+pub async fn attack(_lua: Lua, client: UserDataRef<Client>, entity_id: i32) -> Result<()> {
     client.clone().attack(MinecraftEntityId(entity_id));
 
     while client.get_tick_broadcaster().recv().await.is_ok() {
