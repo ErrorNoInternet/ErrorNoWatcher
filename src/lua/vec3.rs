@@ -1,3 +1,4 @@
+use azalea::{BlockPos, entity::Position};
 use mlua::{FromLua, IntoLua, Lua, Result, Value};
 
 #[derive(Clone)]
@@ -14,6 +15,36 @@ impl IntoLua for Vec3 {
         table.set("y", self.y)?;
         table.set("z", self.z)?;
         Ok(Value::Table(table))
+    }
+}
+
+impl From<azalea::Vec3> for Vec3 {
+    fn from(v: azalea::Vec3) -> Self {
+        Self {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+        }
+    }
+}
+
+impl From<&Position> for Vec3 {
+    fn from(p: &Position) -> Self {
+        Self {
+            x: p.x,
+            y: p.y,
+            z: p.z,
+        }
+    }
+}
+
+impl From<BlockPos> for Vec3 {
+    fn from(p: BlockPos) -> Self {
+        Vec3 {
+            x: f64::from(p.x),
+            y: f64::from(p.y),
+            z: f64::from(p.z),
+        }
     }
 }
 

@@ -37,11 +37,7 @@ pub fn find_blocks(
                 set: block_states.iter().map(|&id| BlockState { id }).collect(),
             },
         )
-        .map(|p| Vec3 {
-            x: f64::from(p.x),
-            y: f64::from(p.y),
-            z: f64::from(p.z),
-        })
+        .map(Vec3::from)
         .collect())
 }
 
@@ -62,14 +58,7 @@ pub fn find_entities(lua: &Lua, client: &Client, filter_fn: Function) -> Result<
         entity.set("id", id.0)?;
         entity.set("uuid", uuid.to_string())?;
         entity.set("kind", kind.to_string())?;
-        entity.set(
-            "position",
-            Vec3 {
-                x: position.x,
-                y: position.y,
-                z: position.z,
-            },
-        )?;
+        entity.set("position", Vec3::from(position))?;
         entity.set("custom_name", custom_name.as_ref().map(ToString::to_string))?;
 
         if filter_fn.call::<bool>(&entity)? {

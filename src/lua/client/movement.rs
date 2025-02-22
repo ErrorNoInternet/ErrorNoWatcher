@@ -16,12 +16,7 @@ pub fn direction(_lua: &Lua, client: &Client) -> Result<Direction> {
 }
 
 pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
-    let p = client.eye_position();
-    Ok(Vec3 {
-        x: p.x,
-        y: p.y,
-        z: p.z,
-    })
+    Ok(Vec3::from(client.eye_position()))
 }
 
 pub async fn goto(
@@ -119,21 +114,14 @@ pub fn jump(_lua: &Lua, client: &mut Client, _: ()) -> Result<()> {
 }
 
 pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
-    let hr = client.component::<HitResultComponent>();
-    Ok(if hr.miss {
+    let r = client.component::<HitResultComponent>();
+    Ok(if r.miss {
         None
     } else {
         let result = lua.create_table()?;
-        result.set(
-            "position",
-            Vec3 {
-                x: f64::from(hr.block_pos.x),
-                y: f64::from(hr.block_pos.y),
-                z: f64::from(hr.block_pos.z),
-            },
-        )?;
-        result.set("inside", hr.inside)?;
-        result.set("world_border", hr.world_border)?;
+        result.set("position", Vec3::from(r.block_pos))?;
+        result.set("inside", r.inside)?;
+        result.set("world_border", r.world_border)?;
         Some(result)
     })
 }
@@ -166,14 +154,7 @@ pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
     pathfinder.set(
         "is_executing",
         if let Some(p) = client.get_component::<ExecutingPath>() {
-            pathfinder.set(
-                "last_reached_node",
-                Vec3 {
-                    x: f64::from(p.last_reached_node.x),
-                    y: f64::from(p.last_reached_node.y),
-                    z: f64::from(p.last_reached_node.z),
-                },
-            )?;
+            pathfinder.set("last_reached_node", Vec3::from(p.last_reached_node))?;
             pathfinder.set(
                 "last_node_reach_elapsed",
                 p.last_node_reached_at.elapsed().as_millis(),
@@ -188,12 +169,7 @@ pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
 }
 
 pub fn position(_lua: &Lua, client: &Client) -> Result<Vec3> {
-    let p = client.component::<Position>();
-    Ok(Vec3 {
-        x: p.x,
-        y: p.y,
-        z: p.z,
-    })
+    Ok(Vec3::from(&client.component::<Position>()))
 }
 
 pub fn set_direction(_lua: &Lua, client: &mut Client, direction: (f32, f32)) -> Result<()> {
