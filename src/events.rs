@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use crate::{
     State,
     commands::CommandSource,
@@ -56,6 +58,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
         }
         Event::Disconnect(message) => {
             call_listeners(&state, "disconnect", message.map(|m| m.to_string())).await;
+            exit(1)
         }
         Event::Login => call_listeners(&state, "login", ()).await,
         Event::RemovePlayer(player_info) => {
