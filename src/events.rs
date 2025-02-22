@@ -25,7 +25,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             let formatted_message = message.message();
             info!("{}", formatted_message.to_ansi());
 
-            let owners = globals.get::<Vec<String>>("OWNERS")?;
+            let owners = globals.get::<Vec<String>>("Owners")?;
             if message.is_whisper()
                 && let (Some(sender), content) = message.split_sender_and_content()
                 && owners.contains(&sender)

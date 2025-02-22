@@ -40,11 +40,11 @@ async fn main() -> anyhow::Result<()> {
 
     let globals = lua.globals();
     let server = globals
-        .get::<String>("SERVER")
-        .expect("SERVER should be in lua globals");
+        .get::<String>("Server")
+        .expect("Server should be in lua globals");
     let username = globals
-        .get::<String>("USERNAME")
-        .expect("USERNAME should be in lua globals");
+        .get::<String>("Username")
+        .expect("Username should be in lua globals");
 
     globals.set("script_path", script_path)?;
     lua::register_functions(&lua, &globals)?;

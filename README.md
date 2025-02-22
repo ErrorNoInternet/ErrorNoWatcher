@@ -21,4 +21,4 @@ $ cargo build --release
 $ # ./target/release/errornowatcher
 ```
 
-Make sure the `SERVER` and `USERNAME` globals are defined in `errornowatcher.lua` before starting the bot.
+Make sure the `Server` and `Username` globals are defined in `errornowatcher.lua` before starting the bot.

@@ -1,6 +1,6 @@
-SERVER = "localhost"
-USERNAME = "ErrorNoWatcher"
-OWNERS = { "ErrorNoInternet" }
+Server = "localhost"
+Username = "ErrorNoWatcher"
+Owners = { "ErrorNoInternet" }
 
 for _, module in
 	{
