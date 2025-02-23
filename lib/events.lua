@@ -14,17 +14,17 @@ function log_player_positions()
 	end
 end
 
-function on_init()
+add_listener("init", function()
 	info("client initialized, setting information...")
 	client:set_client_information({ view_distance = 16 })
+end)
 
-	add_listener("login", function()
-		info("player successfully logged in!")
-	end)
+add_listener("login", function()
+	info("player successfully logged in!")
+end)
 
-	add_listener("death", function()
-		warn(string.format("player died at %.1f %.1f %.1f!", client.position.x, client.position.y, client.position.z))
-	end, "warn_player_died")
+add_listener("death", function()
+	warn(string.format("player died at %.1f %.1f %.1f!", client.position.x, client.position.y, client.position.z))
+end, "warn_player_died")
 
-	add_listener("tick", log_player_positions)
-end
+add_listener("tick", log_player_positions)

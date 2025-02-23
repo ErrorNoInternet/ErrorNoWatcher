@@ -4,19 +4,18 @@ use crate::{
     State,
     commands::CommandSource,
     http::serve,
-    lua::{self, events::register_functions, player::Player},
+    lua::{self, player::Player},
 };
 use azalea::{prelude::*, protocol::packets::game::ClientboundGamePacket};
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
-use mlua::{Function, IntoLuaMulti};
+use mlua::IntoLuaMulti;
 use tokio::net::TcpListener;
 
 #[allow(clippy::too_many_lines)]
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
     state.lua.gc_stop();
-    let globals = state.lua.globals();
 
     match event {
         Event::AddPlayer(player_info) => {
@@ -26,7 +25,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             let formatted_message = message.message();
             info!("{}", formatted_message.to_ansi());
 
-            let owners = globals.get::<Vec<String>>("Owners")?;
+            let owners = state.lua.globals().get::<Vec<String>>("Owners")?;
             if message.is_whisper()
                 && let (Some(sender), content) = message.split_sender_and_content()
                 && owners.contains(&sender)
@@ -78,20 +77,16 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             }
         }
         Event::Init => {
-            debug!("client initialized");
+            debug!("received initialize event");
 
+            let globals = state.lua.globals();
             globals.set(
                 "client",
                 lua::client::Client {
                     inner: Some(client),
                 },
             )?;
-            register_functions(&state.lua, &globals, state.clone()).await?;
-            if let Ok(on_init) = globals.get::<Function>("on_init")
-                && let Err(error) = on_init.call::<()>(())
-            {
-                error!("failed to call lua on_init function: {error:?}");
-            }
+            call_listeners(&state, "init", ()).await;
 
             if let Some(address) = state.http_address {
                 let listener = TcpListener::bind(address).await.map_err(|error| {

@@ -8,7 +8,10 @@ pub mod player;
 pub mod system;
 pub mod vec3;
 
+use crate::ListenerMap;
+use futures::lock::Mutex;
 use mlua::{Lua, Table};
+use std::{io, sync::Arc, time::Duration};
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -18,19 +21,24 @@ pub enum Error {
     ExecChunk(mlua::Error),
     LoadChunk(mlua::Error),
     MissingPath(mlua::Error),
-    ReadFile(std::io::Error),
+    ReadFile(io::Error),
 }
 
-pub fn register_functions(lua: &Lua, globals: &Table) -> mlua::Result<()> {
+pub fn register_functions(
+    lua: &Lua,
+    globals: &Table,
+    event_listeners: Arc<Mutex<ListenerMap>>,
+) -> mlua::Result<()> {
     globals.set(
         "sleep",
         lua.create_async_function(async |_, duration: u64| {
-            tokio::time::sleep(std::time::Duration::from_millis(duration)).await;
+            tokio::time::sleep(Duration::from_millis(duration)).await;
             Ok(())
         })?,
     )?;
 
     block::register_functions(lua, globals)?;
+    events::register_functions(lua, globals, event_listeners)?;
     logging::register_functions(lua, globals)?;
     system::register_functions(lua, globals)
 }
