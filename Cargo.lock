@@ -1180,6 +1180,8 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "azalea",
+ "bevy_app",
+ "bevy_log",
  "clap",
  "futures",
  "http-body-util",

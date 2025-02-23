@@ -17,6 +17,8 @@ strip = true
 [dependencies]
 anyhow = "1"
 azalea = { git = "https://github.com/azalea-rs/azalea.git" }
+bevy_app = "0"
+bevy_log = "0"
 clap = { version = "4", features = ["derive"] }
 futures = "0"
 http-body-util = "0"
