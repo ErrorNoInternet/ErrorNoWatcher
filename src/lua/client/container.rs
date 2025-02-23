@@ -1,10 +1,12 @@
 use super::{Client, Container, ContainerRef, ItemStack, Vec3};
 use azalea::{
-    BlockPos, inventory::Inventory, prelude::ContainerClientExt,
+    BlockPos,
+    inventory::{Inventory, Menu, Player, SlotList},
+    prelude::ContainerClientExt,
     protocol::packets::game::ServerboundSetCarriedItem,
 };
 use log::error;
-use mlua::{Lua, Result, UserDataRef};
+use mlua::{Lua, Result, Table, UserDataRef};
 
 pub fn container(_lua: &Lua, client: &Client) -> Result<Option<ContainerRef>> {
     Ok(client
@@ -13,13 +15,44 @@ pub fn container(_lua: &Lua, client: &Client) -> Result<Option<ContainerRef>> {
 }
 
 pub fn held_item(_lua: &Lua, client: &Client) -> Result<ItemStack> {
-    Ok(ItemStack {
-        inner: client.component::<Inventory>().held_item(),
-    })
+    Ok(ItemStack::from(client.component::<Inventory>().held_item()))
 }
 
 pub fn held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
     Ok(client.component::<Inventory>().selected_hotbar_slot)
+}
+
+pub fn menu(lua: &Lua, client: &Client) -> Result<Table> {
+    fn from_slot_list<const N: usize>(s: SlotList<N>) -> Vec<ItemStack> {
+        s.iter()
+            .map(|i| ItemStack::from(i.to_owned()))
+            .collect::<Vec<_>>()
+    }
+
+    let table = lua.create_table()?;
+    match client.menu() {
+        Menu::Player(Player {
+            craft_result,
+            craft,
+            armor,
+            inventory,
+            offhand,
+        }) => {
+            table.set("type", 0)?;
+            table.set("craft_result", ItemStack::from(craft_result))?;
+            table.set("craft", from_slot_list(craft))?;
+            table.set("armor", from_slot_list(armor))?;
+            table.set("inventory", from_slot_list(inventory))?;
+            table.set("offhand", ItemStack::from(offhand))?;
+        }
+        Menu::Generic9x6 { contents, player } => {
+            table.set("type", 6)?;
+            table.set("contents", from_slot_list(contents))?;
+            table.set("player", from_slot_list(player))?;
+        }
+        _ => (),
+    }
+    Ok(table)
 }
 
 pub async fn open_container_at(

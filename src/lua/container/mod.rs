@@ -25,7 +25,7 @@ impl UserData for Container {
         f.add_field_method_get("contents", |_, this| {
             Ok(this.inner.contents().map(|v| {
                 v.iter()
-                    .map(|i| ItemStack { inner: i.clone() })
+                    .map(|i| ItemStack::from(i.to_owned()))
                     .collect::<Vec<_>>()
             }))
         });
@@ -58,7 +58,7 @@ impl UserData for ContainerRef {
         f.add_field_method_get("contents", |_, this| {
             Ok(this.inner.contents().map(|v| {
                 v.iter()
-                    .map(|i| ItemStack { inner: i.clone() })
+                    .map(|i| ItemStack::from(i.to_owned()))
                     .collect::<Vec<_>>()
             }))
         });

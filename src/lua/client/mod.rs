@@ -49,6 +49,7 @@ impl UserData for Client {
         f.add_field_method_get("held_slot", container::held_slot);
         f.add_field_method_get("hunger", state::hunger);
         f.add_field_method_get("looking_at", movement::looking_at);
+        f.add_field_method_get("menu", container::menu);
         f.add_field_method_get("pathfinder", movement::pathfinder);
         f.add_field_method_get("position", movement::position);
         f.add_field_method_get("score", state::score);

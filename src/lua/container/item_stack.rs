@@ -5,6 +5,12 @@ pub struct ItemStack {
     pub inner: azalea::inventory::ItemStack,
 }
 
+impl From<azalea::inventory::ItemStack> for ItemStack {
+    fn from(inner: azalea::inventory::ItemStack) -> Self {
+        Self { inner }
+    }
+}
+
 impl UserData for ItemStack {
     fn add_fields<F: UserDataFields<Self>>(f: &mut F) {
         f.add_field_method_get("is_empty", |_, this| Ok(this.inner.is_empty()));
@@ -38,9 +44,7 @@ impl UserData for ItemStack {
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
         m.add_method_mut("split", |_, this, count: u32| {
-            Ok(ItemStack {
-                inner: this.inner.split(count),
-            })
+            Ok(ItemStack::from(this.inner.split(count)))
         });
         m.add_method_mut("update_empty", |_, this, (): ()| {
             this.inner.update_empty();
