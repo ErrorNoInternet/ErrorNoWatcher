@@ -12,13 +12,9 @@ pub async fn serve(
     let path = request.uri().path().to_owned();
 
     Ok(match (request.method(), path.as_str()) {
-        (&Method::POST, "/reload") => match reload(&state.lua, None) {
-            Ok(()) => Response::new(empty()),
-            Err(error) => status_code_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                full(format!("{error:?}")),
-            ),
-        },
+        (&Method::POST, "/reload") => {
+            Response::new(full(format!("{:#?}", reload(&state.lua, None))))
+        }
 
         (&Method::POST, "/eval" | "/exec") => {
             let bytes = request.into_body().collect().await?.to_bytes();
