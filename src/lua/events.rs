@@ -9,18 +9,19 @@ pub async fn register_functions(lua: &Lua, globals: &Table, state: State) -> Res
         "add_listener",
         lua.create_function(
             move |_, (event_type, callback, id): (String, Function, Option<String>)| {
-                let mut l = block_on(l.lock());
-
-                l.entry(event_type).or_default().push((
-                    id.unwrap_or(callback.info().name.unwrap_or(format!(
-                            "anonymous @ {}",
-                            SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .unwrap_or_default()
-                                .as_millis()
-                        ))),
-                    callback,
-                ));
+                let l = l.clone();
+                tokio::spawn(async move {
+                    l.lock().await.entry(event_type).or_default().push((
+                        id.unwrap_or(callback.info().name.unwrap_or(format!(
+                                "anonymous @ {}",
+                                SystemTime::now()
+                                    .duration_since(UNIX_EPOCH)
+                                    .unwrap_or_default()
+                                    .as_millis()
+                            ))),
+                        callback,
+                    ));
+                });
                 Ok(())
             },
         )?,
@@ -30,18 +31,19 @@ pub async fn register_functions(lua: &Lua, globals: &Table, state: State) -> Res
     globals.set(
         "remove_listener",
         lua.create_function(move |_, (event_type, target_id): (String, String)| {
-            let mut l = block_on(l.lock());
-
-            let empty = if let Some(listeners) = l.get_mut(&event_type) {
-                listeners.retain(|(id, _)| target_id != *id);
-                listeners.is_empty()
-            } else {
-                false
-            };
-            if empty {
-                l.remove(&event_type);
-            }
-
+            let l = l.clone();
+            tokio::spawn(async move {
+                let mut l = l.lock().await;
+                let empty = if let Some(listeners) = l.get_mut(&event_type) {
+                    listeners.retain(|(id, _)| target_id != *id);
+                    listeners.is_empty()
+                } else {
+                    false
+                };
+                if empty {
+                    l.remove(&event_type);
+                }
+            });
             Ok(())
         })?,
     )?;
