@@ -4,7 +4,7 @@ use mlua::{IntoLua, Lua, Result, Value};
 #[derive(Clone)]
 pub struct Player {
     pub display_name: Option<String>,
-    pub gamemode: String,
+    pub gamemode: u8,
     pub latency: i32,
     pub name: String,
     pub uuid: String,
@@ -14,7 +14,7 @@ impl From<PlayerInfo> for Player {
     fn from(p: PlayerInfo) -> Self {
         Self {
             display_name: p.display_name.map(|n| n.to_string()),
-            gamemode: p.gamemode.name().to_owned(),
+            gamemode: p.gamemode.to_id(),
             latency: p.latency,
             name: p.profile.name,
             uuid: p.uuid.to_string(),
