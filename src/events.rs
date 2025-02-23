@@ -13,6 +13,7 @@ use log::{debug, error, info, trace};
 use mlua::{Function, IntoLuaMulti};
 use tokio::net::TcpListener;
 
+#[allow(clippy::too_many_lines)]
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
     state.lua.gc_stop();
     let globals = state.lua.globals();
