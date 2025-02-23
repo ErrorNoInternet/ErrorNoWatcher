@@ -1,5 +1,3 @@
-use std::process::exit;
-
 use crate::{
     State,
     commands::CommandSource,
@@ -11,6 +9,7 @@ use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
 use mlua::IntoLuaMulti;
+use std::process::exit;
 use tokio::net::TcpListener;
 
 #[allow(clippy::too_many_lines)]
