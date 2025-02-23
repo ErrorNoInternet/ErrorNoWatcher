@@ -9,7 +9,7 @@ function log_player_positions()
 			and e.position.z > center.z - radius
 			and e.position.z < center.z + radius
 	end)
-	for _, e in entities do
+	for _, e in ipairs(entities) do
 		client:chat(string.format("%s (%s) at %.1f %.1f %.1f", e.kind, e.id, e.position.x, e.position.y, e.position.z))
 	end
 end

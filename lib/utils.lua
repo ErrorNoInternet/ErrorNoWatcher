@@ -1,6 +1,6 @@
 function get_player(name)
 	local target_uuid = nil
-	for _, player in client.tab_list do
+	for _, player in ipairs(client.tab_list) do
 		if player.name == name then
 			target_uuid = player.uuid
 			break

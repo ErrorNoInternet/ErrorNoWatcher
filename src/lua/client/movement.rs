@@ -22,7 +22,7 @@ pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
     Ok(Vec3::from(client.eye_position()))
 }
 
-pub async fn goto(
+pub async fn go_to(
     lua: Lua,
     client: UserDataRef<Client>,
     (data, metadata): (Value, Option<Table>),
@@ -89,7 +89,7 @@ pub async fn goto(
             &client,
             without_mining,
             YGoal {
-                y: data.as_integer().ok_or(error)?,
+                y: data.as_table().ok_or(error)?.get("y")?,
             },
         ),
         _ => {

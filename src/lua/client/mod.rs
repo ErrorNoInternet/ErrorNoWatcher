@@ -58,7 +58,7 @@ impl UserData for Client {
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
         m.add_async_method("attack", interaction::attack);
-        m.add_async_method("goto", movement::goto);
+        m.add_async_method("go_to", movement::go_to);
         m.add_async_method("look_at", movement::look_at);
         m.add_async_method("mine", interaction::mine);
         m.add_async_method("open_container_at", container::open_container_at);

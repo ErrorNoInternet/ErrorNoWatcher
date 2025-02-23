@@ -1826,15 +1826,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "luau0-src"
-version = "0.12.2+luau660"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d62e6fe44400150a045b8f2a6721a268437d45dc67600f8ca716e2fa3a3cc2fe"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "matchers"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1906,7 +1897,6 @@ dependencies = [
  "bstr",
  "either",
  "futures-util",
- "libloading",
  "mlua-sys",
  "num-traits",
  "parking_lot",
@@ -1921,7 +1911,6 @@ checksum = "1901c1a635a22fe9250ffcc4fcc937c16b47c2e9e71adba8784af8bca1f69594"
 dependencies = [
  "cc",
  "cfg-if",
- "luau0-src",
  "pkg-config",
 ]
 

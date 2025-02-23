@@ -8,10 +8,10 @@ function look_at_player(name)
 	end
 end
 
-function goto_player(name, opts)
+function go_to_player(name, opts)
 	local player = get_player(name)
 	if player then
-		client:goto(player.position, opts)
+		client:go_to(player.position, opts)
 	else
 		client:chat(string.format("/w %s player not found!", sender))
 	end
