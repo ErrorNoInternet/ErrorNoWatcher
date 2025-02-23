@@ -68,14 +68,22 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
         Event::UpdatePlayer(player_info) => {
             call_listeners(&state, "update_player", Player::from(player_info)).await;
         }
-        Event::Packet(packet) => {
-            if let ClientboundGamePacket::SetPassengers(packet) = packet.as_ref() {
+        Event::Packet(packet) => match packet.as_ref() {
+            ClientboundGamePacket::SetPassengers(packet) => {
                 let table = state.lua.create_table()?;
                 table.set("vehicle", packet.vehicle)?;
                 table.set("passengers", &*packet.passengers)?;
                 call_listeners(&state, "set_passengers", table).await;
             }
-        }
+            ClientboundGamePacket::SetHealth(packet) => {
+                let table = state.lua.create_table()?;
+                table.set("food", packet.food)?;
+                table.set("health", packet.health)?;
+                table.set("saturation", packet.saturation)?;
+                call_listeners(&state, "set_health", table).await;
+            }
+            _ => (),
+        },
         Event::Init => {
             debug!("received initialize event");
 
