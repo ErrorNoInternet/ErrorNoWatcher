@@ -15,8 +15,6 @@ use tokio::net::TcpListener;
 
 #[allow(clippy::too_many_lines)]
 pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
-    state.lua.gc_stop();
-
     match event {
         Event::AddPlayer(player_info) => {
             call_listeners(&state, "add_player", Player::from(player_info)).await;
