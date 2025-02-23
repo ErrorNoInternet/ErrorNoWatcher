@@ -17,7 +17,7 @@ function steal(item_name)
 		end
 
 		container = nil
-		while client.open_container do
+		while client.container do
 			sleep(50)
 		end
 	end
