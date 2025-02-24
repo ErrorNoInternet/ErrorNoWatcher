@@ -21,6 +21,7 @@ bevy_app = "0"
 bevy_log = "0"
 clap = { version = "4", features = ["derive"] }
 futures = "0"
+futures-locks = "0"
 http-body-util = "0"
 hyper = { version = "1", features = ["server"] }
 hyper-util = "0"

@@ -1184,6 +1184,7 @@ dependencies = [
  "bevy_log",
  "clap",
  "futures",
+ "futures-locks",
  "http-body-util",
  "hyper",
  "hyper-util",
@@ -1315,6 +1316,17 @@ dependencies = [
  "futures-io",
  "parking",
  "pin-project-lite",
+]
+
+[[package]]
+name = "futures-locks"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45ec6fe3675af967e67c5536c0b9d44e34e6c52f86bedc4ea49c5317b8e94d06"
+dependencies = [
+ "futures-channel",
+ "futures-task",
+ "tokio",
 ]
 
 [[package]]

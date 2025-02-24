@@ -1,16 +1,9 @@
 use crate::ListenerMap;
-use futures::{executor::block_on, lock::Mutex};
+use futures::executor::block_on;
 use mlua::{Function, Lua, Result, Table};
-use std::{
-    sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-pub fn register_functions(
-    lua: &Lua,
-    globals: &Table,
-    event_listeners: Arc<Mutex<ListenerMap>>,
-) -> Result<()> {
+pub fn register_functions(lua: &Lua, globals: &Table, event_listeners: ListenerMap) -> Result<()> {
     let m = event_listeners.clone();
     globals.set(
         "add_listener",
@@ -18,7 +11,7 @@ pub fn register_functions(
             move |_, (event_type, callback, id): (String, Function, Option<String>)| {
                 let m = m.clone();
                 tokio::spawn(async move {
-                    m.lock().await.entry(event_type).or_default().push((
+                    m.write().await.entry(event_type).or_default().push((
                         id.unwrap_or(callback.info().name.unwrap_or(format!(
                                 "anonymous @ {}",
                                 SystemTime::now()
@@ -40,7 +33,7 @@ pub fn register_functions(
         lua.create_function(move |_, (event_type, target_id): (String, String)| {
             let m = m.clone();
             tokio::spawn(async move {
-                let mut m = m.lock().await;
+                let mut m = m.write().await;
                 let empty = if let Some(listeners) = m.get_mut(&event_type) {
                     listeners.retain(|(id, _)| target_id != *id);
                     listeners.is_empty()
@@ -58,7 +51,7 @@ pub fn register_functions(
     globals.set(
         "get_listeners",
         lua.create_function(move |lua, (): ()| {
-            let m = block_on(event_listeners.lock());
+            let m = block_on(event_listeners.read());
 
             let listeners = lua.create_table()?;
             for (event_type, callbacks) in m.iter() {

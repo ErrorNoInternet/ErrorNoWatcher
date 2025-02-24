@@ -123,7 +123,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
 }
 
 async fn call_listeners<T: Clone + IntoLuaMulti>(state: &State, event_type: &str, data: T) {
-    if let Some(listeners) = state.event_listeners.lock().await.get(event_type) {
+    if let Some(listeners) = state.event_listeners.read().await.get(event_type) {
         for (_, listener) in listeners {
             if let Err(error) = listener.call_async::<()>(data.clone()).await {
                 error!("failed to call lua event listener for {event_type}: {error:?}");

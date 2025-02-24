@@ -9,9 +9,8 @@ pub mod system;
 pub mod vec3;
 
 use crate::ListenerMap;
-use futures::lock::Mutex;
 use mlua::{Lua, Table};
-use std::{io, sync::Arc, time::Duration};
+use std::{io, time::Duration};
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -27,7 +26,7 @@ pub enum Error {
 pub fn register_functions(
     lua: &Lua,
     globals: &Table,
-    event_listeners: Arc<Mutex<ListenerMap>>,
+    event_listeners: ListenerMap,
 ) -> mlua::Result<()> {
     globals.set(
         "sleep",

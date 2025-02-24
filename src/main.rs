@@ -17,6 +17,7 @@ use bevy_log::{
 use clap::Parser;
 use commands::{CommandSource, register};
 use futures::lock::Mutex;
+use futures_locks::RwLock;
 use mlua::{Function, Lua};
 use std::{
     collections::HashMap,
@@ -29,12 +30,12 @@ use std::{
 
 const DEFAULT_SCRIPT_PATH: &str = "errornowatcher.lua";
 
-type ListenerMap = HashMap<String, Vec<(String, Function)>>;
+type ListenerMap = Arc<RwLock<HashMap<String, Vec<(String, Function)>>>>;
 
 #[derive(Default, Clone, Component)]
 pub struct State {
     lua: Lua,
-    event_listeners: Arc<Mutex<ListenerMap>>,
+    event_listeners: ListenerMap,
     commands: Arc<CommandDispatcher<Mutex<CommandSource>>>,
     http_address: Option<SocketAddr>,
 }
@@ -44,7 +45,7 @@ async fn main() -> anyhow::Result<()> {
     let args = arguments::Arguments::parse();
 
     let script_path = args.script.unwrap_or(PathBuf::from(DEFAULT_SCRIPT_PATH));
-    let event_listeners = Arc::new(Mutex::new(HashMap::new()));
+    let event_listeners = Arc::new(RwLock::new(HashMap::new()));
 
     let lua = Lua::new();
     let globals = lua.globals();
