@@ -96,32 +96,34 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             )?;
             call_listeners(&state, "init", ()).await;
 
-            if let Some(address) = state.http_address {
-                let listener = TcpListener::bind(address).await.map_err(|error| {
-                    error!("failed to listen on {address}: {error:?}");
-                    error
-                })?;
-                debug!("http server listening on {address}");
+            let Some(address) = state.http_address else {
+                return Ok(());
+            };
 
-                loop {
-                    let (stream, peer) = listener.accept().await?;
-                    trace!("http server got connection from {peer}");
+            let listener = TcpListener::bind(address).await.map_err(|error| {
+                error!("failed to listen on {address}: {error:?}");
+                error
+            })?;
+            debug!("http server listening on {address}");
 
-                    let conn_state = state.clone();
-                    let service = service_fn(move |request| {
-                        let request_state = conn_state.clone();
-                        async move { serve(request, request_state).await }
-                    });
+            loop {
+                let (stream, peer) = listener.accept().await?;
+                trace!("http server got connection from {peer}");
 
-                    tokio::spawn(async move {
-                        if let Err(error) = http1::Builder::new()
-                            .serve_connection(TokioIo::new(stream), service)
-                            .await
-                        {
-                            error!("failed to serve connection: {error:?}");
-                        }
-                    });
-                }
+                let conn_state = state.clone();
+                let service = service_fn(move |request| {
+                    let request_state = conn_state.clone();
+                    async move { serve(request, request_state).await }
+                });
+
+                tokio::spawn(async move {
+                    if let Err(error) = http1::Builder::new()
+                        .serve_connection(TokioIo::new(stream), service)
+                        .await
+                    {
+                        error!("failed to serve connection: {error:?}");
+                    }
+                });
             }
         }
         _ => (),
@@ -132,9 +134,9 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
 
 async fn call_listeners<T: Clone + IntoLuaMulti>(state: &State, event_type: &str, data: T) {
     if let Some(listeners) = state.event_listeners.read().await.get(event_type) {
-        for (_, listener) in listeners {
-            if let Err(error) = listener.call_async::<()>(data.clone()).await {
-                error!("failed to call lua event listener for {event_type}: {error:?}");
+        for (id, callback) in listeners {
+            if let Err(error) = callback.call_async::<()>(data.clone()).await {
+                error!("failed to call lua event listener {id} for {event_type}: {error:?}");
             }
         }
     }

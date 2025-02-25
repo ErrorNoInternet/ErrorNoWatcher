@@ -8,19 +8,23 @@ pub fn register_functions(lua: &Lua, globals: &Table, event_listeners: ListenerM
     globals.set(
         "add_listener",
         lua.create_function(
-            move |_, (event_type, callback, id): (String, Function, Option<String>)| {
+            move |_, (event_type, callback, optional_id): (String, Function, Option<String>)| {
                 let m = m.clone();
+                let id = optional_id.unwrap_or_else(|| {
+                    callback.info().name.unwrap_or(format!(
+                        "anonymous @ {}",
+                        SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_millis()
+                    ))
+                });
                 tokio::spawn(async move {
-                    m.write().await.entry(event_type).or_default().push((
-                        id.unwrap_or(callback.info().name.unwrap_or(format!(
-                                "anonymous @ {}",
-                                SystemTime::now()
-                                    .duration_since(UNIX_EPOCH)
-                                    .unwrap_or_default()
-                                    .as_millis()
-                            ))),
-                        callback,
-                    ));
+                    m.write()
+                        .await
+                        .entry(event_type)
+                        .or_default()
+                        .push((id, callback));
                 });
                 Ok(())
             },

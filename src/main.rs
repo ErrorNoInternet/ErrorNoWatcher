@@ -75,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
                             .append(true)
                             .create(true)
                             .open(log_file)
-                            .expect("should have been able to open log file"),
+                            .expect("log file should be accessible"),
                     )
                     .boxed()
             })
