@@ -48,12 +48,12 @@ pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
                     .args(args.unwrap_or_default().iter())
                     .output()
                 {
-                    Ok(o) => {
-                        let output = lua.create_table()?;
-                        output.set("status", o.status.code())?;
-                        output.set("stdout", o.stdout)?;
-                        output.set("stderr", o.stderr)?;
-                        Some(output)
+                    Ok(output) => {
+                        let table = lua.create_table()?;
+                        table.set("status", output.status.code())?;
+                        table.set("stdout", lua.create_string(output.stdout)?)?;
+                        table.set("stderr", lua.create_string(output.stderr)?)?;
+                        Some(table)
                     }
                     Err(error) => {
                         error!("failed to run system command: {error:?}");
