@@ -15,7 +15,7 @@ use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
 
 pub fn direction(_lua: &Lua, client: &Client) -> Result<Direction> {
     let d = client.direction();
-    Ok(Direction { x: d.0, y: d.1 })
+    Ok(Direction { y: d.0, x: d.1 })
 }
 
 pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
