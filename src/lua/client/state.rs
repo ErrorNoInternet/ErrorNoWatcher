@@ -2,6 +2,7 @@ use super::Client;
 use azalea::{
     ClientInformation,
     entity::metadata::{AirSupply, Score},
+    protocol::common::client_information::ModelCustomization,
 };
 use log::error;
 use mlua::{Lua, Result, Table, UserDataRef};
@@ -30,11 +31,26 @@ pub fn score(_lua: &Lua, client: &Client) -> Result<i32> {
 pub async fn set_client_information(
     _lua: Lua,
     client: UserDataRef<Client>,
-    client_information: Table,
+    ci: Table,
 ) -> Result<()> {
+    let model_customization = if let Some(mc) = ci.get::<Option<Table>>("model_customization")? {
+        ModelCustomization {
+            cape: mc.get("cape")?,
+            jacket: mc.get("jacket")?,
+            left_sleeve: mc.get("left_sleeve")?,
+            right_sleeve: mc.get("right_sleeve")?,
+            left_pants: mc.get("left_pants")?,
+            right_pants: mc.get("right_pants")?,
+            hat: mc.get("hat")?,
+        }
+    } else {
+        ModelCustomization::default()
+    };
     if let Err(error) = client
         .set_client_information(ClientInformation {
-            view_distance: client_information.get("view_distance")?,
+            allows_listing: ci.get("allows_listing")?,
+            model_customization,
+            view_distance: ci.get("view_distance").unwrap_or(8),
             ..ClientInformation::default()
         })
         .await
