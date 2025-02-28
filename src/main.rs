@@ -42,6 +42,9 @@ pub struct State {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    #[cfg(feature = "console-subscriber")]
+    console_subscriber::init();
+
     let args = arguments::Arguments::parse();
 
     let script_path = args.script.unwrap_or(PathBuf::from(DEFAULT_SCRIPT_PATH));
@@ -66,24 +69,28 @@ async fn main() -> anyhow::Result<()> {
     let mut commands = CommandDispatcher::new();
     register(&mut commands);
 
-    let log_plugin = LogPlugin {
-        custom_layer: |_| {
-            env::var("LOG_FILE").ok().map(|log_file| {
-                layer()
-                    .with_writer(
-                        OpenOptions::new()
-                            .append(true)
-                            .create(true)
-                            .open(log_file)
-                            .expect("log file should be accessible"),
-                    )
-                    .boxed()
-            })
-        },
-        ..Default::default()
+    let default_plugins = if cfg!(feature = "console-subscriber") {
+        DefaultPlugins.build().disable::<LogPlugin>()
+    } else {
+        DefaultPlugins.set(LogPlugin {
+            custom_layer: |_| {
+                env::var("LOG_FILE").ok().map(|log_file| {
+                    layer()
+                        .with_writer(
+                            OpenOptions::new()
+                                .append(true)
+                                .create(true)
+                                .open(log_file)
+                                .expect("log file should be accessible"),
+                        )
+                        .boxed()
+                })
+            },
+            ..Default::default()
+        })
     };
     let Err(error) = ClientBuilder::new_without_plugins()
-        .add_plugins(DefaultPlugins.set(log_plugin))
+        .add_plugins(default_plugins)
         .add_plugins(DefaultBotPlugins)
         .set_handler(events::handle_event)
         .set_state(State {
