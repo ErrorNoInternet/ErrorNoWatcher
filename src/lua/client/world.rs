@@ -53,11 +53,9 @@ pub async fn find_entities(
     client: UserDataRef<Client>,
     filter_fn: Function,
 ) -> Result<Vec<Table>> {
-    let mut entities = Vec::new();
-
-    {
+    let entities = {
         let mut ecs = client.ecs.lock();
-        let mut query = ecs.query_filtered::<(
+        ecs.query_filtered::<(
             &MinecraftEntityId,
             &EntityUuid,
             &EntityKind,
@@ -65,25 +63,34 @@ pub async fn find_entities(
             &AzaleaPosition,
             &LookDirection,
             &Pose,
-        ), Without<Dead>>();
-
-        for (id, uuid, kind, custom_name, position, direction, pose) in query.iter(&ecs) {
-            let entity = lua.create_table()?;
-            entity.set("id", id.0)?;
-            entity.set("uuid", uuid.to_string())?;
-            entity.set("kind", kind.to_string())?;
-            entity.set("custom_name", custom_name.as_ref().map(ToString::to_string))?;
-            entity.set("position", Vec3::from(position))?;
-            entity.set("direction", Direction::from(direction))?;
-            entity.set("pose", *pose as u8)?;
-            entities.push(entity);
-        }
-    }
+        ), Without<Dead>>()
+            .iter(&ecs)
+            .map(|(id, uuid, kind, custom_name, position, direction, pose)| {
+                (
+                    id.0,
+                    uuid.to_string(),
+                    kind.to_string(),
+                    custom_name.as_ref().map(ToString::to_string),
+                    Vec3::from(position),
+                    Direction::from(direction),
+                    *pose as u8,
+                )
+            })
+            .collect::<Vec<_>>()
+    };
 
     let mut matched = Vec::new();
-    for entity in entities {
+    for (id, uuid, kind, custom_name, position, direction, pose) in entities {
+        let entity = lua.create_table()?;
+        entity.set("id", id)?;
+        entity.set("uuid", uuid)?;
+        entity.set("kind", kind)?;
+        entity.set("custom_name", custom_name)?;
+        entity.set("position", position)?;
+        entity.set("direction", direction)?;
+        entity.set("pose", pose)?;
         if filter_fn.call_async::<bool>(&entity).await? {
-            matched.push(entity)
+            matched.push(entity);
         }
     }
     Ok(matched)
