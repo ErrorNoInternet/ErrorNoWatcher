@@ -5,7 +5,7 @@ use azalea::{
     interact::HitResultComponent,
     pathfinder::{
         ExecutingPath, GotoEvent, Pathfinder, PathfinderClientExt,
-        goals::{BlockPosGoal, Goal, RadiusGoal, ReachBlockPosGoal, XZGoal, YGoal},
+        goals::{BlockPosGoal, Goal, InverseGoal, RadiusGoal, ReachBlockPosGoal, XZGoal, YGoal},
     },
     protocol::packets::game::{ServerboundPlayerCommand, s_player_command::Action},
     world::MinecraftEntityId,
@@ -27,11 +27,23 @@ pub async fn go_to(
     client: UserDataRef<Client>,
     (data, metadata): (Value, Option<Table>),
 ) -> Result<()> {
-    fn g(client: &Client, without_mining: bool, goal: impl Goal + Send + Sync + 'static) {
-        if without_mining {
+    fn goto_with_options<G: Goal + Send + Sync + 'static>(
+        client: &Client,
+        options: &Table,
+        goal: G,
+    ) {
+        if options.get("without_mining").unwrap_or_default() {
             client.goto_without_mining(goal);
         } else {
             client.goto(goal);
+        }
+    }
+
+    fn goto<G: Goal + Send + Sync + 'static>(client: &Client, options: Table, goal: G) {
+        if options.get("inverse").unwrap_or_default() {
+            goto_with_options(client, &options, InverseGoal(goal));
+        } else {
+            goto_with_options(client, &options, goal);
         }
     }
 
@@ -40,23 +52,23 @@ pub async fn go_to(
         to: "Table".to_string(),
         message: None,
     };
-    let (goal_type, without_mining) = metadata
-        .map(|t| {
-            (
-                t.get("type").unwrap_or_default(),
-                t.get("without_mining").unwrap_or_default(),
-            )
-        })
-        .unwrap_or_default();
+    let (goal_type, options) = if let Some(metadata) = metadata {
+        (
+            metadata.get("type")?,
+            metadata.get("options").unwrap_or(lua.create_table()?),
+        )
+    } else {
+        (0, lua.create_table()?)
+    };
 
     #[allow(clippy::cast_possible_truncation)]
     match goal_type {
         1 => {
             let t = data.as_table().ok_or(error)?;
             let p = Vec3::from_lua(t.get("position")?, &lua)?;
-            g(
+            goto(
                 &client,
-                without_mining,
+                options,
                 RadiusGoal {
                     pos: azalea::Vec3::new(p.x, p.y, p.z),
                     radius: t.get("radius")?,
@@ -65,9 +77,9 @@ pub async fn go_to(
         }
         2 => {
             let p = Vec3::from_lua(data, &lua)?;
-            g(
+            goto(
                 &client,
-                without_mining,
+                options,
                 ReachBlockPosGoal {
                     pos: BlockPos::new(p.x as i32, p.y as i32, p.z as i32),
                     chunk_storage: client.world().read().chunks.clone(),
@@ -76,27 +88,27 @@ pub async fn go_to(
         }
         3 => {
             let t = data.as_table().ok_or(error)?;
-            g(
+            goto(
                 &client,
-                without_mining,
+                options,
                 XZGoal {
                     x: t.get("x")?,
                     z: t.get("z")?,
                 },
             );
         }
-        4 => g(
+        4 => goto(
             &client,
-            without_mining,
+            options,
             YGoal {
                 y: data.as_table().ok_or(error)?.get("y")?,
             },
         ),
         _ => {
             let p = Vec3::from_lua(data, &lua)?;
-            g(
+            goto(
                 &client,
-                without_mining,
+                options,
                 BlockPosGoal(BlockPos::new(p.x as i32, p.y as i32, p.z as i32)),
             );
         }
