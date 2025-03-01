@@ -2,7 +2,8 @@ use crate::{
     State,
     commands::CommandSource,
     http::serve,
-    lua::{self, player::Player},
+    lua::{self, player::Player, vec3::Vec3},
+    particle,
 };
 use azalea::{prelude::*, protocol::packets::game::ClientboundGamePacket};
 use hyper::{server::conn::http1, service::service_fn};
@@ -69,18 +70,25 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             call_listeners(&state, "update_player", Player::from(player_info)).await;
         }
         Event::Packet(packet) => match packet.as_ref() {
-            ClientboundGamePacket::SetPassengers(packet) => {
-                let table = state.lua.create_table()?;
-                table.set("vehicle", packet.vehicle)?;
-                table.set("passengers", &*packet.passengers)?;
-                call_listeners(&state, "set_passengers", table).await;
-            }
             ClientboundGamePacket::SetHealth(packet) => {
                 let table = state.lua.create_table()?;
                 table.set("food", packet.food)?;
                 table.set("health", packet.health)?;
                 table.set("saturation", packet.saturation)?;
                 call_listeners(&state, "set_health", table).await;
+            }
+            ClientboundGamePacket::SetPassengers(packet) => {
+                let table = state.lua.create_table()?;
+                table.set("vehicle", packet.vehicle)?;
+                table.set("passengers", &*packet.passengers)?;
+                call_listeners(&state, "set_passengers", table).await;
+            }
+            ClientboundGamePacket::LevelParticles(packet) => {
+                let table = state.lua.create_table()?;
+                table.set("position", Vec3::from(packet.pos))?;
+                table.set("count", packet.count)?;
+                table.set("kind", particle::to_kind(&packet.particle) as u8)?;
+                call_listeners(&state, "level_particles", table).await;
             }
             _ => (),
         },

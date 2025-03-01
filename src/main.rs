@@ -5,6 +5,7 @@ mod commands;
 mod events;
 mod http;
 mod lua;
+mod particle;
 
 use azalea::{
     DefaultBotPlugins, DefaultPlugins, brigadier::prelude::CommandDispatcher, prelude::*,
