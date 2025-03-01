@@ -9,7 +9,10 @@ pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
         "get_block_from_state",
         lua.create_function(get_block_from_state)?,
     )?;
-    globals.set("get_block_states", lua.create_async_function(get_block_states)?)?;
+    globals.set(
+        "get_block_states",
+        lua.create_async_function(get_block_states)?,
+    )?;
 
     Ok(())
 }
@@ -18,20 +21,20 @@ pub fn get_block_from_state(lua: &Lua, state: u32) -> Result<Option<Table>> {
     let Ok(state) = BlockState::try_from(state) else {
         return Ok(None);
     };
-    let b: Box<dyn AzaleaBlock> = state.into();
-    let bh = b.behavior();
+    let block: Box<dyn AzaleaBlock> = state.into();
+    let behavior = block.behavior();
 
-    let block = lua.create_table()?;
-    block.set("id", b.id())?;
-    block.set("friction", bh.friction)?;
-    block.set("jump_factor", bh.jump_factor)?;
-    block.set("destroy_time", bh.destroy_time)?;
-    block.set("explosion_resistance", bh.explosion_resistance)?;
-    block.set(
+    let table = lua.create_table()?;
+    table.set("id", block.id())?;
+    table.set("friction", behavior.friction)?;
+    table.set("jump_factor", behavior.jump_factor)?;
+    table.set("destroy_time", behavior.destroy_time)?;
+    table.set("explosion_resistance", behavior.explosion_resistance)?;
+    table.set(
         "requires_correct_tool_for_drops",
-        bh.requires_correct_tool_for_drops,
+        behavior.requires_correct_tool_for_drops,
     )?;
-    Ok(Some(block))
+    Ok(Some(table))
 }
 
 pub async fn get_block_states(

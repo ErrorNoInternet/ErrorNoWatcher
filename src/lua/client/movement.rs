@@ -117,15 +117,15 @@ pub fn jump(_lua: &Lua, client: &mut Client, _: ()) -> Result<()> {
 }
 
 pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
-    let r = client.component::<HitResultComponent>();
-    Ok(if r.miss {
+    let result = client.component::<HitResultComponent>();
+    Ok(if result.miss {
         None
     } else {
-        let result = lua.create_table()?;
-        result.set("position", Vec3::from(r.block_pos))?;
-        result.set("inside", r.inside)?;
-        result.set("world_border", r.world_border)?;
-        Some(result)
+        let table = lua.create_table()?;
+        table.set("position", Vec3::from(result.block_pos))?;
+        table.set("inside", result.inside)?;
+        table.set("world_border", result.world_border)?;
+        Some(table)
     })
 }
 
@@ -149,26 +149,29 @@ pub async fn look_at(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> 
 }
 
 pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
-    let pathfinder = lua.create_table()?;
-    pathfinder.set(
+    let table = lua.create_table()?;
+    table.set(
         "is_calculating",
         client.component::<Pathfinder>().is_calculating,
     )?;
-    pathfinder.set(
+    table.set(
         "is_executing",
-        if let Some(p) = client.get_component::<ExecutingPath>() {
-            pathfinder.set("last_reached_node", Vec3::from(p.last_reached_node))?;
-            pathfinder.set(
-                "last_node_reach_elapsed",
-                p.last_node_reached_at.elapsed().as_millis(),
+        if let Some(pathfinder) = client.get_component::<ExecutingPath>() {
+            table.set(
+                "last_reached_node",
+                Vec3::from(pathfinder.last_reached_node),
             )?;
-            pathfinder.set("is_path_partial", p.is_path_partial)?;
+            table.set(
+                "last_node_reach_elapsed",
+                pathfinder.last_node_reached_at.elapsed().as_millis(),
+            )?;
+            table.set("is_path_partial", pathfinder.is_path_partial)?;
             true
         } else {
             false
         },
     )?;
-    Ok(pathfinder)
+    Ok(table)
 }
 
 pub fn position(_lua: &Lua, client: &Client) -> Result<Vec3> {

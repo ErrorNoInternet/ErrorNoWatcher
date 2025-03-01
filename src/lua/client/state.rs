@@ -16,12 +16,12 @@ pub fn health(_lua: &Lua, client: &Client) -> Result<f32> {
 }
 
 pub fn hunger(lua: &Lua, client: &Client) -> Result<Table> {
-    let h = client.hunger();
+    let hunger = client.hunger();
 
-    let hunger = lua.create_table()?;
-    hunger.set("food", h.food)?;
-    hunger.set("saturation", h.saturation)?;
-    Ok(hunger)
+    let table = lua.create_table()?;
+    table.set("food", hunger.food)?;
+    table.set("saturation", hunger.saturation)?;
+    Ok(table)
 }
 
 pub fn score(_lua: &Lua, client: &Client) -> Result<i32> {

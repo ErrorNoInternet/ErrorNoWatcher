@@ -13,12 +13,12 @@ use azalea::{
 use mlua::{Function, Lua, Result, Table, UserDataRef};
 
 pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Result<Table> {
-    let tr = client.best_tool_in_hotbar_for_block(BlockState { id: block_state });
+    let result = client.best_tool_in_hotbar_for_block(BlockState { id: block_state });
 
-    let tool_result = lua.create_table()?;
-    tool_result.set("index", tr.index)?;
-    tool_result.set("percentage_per_tick", tr.percentage_per_tick)?;
-    Ok(tool_result)
+    let table = lua.create_table()?;
+    table.set("index", result.index)?;
+    table.set("percentage_per_tick", result.percentage_per_tick)?;
+    Ok(table)
 }
 
 pub fn dimension(_lua: &Lua, client: &Client) -> Result<String> {
@@ -105,16 +105,16 @@ pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Op
 pub fn get_fluid_state(lua: &Lua, client: &Client, position: Vec3) -> Result<Option<Table>> {
     #[allow(clippy::cast_possible_truncation)]
     Ok(
-        if let Some(fs) = client.world().read().get_fluid_state(&BlockPos::new(
+        if let Some(state) = client.world().read().get_fluid_state(&BlockPos::new(
             position.x as i32,
             position.y as i32,
             position.z as i32,
         )) {
-            let fluid_state = lua.create_table()?;
-            fluid_state.set("kind", fs.kind as u8)?;
-            fluid_state.set("amount", fs.amount)?;
-            fluid_state.set("falling", fs.falling)?;
-            Some(fluid_state)
+            let table = lua.create_table()?;
+            table.set("kind", state.kind as u8)?;
+            table.set("amount", state.amount)?;
+            table.set("falling", state.falling)?;
+            Some(table)
         } else {
             None
         },
