@@ -34,7 +34,7 @@ type ListenerMap = Arc<RwLock<HashMap<String, Vec<(String, Function)>>>>;
 
 #[derive(Default, Clone, Component)]
 pub struct State {
-    lua: Lua,
+    lua: Arc<Lua>,
     event_listeners: ListenerMap,
     commands: Arc<CommandDispatcher<Mutex<CommandSource>>>,
     http_address: Option<SocketAddr>,
@@ -94,7 +94,7 @@ async fn main() -> anyhow::Result<()> {
         .add_plugins(DefaultBotPlugins)
         .set_handler(events::handle_event)
         .set_state(State {
-            lua,
+            lua: Arc::new(lua),
             event_listeners,
             commands: Arc::new(commands),
             http_address: args.http_address,
