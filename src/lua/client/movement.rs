@@ -54,7 +54,7 @@ pub async fn go_to(
     };
     let (goal_type, options) = if let Some(metadata) = metadata {
         (
-            metadata.get("type")?,
+            metadata.get("type").unwrap_or_default(),
             metadata.get("options").unwrap_or(lua.create_table()?),
         )
     } else {
