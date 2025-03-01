@@ -6,7 +6,7 @@ use azalea::{
     ecs::query::{With, Without},
     entity::{
         Dead, EntityKind, EntityUuid, LookDirection, Pose, Position as AzaleaPosition,
-        metadata::{CustomName, Player},
+        metadata::{CustomName, Owneruuid, Player},
     },
     world::{InstanceName, MinecraftEntityId},
 };
@@ -56,38 +56,45 @@ pub async fn find_entities(
     let entities = {
         let mut ecs = client.ecs.lock();
         ecs.query_filtered::<(
-            &MinecraftEntityId,
-            &EntityUuid,
-            &EntityKind,
-            &CustomName,
             &AzaleaPosition,
+            &CustomName,
+            &EntityKind,
+            &EntityUuid,
             &LookDirection,
+            &MinecraftEntityId,
+            &Owneruuid,
             &Pose,
         ), Without<Dead>>()
             .iter(&ecs)
-            .map(|(id, uuid, kind, custom_name, position, direction, pose)| {
-                (
-                    id.0,
-                    uuid.to_string(),
-                    kind.to_string(),
-                    custom_name.as_ref().map(ToString::to_string),
-                    Vec3::from(position),
-                    Direction::from(direction),
-                    *pose as u8,
-                )
-            })
+            .map(
+                |(position, custom_name, kind, uuid, direction, id, owner_uuid, pose)| {
+                    (
+                        Vec3::from(position),
+                        custom_name.as_ref().map(ToString::to_string),
+                        kind.to_string(),
+                        uuid.to_string(),
+                        Direction::from(direction),
+                        id.0,
+                        owner_uuid.to_owned(),
+                        *pose as u8,
+                    )
+                },
+            )
             .collect::<Vec<_>>()
     };
 
     let mut matched = Vec::new();
-    for (id, uuid, kind, custom_name, position, direction, pose) in entities {
+    for (position, custom_name, kind, uuid, direction, id, owner_uuid, pose) in entities {
         let entity = lua.create_table()?;
-        entity.set("id", id)?;
-        entity.set("uuid", uuid)?;
-        entity.set("kind", kind)?;
-        entity.set("custom_name", custom_name)?;
         entity.set("position", position)?;
+        entity.set("custom_name", custom_name)?;
+        entity.set("kind", kind)?;
+        entity.set("uuid", uuid)?;
         entity.set("direction", direction)?;
+        entity.set("id", id)?;
+        if let Some(uuid) = *owner_uuid {
+            entity.set("owner_uuid", uuid.to_string())?;
+        }
         entity.set("pose", pose)?;
         if filter_fn.call_async::<bool>(&entity).await? {
             matched.push(entity);
