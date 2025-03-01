@@ -10,7 +10,7 @@ use azalea::{
     },
     world::{InstanceName, MinecraftEntityId},
 };
-use mlua::{Function, Lua, Result, Table};
+use mlua::{Function, Lua, Result, Table, UserDataRef};
 
 pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Result<Table> {
     let tr = client.best_tool_in_hotbar_for_block(BlockState { id: block_state });
@@ -48,35 +48,44 @@ pub fn find_blocks(
         .collect())
 }
 
-pub fn find_entities(lua: &Lua, client: &Client, filter_fn: Function) -> Result<Vec<Table>> {
-    let mut matched = Vec::new();
+pub async fn find_entities(
+    lua: Lua,
+    client: UserDataRef<Client>,
+    filter_fn: Function,
+) -> Result<Vec<Table>> {
+    let mut entities = Vec::new();
 
-    let mut ecs = client.ecs.lock();
-    let mut query = ecs.query_filtered::<(
-        &MinecraftEntityId,
-        &EntityUuid,
-        &EntityKind,
-        &CustomName,
-        &AzaleaPosition,
-        &LookDirection,
-        &Pose,
-    ), Without<Dead>>();
+    {
+        let mut ecs = client.ecs.lock();
+        let mut query = ecs.query_filtered::<(
+            &MinecraftEntityId,
+            &EntityUuid,
+            &EntityKind,
+            &CustomName,
+            &AzaleaPosition,
+            &LookDirection,
+            &Pose,
+        ), Without<Dead>>();
 
-    for (&id, uuid, kind, custom_name, position, direction, pose) in query.iter(&ecs) {
-        let entity = lua.create_table()?;
-        entity.set("id", id.0)?;
-        entity.set("uuid", uuid.to_string())?;
-        entity.set("kind", kind.to_string())?;
-        entity.set("custom_name", custom_name.as_ref().map(ToString::to_string))?;
-        entity.set("position", Vec3::from(position))?;
-        entity.set("direction", Direction::from(direction))?;
-        entity.set("pose", *pose as u8)?;
-
-        if filter_fn.call::<bool>(&entity)? {
-            matched.push(entity);
+        for (id, uuid, kind, custom_name, position, direction, pose) in query.iter(&ecs) {
+            let entity = lua.create_table()?;
+            entity.set("id", id.0)?;
+            entity.set("uuid", uuid.to_string())?;
+            entity.set("kind", kind.to_string())?;
+            entity.set("custom_name", custom_name.as_ref().map(ToString::to_string))?;
+            entity.set("position", Vec3::from(position))?;
+            entity.set("direction", Direction::from(direction))?;
+            entity.set("pose", *pose as u8)?;
+            entities.push(entity);
         }
     }
 
+    let mut matched = Vec::new();
+    for entity in entities {
+        if filter_fn.call_async::<bool>(&entity).await? {
+            matched.push(entity)
+        }
+    }
     Ok(matched)
 }
 

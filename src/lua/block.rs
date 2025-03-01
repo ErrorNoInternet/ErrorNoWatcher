@@ -9,7 +9,7 @@ pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
         "get_block_from_state",
         lua.create_function(get_block_from_state)?,
     )?;
-    globals.set("get_block_states", lua.create_function(get_block_states)?)?;
+    globals.set("get_block_states", lua.create_async_function(get_block_states)?)?;
 
     Ok(())
 }
@@ -34,8 +34,8 @@ pub fn get_block_from_state(lua: &Lua, state: u32) -> Result<Option<Table>> {
     Ok(Some(block))
 }
 
-pub fn get_block_states(
-    lua: &Lua,
+pub async fn get_block_states(
+    lua: Lua,
     (block_names, filter_fn): (Vec<String>, Option<Function>),
 ) -> Result<Vec<u16>> {
     let mut matched = Vec::new();
@@ -49,7 +49,7 @@ pub fn get_block_states(
                     p.set("chest_type", b.property::<ChestType>().map(|v| v as u8))?;
                     p.set("facing", b.property::<Facing>().map(|v| v as u8))?;
                     p.set("light_level", b.property::<LightLevel>().map(|v| v as u8))?;
-                    filter_fn.call::<bool>(p.clone())?
+                    filter_fn.call_async::<bool>(p.clone()).await?
                 } else {
                     true
                 })
