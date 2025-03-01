@@ -33,7 +33,7 @@ pub fn register_functions(lua: &Lua, globals: &Table, event_listeners: ListenerM
 
     let m = event_listeners.clone();
     globals.set(
-        "remove_listener",
+        "remove_listeners",
         lua.create_function(move |_, (event_type, target_id): (String, String)| {
             let m = m.clone();
             tokio::spawn(async move {
