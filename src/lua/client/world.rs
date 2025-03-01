@@ -55,32 +55,32 @@ pub async fn find_entities(
 ) -> Result<Vec<Table>> {
     let entities = {
         let mut ecs = client.ecs.lock();
-        ecs.query_filtered::<(
+        ecs.query::<(
             &AzaleaPosition,
             &CustomName,
             &EntityKind,
             &EntityUuid,
             &LookDirection,
             &MinecraftEntityId,
-            &Owneruuid,
+            Option<&Owneruuid>,
             &Pose,
-        ), Without<Dead>>()
-            .iter(&ecs)
-            .map(
-                |(position, custom_name, kind, uuid, direction, id, owner_uuid, pose)| {
-                    (
-                        Vec3::from(position),
-                        custom_name.as_ref().map(ToString::to_string),
-                        kind.to_string(),
-                        uuid.to_string(),
-                        Direction::from(direction),
-                        id.0,
-                        owner_uuid.to_owned(),
-                        *pose as u8,
-                    )
-                },
-            )
-            .collect::<Vec<_>>()
+        )>()
+        .iter(&ecs)
+        .map(
+            |(position, custom_name, kind, uuid, direction, id, owner_uuid, pose)| {
+                (
+                    Vec3::from(position),
+                    custom_name.as_ref().map(ToString::to_string),
+                    kind.to_string(),
+                    uuid.to_string(),
+                    Direction::from(direction),
+                    id.0,
+                    owner_uuid.map(ToOwned::to_owned),
+                    *pose as u8,
+                )
+            },
+        )
+        .collect::<Vec<_>>()
     };
 
     let mut matched = Vec::new();
@@ -92,7 +92,9 @@ pub async fn find_entities(
         entity.set("uuid", uuid)?;
         entity.set("direction", direction)?;
         entity.set("id", id)?;
-        if let Some(uuid) = *owner_uuid {
+        if let Some(v) = owner_uuid
+            && let Some(uuid) = *v
+        {
             entity.set("owner_uuid", uuid.to_string())?;
         }
         entity.set("pose", pose)?;
