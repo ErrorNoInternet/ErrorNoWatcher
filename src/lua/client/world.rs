@@ -3,10 +3,10 @@ use azalea::{
     BlockPos,
     auto_tool::AutoToolClientExt,
     blocks::{BlockState, BlockStates},
-    ecs::query::Without,
+    ecs::query::{With, Without},
     entity::{
         Dead, EntityKind, EntityUuid, LookDirection, Pose, Position as AzaleaPosition,
-        metadata::CustomName,
+        metadata::{CustomName, Player},
     },
     world::{InstanceName, MinecraftEntityId},
 };
@@ -94,6 +94,45 @@ pub async fn find_entities(
         }
     }
     Ok(matched)
+}
+
+pub async fn find_players(lua: Lua, client: UserDataRef<Client>, (): ()) -> Result<Vec<Table>> {
+    let entities = {
+        let mut ecs = client.ecs.lock();
+        ecs.query_filtered::<(
+            &MinecraftEntityId,
+            &EntityUuid,
+            &EntityKind,
+            &AzaleaPosition,
+            &LookDirection,
+            &Pose,
+        ), (With<Player>, Without<Dead>)>()
+            .iter(&ecs)
+            .map(|(id, uuid, kind, position, direction, pose)| {
+                (
+                    id.0,
+                    uuid.to_string(),
+                    kind.to_string(),
+                    Vec3::from(position),
+                    Direction::from(direction),
+                    *pose as u8,
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+
+    let mut players = Vec::new();
+    for (id, uuid, kind, position, direction, pose) in entities {
+        let entity = lua.create_table()?;
+        entity.set("id", id)?;
+        entity.set("uuid", uuid)?;
+        entity.set("kind", kind)?;
+        entity.set("position", position)?;
+        entity.set("direction", direction)?;
+        entity.set("pose", pose)?;
+        players.push(entity);
+    }
+    Ok(players)
 }
 
 pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Option<u16>> {
