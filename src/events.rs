@@ -22,10 +22,13 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             let formatted_message = message.message();
             info!("{}", formatted_message.to_ansi());
 
-            let owners = state.lua.globals().get::<Vec<String>>("Owners")?;
             if message.is_whisper()
                 && let (Some(sender), content) = message.split_sender_and_content()
-                && owners.contains(&sender)
+                && state
+                    .lua
+                    .globals()
+                    .get::<Vec<String>>("Owners")?
+                    .contains(&sender)
             {
                 if let Err(error) = state.commands.execute(
                     content,
@@ -55,7 +58,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
         }
         Event::Disconnect(message) => {
             call_listeners(&state, "disconnect", message.map(|m| m.to_string())).await;
-            exit(1)
+            exit(0)
         }
         Event::Login => call_listeners(&state, "login", ()).await,
         Event::RemovePlayer(player_info) => {
@@ -84,8 +87,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
         Event::Init => {
             debug!("received initialize event");
 
-            let globals = state.lua.globals();
-            globals.set(
+            state.lua.globals().set(
                 "client",
                 lua::client::Client {
                     inner: Some(client),

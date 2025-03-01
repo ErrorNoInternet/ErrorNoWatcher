@@ -46,12 +46,11 @@ async fn main() -> anyhow::Result<()> {
     console_subscriber::init();
 
     let args = arguments::Arguments::parse();
-
     let script_path = args.script.unwrap_or(PathBuf::from(DEFAULT_SCRIPT_PATH));
     let event_listeners = Arc::new(RwLock::new(HashMap::new()));
-
     let lua = Lua::new();
     let globals = lua.globals();
+
     globals.set("script_path", &*script_path)?;
     lua::register_functions(&lua, &globals, event_listeners.clone())?;
     lua.load(
