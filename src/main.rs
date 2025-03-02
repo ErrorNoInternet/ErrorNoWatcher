@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
     let args = arguments::Arguments::parse();
     let script_path = args.script.unwrap_or(PathBuf::from(DEFAULT_SCRIPT_PATH));
     let event_listeners = Arc::new(RwLock::new(HashMap::new()));
-    let lua = Lua::new();
+    let lua = unsafe { Lua::unsafe_new() };
     let globals = lua.globals();
 
     globals.set("script_path", &*script_path)?;
