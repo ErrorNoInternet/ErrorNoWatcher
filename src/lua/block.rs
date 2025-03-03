@@ -43,21 +43,24 @@ pub async fn get_block_states(
 ) -> Result<Vec<u16>> {
     let mut matched = Vec::new();
     for block_name in block_names {
-        for b in
+        for block in
             (u32::MIN..u32::MAX).map_while(|possible_id| BlockState::try_from(possible_id).ok())
         {
-            if block_name == Into::<Box<dyn AzaleaBlock>>::into(b).id()
+            if block_name == Into::<Box<dyn AzaleaBlock>>::into(block).id()
                 && (if let Some(filter_fn) = &filter_fn {
-                    let p = lua.create_table()?;
-                    p.set("chest_type", b.property::<ChestType>().map(|v| v as u8))?;
-                    p.set("facing", b.property::<Facing>().map(|v| v as u8))?;
-                    p.set("light_level", b.property::<LightLevel>().map(|v| v as u8))?;
-                    filter_fn.call_async::<bool>(p.clone()).await?
+                    let table = lua.create_table()?;
+                    table.set("chest_type", block.property::<ChestType>().map(|v| v as u8))?;
+                    table.set("facing", block.property::<Facing>().map(|v| v as u8))?;
+                    table.set(
+                        "light_level",
+                        block.property::<LightLevel>().map(|v| v as u8),
+                    )?;
+                    filter_fn.call_async::<bool>(table).await?
                 } else {
                     true
                 })
             {
-                matched.push(b.id);
+                matched.push(block.id);
             }
         }
     }
