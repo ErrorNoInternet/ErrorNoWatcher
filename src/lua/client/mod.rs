@@ -10,7 +10,7 @@ use super::{
     player::Player,
     vec3::Vec3,
 };
-use azalea::Client as AzaleaClient;
+use azalea::{Client as AzaleaClient, world::MinecraftEntityId};
 use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
 use std::ops::{Deref, DerefMut};
 
@@ -48,6 +48,7 @@ impl UserData for Client {
         f.add_field_method_get("held_item", container::held_item);
         f.add_field_method_get("held_slot", container::held_slot);
         f.add_field_method_get("hunger", state::hunger);
+        f.add_field_method_get("id", id);
         f.add_field_method_get("looking_at", movement::looking_at);
         f.add_field_method_get("menu", container::menu);
         f.add_field_method_get("pathfinder", movement::pathfinder);
@@ -98,6 +99,10 @@ fn chat(_lua: &Lua, client: &Client, message: String) -> Result<()> {
 fn disconnect(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
     client.disconnect();
     Ok(())
+}
+
+fn id(_lua: &Lua, client: &Client) -> Result<i32> {
+    Ok(client.component::<MinecraftEntityId>().0)
 }
 
 fn tab_list(_lua: &Lua, client: &Client) -> Result<Vec<Player>> {
