@@ -21,7 +21,7 @@ impl UserData for ItemStack {
             Ok(if let Some(data) = this.inner.as_present() {
                 data.components
                     .get::<CustomName>()
-                    .map(|n| n.name.to_string())
+                    .map(|c| c.name.to_string())
             } else {
                 None
             })

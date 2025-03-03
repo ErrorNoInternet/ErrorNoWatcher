@@ -56,28 +56,20 @@ pub fn register_functions(lua: &Lua, globals: &Table, event_listeners: ListenerM
         "get_listeners",
         lua.create_function(move |lua, (): ()| {
             let m = block_on(event_listeners.read());
-
-            let listeners = lua.create_table()?;
+            let listeners_table = lua.create_table()?;
             for (event_type, callbacks) in m.iter() {
-                let type_listeners = lua.create_table()?;
+                let type_listeners_table = lua.create_table()?;
                 for (id, callback) in callbacks {
-                    let listener = lua.create_table()?;
-                    let i = callback.info();
-                    if let Some(n) = i.name {
-                        listener.set("name", n)?;
-                    }
-                    if let Some(l) = i.line_defined {
-                        listener.set("line_defined", l)?;
-                    }
-                    if let Some(s) = i.source {
-                        listener.set("source", s)?;
-                    }
-                    type_listeners.set(id.to_owned(), listener)?;
+                    let info = callback.info();
+                    let table = lua.create_table()?;
+                    table.set("name", info.name)?;
+                    table.set("line_defined", info.line_defined)?;
+                    table.set("source", info.source)?;
+                    type_listeners_table.set(id.to_owned(), table)?;
                 }
-                listeners.set(event_type.to_owned(), type_listeners)?;
+                listeners_table.set(event_type.to_owned(), type_listeners_table)?;
             }
-
-            Ok(listeners)
+            Ok(listeners_table)
         })?,
     )?;
 
