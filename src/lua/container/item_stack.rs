@@ -18,27 +18,23 @@ impl UserData for ItemStack {
         f.add_field_method_get("count", |_, this| Ok(this.inner.count()));
         f.add_field_method_get("kind", |_, this| Ok(this.inner.kind().to_string()));
         f.add_field_method_get("custom_name", |_, this| {
-            Ok(if let Some(data) = this.inner.as_present() {
+            Ok(this.inner.as_present().map(|data| {
                 data.components
                     .get::<CustomName>()
                     .map(|c| c.name.to_string())
-            } else {
-                None
-            })
+            }))
         });
         f.add_field_method_get("damage", |_, this| {
-            Ok(if let Some(data) = this.inner.as_present() {
-                data.components.get::<Damage>().map(|d| d.amount)
-            } else {
-                None
-            })
+            Ok(this
+                .inner
+                .as_present()
+                .map(|data| data.components.get::<Damage>().map(|d| d.amount)))
         });
         f.add_field_method_get("max_damage", |_, this| {
-            Ok(if let Some(data) = this.inner.as_present() {
-                data.components.get::<MaxDamage>().map(|d| d.amount)
-            } else {
-                None
-            })
+            Ok(this
+                .inner
+                .as_present()
+                .map(|data| data.components.get::<MaxDamage>().map(|d| d.amount)))
         });
     }
 
