@@ -11,6 +11,7 @@ A Minecraft bot with Lua scripting support, written in Rust with [azalea](https:
 - Listening to in-game events
 - Pathfinding (from azalea)
 - Entity and chest interaction
+- NoChatReports encryption
 
 ## Usage
 

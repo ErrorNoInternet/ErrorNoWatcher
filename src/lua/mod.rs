@@ -4,6 +4,7 @@ pub mod container;
 pub mod direction;
 pub mod events;
 pub mod logging;
+pub mod nochatreports;
 pub mod player;
 pub mod system;
 pub mod vec3;
@@ -39,6 +40,7 @@ pub fn register_functions(
     block::register_functions(lua, globals)?;
     events::register_functions(lua, globals, event_listeners)?;
     logging::register_functions(lua, globals)?;
+    nochatreports::register_functions(lua, globals)?;
     system::register_functions(lua, globals)
 }
 

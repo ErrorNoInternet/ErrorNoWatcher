@@ -4,6 +4,8 @@ use crate::{
 };
 use azalea::{brigadier::prelude::*, chat::ChatPacket, prelude::*};
 use futures::lock::Mutex;
+use mlua::{Function, Table};
+use ncr::utils::prepend_header;
 
 pub type Ctx = CommandContext<Mutex<CommandSource>>;
 
@@ -11,16 +13,24 @@ pub struct CommandSource {
     pub client: Client,
     pub message: ChatPacket,
     pub state: State,
+    pub ncr_options: Option<Table>,
 }
 
 impl CommandSource {
     pub fn reply(&self, message: &str) {
-        for chunk in message
+        for mut chunk in message
             .chars()
             .collect::<Vec<char>>()
-            .chunks(236)
+            .chunks(if self.ncr_options.is_some() { 150 } else { 236 })
             .map(|chars| chars.iter().collect::<String>())
         {
+            if let (Some(options), Ok(encrypt)) = (
+                &self.ncr_options,
+                self.state.lua.globals().get::<Function>("ncr_encrypt"),
+            ) && let Ok(encrypted) = encrypt.call::<String>((options, prepend_header(&chunk)))
+            {
+                chunk = encrypted
+            }
             self.client.chat(
                 &(if self.message.is_whisper()
                     && let Some(username) = self.message.username()

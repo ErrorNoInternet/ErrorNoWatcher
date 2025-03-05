@@ -9,7 +9,8 @@ use azalea::{prelude::*, protocol::packets::game::ClientboundGamePacket};
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
-use mlua::IntoLuaMulti;
+use mlua::{Function, IntoLuaMulti, Table};
+use ncr::utils::trim_header;
 use std::process::exit;
 use tokio::net::TcpListener;
 
@@ -20,32 +21,44 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             call_listeners(&state, "add_player", Player::from(player_info)).await;
         }
         Event::Chat(message) => {
+            let globals = state.lua.globals();
+            let (sender, mut content) = message.split_sender_and_content();
             let formatted_message = message.message();
             info!("{}", formatted_message.to_ansi());
 
-            if message.is_whisper()
-                && let (Some(sender), content) = message.split_sender_and_content()
-                && state
-                    .lua
-                    .globals()
-                    .get::<Vec<String>>("Owners")?
-                    .contains(&sender)
-            {
-                if let Err(error) = state.commands.execute(
-                    content,
-                    CommandSource {
-                        client: client.clone(),
-                        message: message.clone(),
-                        state: state.clone(),
+            if let Some(sender) = sender {
+                let mut ncr_options = None;
+                if let (Ok(options), Ok(decrypt)) = (
+                    globals.get::<Table>("NcrOptions"),
+                    globals.get::<Function>("ncr_decrypt"),
+                ) && let Ok(decrypted) =
+                    decrypt.call::<String>((options.clone(), content.clone()))
+                    && let Ok(trimmed) = trim_header(&decrypted)
+                {
+                    ncr_options = Some(options);
+                    content = trimmed.to_owned();
+                    info!("Decrypted message from {sender}: {content}");
+                }
+
+                if message.is_whisper() && globals.get::<Vec<String>>("Owners")?.contains(&sender) {
+                    if let Err(error) = state.commands.execute(
+                        content,
+                        CommandSource {
+                            client: client.clone(),
+                            message: message.clone(),
+                            state: state.clone(),
+                            ncr_options: ncr_options.clone(),
+                        }
+                        .into(),
+                    ) {
+                        CommandSource {
+                            client,
+                            message,
+                            state: state.clone(),
+                            ncr_options,
+                        }
+                        .reply(&format!("{error:?}"));
                     }
-                    .into(),
-                ) {
-                    CommandSource {
-                        client,
-                        message,
-                        state: state.clone(),
-                    }
-                    .reply(&format!("{error:?}"));
                 }
             }
 
