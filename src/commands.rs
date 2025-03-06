@@ -29,7 +29,7 @@ impl CommandSource {
                 self.state.lua.globals().get::<Function>("ncr_encrypt"),
             ) && let Ok(encrypted) = encrypt.call::<String>((options, prepend_header(&chunk)))
             {
-                chunk = encrypted
+                chunk = encrypted;
             }
             self.client.chat(
                 &(if self.message.is_whisper()

@@ -36,7 +36,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                     && let Ok(trimmed) = trim_header(&decrypted)
                 {
                     ncr_options = Some(options);
-                    content = trimmed.to_owned();
+                    trimmed.clone_into(&mut content);
                     info!("Decrypted message from {sender}: {content}");
                 }
 
