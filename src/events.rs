@@ -176,12 +176,19 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
     Ok(())
 }
 
-async fn call_listeners<T: Clone + IntoLuaMulti>(state: &State, event_type: &str, data: T) {
-    if let Some(listeners) = state.event_listeners.read().await.get(event_type) {
+async fn call_listeners<T: Clone + IntoLuaMulti + Send + 'static>(
+    state: &State,
+    event_type: &'static str,
+    data: T,
+) {
+    if let Some(listeners) = state.event_listeners.read().await.get(event_type).cloned() {
         for (id, callback) in listeners {
-            if let Err(error) = callback.call_async::<()>(data.clone()).await {
-                error!("failed to call lua event listener {id} for {event_type}: {error:?}");
-            }
+            let data = data.clone();
+            tokio::spawn(async move {
+                if let Err(error) = callback.call_async::<()>(data).await {
+                    error!("failed to call lua event listener {id} for {event_type}: {error:?}");
+                }
+            });
         }
     }
 }
