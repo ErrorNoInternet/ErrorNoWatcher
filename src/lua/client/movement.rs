@@ -25,7 +25,7 @@ pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
 pub async fn go_to(
     lua: Lua,
     client: UserDataRef<Client>,
-    (data, metadata): (Value, Option<Table>),
+    (data, metadata): (Table, Option<Table>),
 ) -> Result<()> {
     fn goto_with_options<G: Goal + Send + Sync + 'static>(
         client: &Client,
@@ -39,78 +39,48 @@ pub async fn go_to(
         }
     }
 
-    fn goto<G: Goal + Send + Sync + 'static>(client: &Client, options: Table, goal: G) {
-        if options.get("inverse").unwrap_or_default() {
-            goto_with_options(client, &options, InverseGoal(goal));
-        } else {
-            goto_with_options(client, &options, goal);
-        }
-    }
+    let table = metadata.unwrap_or(lua.create_table()?);
+    let goal_type = table.get("type").unwrap_or_default();
+    let options = table.get("options").unwrap_or(lua.create_table()?);
 
-    let error = mlua::Error::FromLuaConversionError {
-        from: data.type_name(),
-        to: "Table".to_string(),
-        message: None,
-    };
-    let (goal_type, options) = if let Some(metadata) = metadata {
-        (
-            metadata.get("type").unwrap_or_default(),
-            metadata.get("options").unwrap_or(lua.create_table()?),
-        )
-    } else {
-        (0, lua.create_table()?)
-    };
+    macro_rules! goto {
+        ($goal:expr) => {
+            if options.get("inverse").unwrap_or_default() {
+                goto_with_options(&client, &options, InverseGoal($goal));
+            } else {
+                goto_with_options(&client, &options, $goal);
+            }
+        };
+    }
 
     #[allow(clippy::cast_possible_truncation)]
     match goal_type {
         1 => {
-            let t = data.as_table().ok_or(error)?;
-            let p = Vec3::from_lua(t.get("position")?, &lua)?;
-            goto(
-                &client,
-                options,
-                RadiusGoal {
-                    pos: azalea::Vec3::new(p.x, p.y, p.z),
-                    radius: t.get("radius")?,
-                },
-            );
+            let p = Vec3::from_lua(data.get("position")?, &lua)?;
+            goto!(RadiusGoal {
+                pos: azalea::Vec3::new(p.x, p.y, p.z),
+                radius: data.get("radius")?,
+            });
         }
         2 => {
-            let p = Vec3::from_lua(data, &lua)?;
-            goto(
-                &client,
-                options,
-                ReachBlockPosGoal {
-                    pos: BlockPos::new(p.x as i32, p.y as i32, p.z as i32),
-                    chunk_storage: client.world().read().chunks.clone(),
-                },
-            );
+            let p = Vec3::from_lua(Value::Table(data), &lua)?;
+            goto!(ReachBlockPosGoal {
+                pos: BlockPos::new(p.x as i32, p.y as i32, p.z as i32),
+                chunk_storage: client.world().read().chunks.clone(),
+            });
         }
         3 => {
-            let t = data.as_table().ok_or(error)?;
-            goto(
-                &client,
-                options,
-                XZGoal {
-                    x: t.get("x")?,
-                    z: t.get("z")?,
-                },
-            );
+            goto!(XZGoal {
+                x: data.get("x")?,
+                z: data.get("z")?,
+            });
         }
-        4 => goto(
-            &client,
-            options,
-            YGoal {
-                y: data.as_table().ok_or(error)?.get("y")?,
-            },
-        ),
+        4 => goto!(YGoal { y: data.get("y")? }),
         _ => {
-            let p = Vec3::from_lua(data, &lua)?;
-            goto(
-                &client,
-                options,
-                BlockPosGoal(BlockPos::new(p.x as i32, p.y as i32, p.z as i32)),
-            );
+            let p = Vec3::from_lua(Value::Table(data), &lua)?;
+            goto!(BlockPosGoal(BlockPos::new(
+                p.x as i32, p.y as i32, p.z as i32
+            )));
         }
     }
 
