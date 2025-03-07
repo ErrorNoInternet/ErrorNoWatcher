@@ -37,7 +37,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                 {
                     ncr_options = Some(options);
                     trimmed.clone_into(&mut content);
-                    info!("Decrypted message from {sender}: {content}");
+                    info!("decrypted message from {sender}: {content}");
                 }
 
                 if message.is_whisper() && globals.get::<Vec<String>>("Owners")?.contains(&sender) {

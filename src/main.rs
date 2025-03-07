@@ -80,8 +80,8 @@ async fn main() -> anyhow::Result<()> {
                             OpenOptions::new()
                                 .append(true)
                                 .create(true)
-                                .open(log_file)
-                                .expect("log file should be accessible"),
+                                .open(&log_file)
+                                .expect(&(log_file + " should be accessible")),
                         )
                         .boxed()
                 })
