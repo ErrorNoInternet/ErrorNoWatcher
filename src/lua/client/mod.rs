@@ -60,6 +60,8 @@ impl UserData for Client {
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
         m.add_async_method("attack", interaction::attack);
+        m.add_async_method("find_all_entities", world::find_all_entities);
+        m.add_async_method("find_all_players", world::find_all_players);
         m.add_async_method("find_entities", world::find_entities);
         m.add_async_method("find_players", world::find_players);
         m.add_async_method("go_to", movement::go_to);
