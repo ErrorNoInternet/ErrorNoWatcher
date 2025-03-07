@@ -76,14 +76,14 @@ async fn main() -> anyhow::Result<()> {
     } else {
         DefaultPlugins.set(LogPlugin {
             custom_layer: |_| {
-                env::var("LOG_FILE").ok().map(|log_file| {
+                env::var("LOG_FILE").ok().map(|path| {
                     layer()
                         .with_writer(
                             OpenOptions::new()
                                 .append(true)
                                 .create(true)
-                                .open(&log_file)
-                                .expect(&(log_file + " should be accessible")),
+                                .open(&path)
+                                .expect(&(path + " should be accessible")),
                         )
                         .boxed()
                 })

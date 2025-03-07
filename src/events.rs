@@ -64,11 +64,15 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
 
             call_listeners(&state, "chat", formatted_message.to_string()).await;
         }
-        Event::Death(Some(packet)) => {
-            let table = state.lua.create_table()?;
-            table.set("message", packet.message.to_string())?;
-            table.set("player_id", packet.player_id.0)?;
-            call_listeners(&state, "death", table).await;
+        Event::Death(packet) => {
+            if let Some(packet) = packet {
+                let table = state.lua.create_table()?;
+                table.set("message", packet.message.to_string())?;
+                table.set("player_id", packet.player_id.0)?;
+                call_listeners(&state, "death", table).await;
+            } else {
+                call_listeners(&state, "death", ()).await;
+            }
         }
         Event::Disconnect(message) => {
             call_listeners(&state, "disconnect", message.map(|m| m.to_string())).await;
