@@ -9,7 +9,7 @@ pub mod player;
 pub mod system;
 pub mod vec3;
 
-use crate::ListenerMap;
+use crate::{ListenerMap, build_info::built};
 use mlua::{Lua, Table};
 use std::{io, time::Duration};
 
@@ -24,11 +24,15 @@ pub enum Error {
     ReadFile(io::Error),
 }
 
-pub fn register_functions(
+pub fn register_globals(
     lua: &Lua,
     globals: &Table,
     event_listeners: ListenerMap,
 ) -> mlua::Result<()> {
+    globals.set("CARGO_PKG_VERSION", env!("CARGO_PKG_VERSION"))?;
+    globals.set("GIT_COMMIT_HASH", built::GIT_COMMIT_HASH)?;
+    globals.set("GIT_COMMIT_HASH_SHORT", built::GIT_COMMIT_HASH_SHORT)?;
+
     globals.set(
         "sleep",
         lua.create_async_function(async |_, duration: u64| {
@@ -37,11 +41,11 @@ pub fn register_functions(
         })?,
     )?;
 
-    block::register_functions(lua, globals)?;
-    events::register_functions(lua, globals, event_listeners)?;
-    logging::register_functions(lua, globals)?;
-    nochatreports::register_functions(lua, globals)?;
-    system::register_functions(lua, globals)
+    block::register_globals(lua, globals)?;
+    events::register_globals(lua, globals, event_listeners)?;
+    logging::register_globals(lua, globals)?;
+    nochatreports::register_globals(lua, globals)?;
+    system::register_globals(lua, globals)
 }
 
 pub fn reload(lua: &Lua, sender: Option<String>) -> Result<(), Error> {

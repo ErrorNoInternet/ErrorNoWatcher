@@ -4,7 +4,7 @@ use azalea::blocks::{
 };
 use mlua::{Function, Lua, Result, Table};
 
-pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
+pub fn register_globals(lua: &Lua, globals: &Table) -> Result<()> {
     globals.set(
         "get_block_from_state",
         lua.create_function(get_block_from_state)?,

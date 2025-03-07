@@ -3,7 +3,7 @@ use futures::executor::block_on;
 use mlua::{Function, Lua, Result, Table};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub fn register_functions(lua: &Lua, globals: &Table, event_listeners: ListenerMap) -> Result<()> {
+pub fn register_globals(lua: &Lua, globals: &Table, event_listeners: ListenerMap) -> Result<()> {
     let m = event_listeners.clone();
     globals.set(
         "add_listener",

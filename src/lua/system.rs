@@ -6,7 +6,7 @@ use std::{
     thread,
 };
 
-pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
+pub fn register_globals(lua: &Lua, globals: &Table) -> Result<()> {
     globals.set(
         "system",
         lua.create_function(|_, (command, args): (String, Option<Vec<OsString>>)| {

@@ -1,12 +1,14 @@
 #![feature(let_chains)]
 
 mod arguments;
+mod build_info;
 mod commands;
 mod events;
 mod http;
 mod lua;
 mod particle;
 
+use arguments::Arguments;
 use azalea::{
     DefaultBotPlugins, DefaultPlugins, brigadier::prelude::CommandDispatcher, prelude::*,
 };
@@ -46,14 +48,14 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(feature = "console-subscriber")]
     console_subscriber::init();
 
-    let args = arguments::Arguments::parse();
+    let args = Arguments::parse();
     let script_path = args.script.unwrap_or(PathBuf::from(DEFAULT_SCRIPT_PATH));
     let event_listeners = Arc::new(RwLock::new(HashMap::new()));
     let lua = unsafe { Lua::unsafe_new() };
     let globals = lua.globals();
 
     globals.set("script_path", &*script_path)?;
-    lua::register_functions(&lua, &globals, event_listeners.clone())?;
+    lua::register_globals(&lua, &globals, event_listeners.clone())?;
     lua.load(
         read_to_string(script_path)
             .expect(&(DEFAULT_SCRIPT_PATH.to_owned() + " should be in current directory")),

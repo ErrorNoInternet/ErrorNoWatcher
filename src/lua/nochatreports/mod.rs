@@ -10,7 +10,7 @@ use ncr::{
     utils::{prepend_header, trim_header},
 };
 
-pub fn register_functions(lua: &Lua, globals: &Table) -> Result<()> {
+pub fn register_globals(lua: &Lua, globals: &Table) -> Result<()> {
     globals.set(
         "ncr_aes_key_from_passphrase",
         lua.create_function(|_, passphrase: Vec<u8>| {

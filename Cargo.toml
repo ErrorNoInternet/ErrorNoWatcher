@@ -2,6 +2,7 @@
 name = "errornowatcher"
 version = "0.2.0"
 edition = "2024"
+build = "build.rs"
 
 [profile.dev]
 opt-level = 1
@@ -14,12 +15,15 @@ codegen-units = 1
 lto = true
 strip = true
 
+[build-dependencies]
+built = { version = "0", features = ["git2"] }
+
 [dependencies]
 anyhow = "1"
 azalea = { git = "https://github.com/azalea-rs/azalea.git" }
 bevy_app = "0"
 bevy_log = "0"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive", "string"] }
 console-subscriber = { version = "0", optional = true }
 futures = "0"
 futures-locks = "0"
