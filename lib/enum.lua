@@ -32,3 +32,14 @@ QUICK_CRAFT_START = 0
 QUICK_CRAFT_ADD = 1
 QUICK_CRAFT_END = 2
 PICKUP_ALL = 11
+
+POSE_NAMES = {
+	"standing",
+	"flying",
+	"sleeping",
+	"swimming",
+	"attacking",
+	"sneaking",
+	"jumping",
+	"dying",
+}

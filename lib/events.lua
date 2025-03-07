@@ -1,30 +1,90 @@
-local center = { x = 0, z = 0 }
-local radius = 100
+Center = { x = 0, y = 64, z = 0 }
+Radius = 100
+Whitelist = Owners
+Ticks = -1
 
-function log_player_positions()
-	local entities = client:find_entities(function(e)
-		return e.kind == "minecraft:player"
-			and e.position.x > center.x - radius + 1
-			and e.position.x < center.x + radius
-			and e.position.z > center.z - radius
-			and e.position.z < center.z + radius
+function check_radius()
+	Ticks = Ticks + 1
+	if Ticks % 20 ~= 0 then
+		return
+	end
+
+	local self_id = client.id
+	local players = client:find_players(function(p)
+		return self_id ~= p.id
+			and p.position.x > Center.x - Radius + 1
+			and p.position.x < Center.x + Radius
+			and p.position.z > Center.z - Radius
+			and p.position.z < Center.z + Radius
 	end)
-	for _, e in ipairs(entities) do
-		client:chat(string.format("%s (%s) at %.1f %.1f %.1f", e.kind, e.id, e.position.x, e.position.y, e.position.z))
+
+	local tab_list = client.tab_list
+	for _, player in ipairs(players) do
+		local target
+		for _, tab_player in ipairs(tab_list) do
+			if tab_player.uuid == player.uuid and not table.contains(Whitelist, tab_player.name) then
+				target = tab_player
+				break
+			end
+		end
+		if not target then
+			goto continue
+		end
+
+		client:chat(
+			string.format(
+				"%s is %s %d blocks away at %.2f %.2f %.2f facing %.2f %.2f",
+				target.name,
+				POSE_NAMES[player.pose + 1],
+				distance(Center, player.position),
+				player.position.x,
+				player.position.y,
+				player.position.z,
+				player.direction.x,
+				player.direction.y
+			)
+		)
+
+		::continue::
 	end
 end
 
-add_listener("init", function()
-	info("client initialized, setting information...")
-	client:set_client_information({ view_distance = 16 })
-end)
+function update_listeners()
+	for type, listeners in pairs(get_listeners()) do
+		for id, _ in pairs(listeners) do
+			remove_listeners(type, id)
+		end
+	end
 
-add_listener("login", function()
-	info("player successfully logged in!")
-end)
-
-add_listener("death", function()
-	warn(string.format("player died at %.1f %.1f %.1f!", client.position.x, client.position.y, client.position.z))
-end, "warn_player_died")
-
-add_listener("tick", log_player_positions)
+	for type, listeners in pairs({
+		login = {
+			message = function()
+				info("bot successfully logged in!")
+			end,
+			eat = function()
+				sleep(5000)
+				check_food(client.hunger)
+			end,
+		},
+		death = {
+			warn_bot_died = function()
+				warn(
+					string.format(
+						"bot died at %.2f %.2f %.2f facing %.2f %.2f!",
+						client.position.x,
+						client.position.y,
+						client.position.z,
+						client.direction.x,
+						client.direction.y
+					)
+				)
+			end,
+		},
+		set_health = { auto_eat = check_food },
+		tick = { log_player_positions = check_radius },
+	}) do
+		for id, callback in pairs(listeners) do
+			add_listener(type, callback, id)
+		end
+	end
+end

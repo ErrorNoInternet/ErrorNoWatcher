@@ -3,9 +3,11 @@ Username = "ErrorNoWatcher"
 Owners = { "ErrorNoInternet" }
 
 for _, module in ipairs({
+	"automation",
 	"enum",
 	"events",
 	"inventory",
+	"lib",
 	"movement",
 	"utils",
 }) do
@@ -13,3 +15,5 @@ for _, module in ipairs({
 	package.loaded[module] = nil
 	require(module)
 end
+
+update_listeners()
