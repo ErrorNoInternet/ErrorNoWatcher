@@ -22,6 +22,7 @@ pub fn held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
     Ok(client.component::<Inventory>().selected_hotbar_slot)
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn menu(lua: &Lua, client: &Client) -> Result<Table> {
     fn from_slot_list<const N: usize>(s: SlotList<N>) -> Vec<ItemStack> {
         s.iter()
@@ -45,8 +46,43 @@ pub fn menu(lua: &Lua, client: &Client) -> Result<Table> {
             table.set("inventory", from_slot_list(inventory))?;
             table.set("offhand", ItemStack::from(offhand))?;
         }
+        Menu::Generic9x3 { contents, player } => {
+            table.set("type", 3)?;
+            table.set("contents", from_slot_list(contents))?;
+            table.set("player", from_slot_list(player))?;
+        }
         Menu::Generic9x6 { contents, player } => {
             table.set("type", 6)?;
+            table.set("contents", from_slot_list(contents))?;
+            table.set("player", from_slot_list(player))?;
+        }
+        Menu::Crafting {
+            result,
+            grid,
+            player,
+        } => {
+            table.set("type", 13)?;
+            table.set("result", ItemStack::from(result))?;
+            table.set("grid", from_slot_list(grid))?;
+            table.set("player", from_slot_list(player))?;
+        }
+        Menu::Hopper { contents, player } => {
+            table.set("type", 17)?;
+            table.set("contents", from_slot_list(contents))?;
+            table.set("player", from_slot_list(player))?;
+        }
+        Menu::Merchant {
+            payments,
+            result,
+            player,
+        } => {
+            table.set("type", 20)?;
+            table.set("payments", from_slot_list(payments))?;
+            table.set("result", ItemStack::from(result))?;
+            table.set("player", from_slot_list(player))?;
+        }
+        Menu::ShulkerBox { contents, player } => {
+            table.set("type", 21)?;
             table.set("contents", from_slot_list(contents))?;
             table.set("player", from_slot_list(player))?;
         }
