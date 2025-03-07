@@ -31,26 +31,26 @@ pub fn score(_lua: &Lua, client: &Client) -> Result<i32> {
 pub async fn set_client_information(
     _lua: Lua,
     client: UserDataRef<Client>,
-    ci: Table,
+    info: Table,
 ) -> Result<()> {
-    let model_customization = if let Some(mc) = ci.get::<Option<Table>>("model_customization")? {
-        ModelCustomization {
-            cape: mc.get("cape")?,
-            jacket: mc.get("jacket")?,
-            left_sleeve: mc.get("left_sleeve")?,
-            right_sleeve: mc.get("right_sleeve")?,
-            left_pants: mc.get("left_pants")?,
-            right_pants: mc.get("right_pants")?,
-            hat: mc.get("hat")?,
-        }
-    } else {
-        ModelCustomization::default()
-    };
+    let get_bool = |table: &Table, name| table.get(name).unwrap_or(true);
+
     if let Err(error) = client
         .set_client_information(ClientInformation {
-            allows_listing: ci.get("allows_listing")?,
-            model_customization,
-            view_distance: ci.get("view_distance").unwrap_or(8),
+            allows_listing: info.get("allows_listing")?,
+            model_customization: info
+                .get::<Table>("model_customization")
+                .map(|t| ModelCustomization {
+                    cape: get_bool(&t, "cape"),
+                    jacket: get_bool(&t, "jacket"),
+                    left_sleeve: get_bool(&t, "left_sleeve"),
+                    right_sleeve: get_bool(&t, "right_sleeve"),
+                    left_pants: get_bool(&t, "left_pants"),
+                    right_pants: get_bool(&t, "right_pants"),
+                    hat: get_bool(&t, "hat"),
+                })
+                .unwrap_or_default(),
+            view_distance: info.get("view_distance").unwrap_or(8),
             ..ClientInformation::default()
         })
         .await
