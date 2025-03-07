@@ -59,13 +59,11 @@ impl UserData for Client {
     }
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
-        m.add_async_method("attack", interaction::attack);
         m.add_async_method("find_all_entities", world::find_all_entities);
         m.add_async_method("find_all_players", world::find_all_players);
         m.add_async_method("find_entities", world::find_entities);
         m.add_async_method("find_players", world::find_players);
         m.add_async_method("go_to", movement::go_to);
-        m.add_async_method("look_at", movement::look_at);
         m.add_async_method("mine", interaction::mine);
         m.add_async_method("open_container_at", container::open_container_at);
         m.add_async_method("set_client_information", state::set_client_information);
@@ -82,8 +80,10 @@ impl UserData for Client {
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
         m.add_method("stop_sleeping", movement::stop_sleeping);
         m.add_method("use_item", interaction::use_item);
+        m.add_method_mut("attack", interaction::attack);
         m.add_method_mut("block_interact", interaction::block_interact);
         m.add_method_mut("jump", movement::jump);
+        m.add_method_mut("look_at", movement::look_at);
         m.add_method_mut("open_inventory", container::open_inventory);
         m.add_method_mut("set_direction", movement::set_direction);
         m.add_method_mut("set_jumping", movement::set_jumping);

@@ -1,6 +1,6 @@
 use super::{Client, Direction, Vec3};
 use azalea::{
-    BlockPos, BotClientExt, LookAtEvent, SprintDirection, WalkDirection,
+    BlockPos, BotClientExt, SprintDirection, WalkDirection,
     entity::Position,
     interact::HitResultComponent,
     pathfinder::{
@@ -141,22 +141,8 @@ pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
     })
 }
 
-pub async fn look_at(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Result<()> {
-    client
-        .clone()
-        .look_at(azalea::Vec3::new(position.x, position.y, position.z));
-
-    while client.get_tick_broadcaster().recv().await.is_ok() {
-        if client
-            .ecs
-            .lock()
-            .get::<LookAtEvent>(client.entity)
-            .is_none()
-        {
-            break;
-        }
-    }
-
+pub fn look_at(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
+    client.look_at(azalea::Vec3::new(position.x, position.y, position.z));
     Ok(())
 }
 
