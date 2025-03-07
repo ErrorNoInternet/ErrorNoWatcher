@@ -78,6 +78,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             call_listeners(&state, "disconnect", message.map(|m| m.to_string())).await;
             exit(0)
         }
+        Event::KeepAlive(id) => call_listeners(&state, "keep_alive", id).await,
         Event::Login => call_listeners(&state, "login", ()).await,
         Event::RemovePlayer(player_info) => {
             call_listeners(&state, "remove_player", Player::from(player_info)).await;
@@ -174,7 +175,6 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                 });
             }
         }
-        _ => (),
     }
 
     Ok(())
