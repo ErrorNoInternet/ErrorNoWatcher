@@ -28,15 +28,16 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
 
             if let Some(sender) = sender {
                 let mut ncr_options = None;
-                if let (Ok(options), Ok(decrypt)) = (
-                    globals.get::<Table>("NcrOptions"),
-                    globals.get::<Function>("ncr_decrypt"),
-                ) && let Ok(decrypted) =
-                    decrypt.call::<String>((options.clone(), content.clone()))
-                    && let Ok(trimmed) = trim_header(&decrypted)
+                if let Ok(options) = globals.get::<Table>("NcrOptions")
+                    && let Ok(decrypt) = globals.get::<Function>("ncr_decrypt")
+                    && let Some(plaintext) = decrypt
+                        .call::<String>((options.clone(), content.clone()))
+                        .ok()
+                        .as_deref()
+                        .and_then(|s| trim_header(s).ok())
                 {
                     ncr_options = Some(options);
-                    trimmed.clone_into(&mut content);
+                    plaintext.clone_into(&mut content);
                     info!("decrypted message from {sender}: {content}");
                 }
 

@@ -24,12 +24,11 @@ impl CommandSource {
             .chunks(if self.ncr_options.is_some() { 150 } else { 236 })
             .map(|chars| chars.iter().collect::<String>())
         {
-            if let (Some(options), Ok(encrypt)) = (
-                &self.ncr_options,
-                self.state.lua.globals().get::<Function>("ncr_encrypt"),
-            ) && let Ok(encrypted) = encrypt.call::<String>((options, prepend_header(&chunk)))
+            if let Some(options) = &self.ncr_options
+                && let Ok(encrypt) = self.state.lua.globals().get::<Function>("ncr_encrypt")
+                && let Ok(ciphertext) = encrypt.call::<String>((options, prepend_header(&chunk)))
             {
-                chunk = encrypted;
+                chunk = ciphertext;
             }
             self.client.chat(
                 &(if self.message.is_whisper()
