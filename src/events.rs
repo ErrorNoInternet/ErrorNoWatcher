@@ -5,7 +5,10 @@ use crate::{
     lua::{self, direction::Direction, player::Player, vec3::Vec3},
     particle,
 };
-use azalea::{prelude::*, protocol::packets::game::ClientboundGamePacket};
+use azalea::{
+    brigadier::exceptions::BuiltInExceptions::DispatcherUnknownCommand, prelude::*,
+    protocol::packets::game::ClientboundGamePacket,
+};
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
@@ -44,8 +47,9 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                     info!("decrypted message from {sender}: {content}");
                 }
 
-                if is_whisper && globals.get::<Vec<String>>("Owners")?.contains(sender) {
-                    if let Err(error) = state.commands.execute(
+                if is_whisper
+                    && globals.get::<Vec<String>>("Owners")?.contains(sender)
+                    && let Err(error) = state.commands.execute(
                         content.clone(),
                         CommandSource {
                             client: client.clone(),
@@ -54,15 +58,16 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                             ncr_options: ncr_options.clone(),
                         }
                         .into(),
-                    ) {
-                        CommandSource {
-                            client,
-                            message,
-                            state: state.clone(),
-                            ncr_options,
-                        }
-                        .reply(&format!("{error:?}"));
+                    )
+                    && error.type_ != DispatcherUnknownCommand
+                {
+                    CommandSource {
+                        client,
+                        message,
+                        state: state.clone(),
+                        ncr_options,
                     }
+                    .reply(&format!("{error:?}"));
                 }
             }
 
