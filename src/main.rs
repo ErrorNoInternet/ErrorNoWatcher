@@ -110,7 +110,7 @@ async fn main() -> anyhow::Result<()> {
             server.as_ref(),
         )
         .await;
-    eprintln!("{error:?}");
+    eprintln!("{error}");
 
     Ok(())
 }
