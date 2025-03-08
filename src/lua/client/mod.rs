@@ -55,6 +55,7 @@ impl UserData for Client {
         f.add_field_method_get("position", movement::position);
         f.add_field_method_get("score", state::score);
         f.add_field_method_get("tab_list", tab_list);
+        f.add_field_method_get("username", username);
         f.add_field_method_get("uuid", uuid);
     }
 
@@ -113,6 +114,10 @@ fn tab_list(_lua: &Lua, client: &Client) -> Result<Vec<Player>> {
         tab_list.push(Player::from(player_info));
     }
     Ok(tab_list)
+}
+
+fn username(_lua: &Lua, client: &Client) -> Result<String> {
+    Ok(client.username())
 }
 
 fn uuid(_lua: &Lua, client: &Client) -> Result<String> {
