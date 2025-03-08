@@ -32,9 +32,10 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             let ansi_text = text.to_ansi();
             info!("{ansi_text}");
 
+            let mut is_encrypted = false;
             if let Some(ref sender) = sender {
-                let mut ncr_options = None;
-                if let Ok(options) = globals.get::<Table>("NcrOptions")
+                let ncr_options = globals.get::<Table>("NcrOptions").ok();
+                if let Some(ref options) = ncr_options
                     && let Ok(decrypt) = globals.get::<Function>("ncr_decrypt")
                     && let Some(plaintext) = decrypt
                         .call::<String>((options.clone(), content.clone()))
@@ -42,7 +43,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                         .as_deref()
                         .and_then(|s| trim_header(s).ok())
                 {
-                    ncr_options = Some(options);
+                    is_encrypted = true;
                     plaintext.clone_into(&mut content);
                     info!("decrypted message from {sender}: {content}");
                 }
@@ -81,6 +82,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             table.set("content", content)?;
             table.set("uuid", uuid)?;
             table.set("is_whisper", is_whisper)?;
+            table.set("is_encrypted", is_encrypted)?;
             call_listeners(&state, "chat", table).await;
         }
         Event::Death(packet) => {
