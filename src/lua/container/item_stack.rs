@@ -1,4 +1,4 @@
-use azalea::inventory::components::{CustomName, Damage, MaxDamage};
+use azalea::inventory::components::{CustomName, Damage, Food, MaxDamage};
 use mlua::{UserData, UserDataFields, UserDataMethods};
 
 pub struct ItemStack {
@@ -35,6 +35,25 @@ impl UserData for ItemStack {
                 .inner
                 .as_present()
                 .map(|data| data.components.get::<MaxDamage>().map(|d| d.amount)))
+        });
+
+        f.add_field_method_get("food", |lua, this| {
+            Ok(
+                if let Some(food) = this
+                    .inner
+                    .as_present()
+                    .and_then(|data| data.components.get::<Food>())
+                {
+                    let table = lua.create_table()?;
+                    table.set("nutrition", food.nutrition)?;
+                    table.set("saturation", food.saturation)?;
+                    table.set("can_always_eat", food.can_always_eat)?;
+                    table.set("eat_seconds", food.eat_seconds)?;
+                    Some(table)
+                } else {
+                    None
+                },
+            )
         });
     }
 
