@@ -23,10 +23,13 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
         Event::Chat(message) => {
             let globals = state.lua.globals();
             let (sender, mut content) = message.split_sender_and_content();
-            let formatted_message = message.message();
-            info!("{}", formatted_message.to_ansi());
+            let uuid = message.uuid().map(|uuid| uuid.to_string());
+            let is_whisper = message.is_whisper();
+            let text = message.message();
+            let ansi_text = text.to_ansi();
+            info!("{ansi_text}");
 
-            if let Some(sender) = sender {
+            if let Some(ref sender) = sender {
                 let mut ncr_options = None;
                 if let Ok(options) = globals.get::<Table>("NcrOptions")
                     && let Ok(decrypt) = globals.get::<Function>("ncr_decrypt")
@@ -41,9 +44,9 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                     info!("decrypted message from {sender}: {content}");
                 }
 
-                if message.is_whisper() && globals.get::<Vec<String>>("Owners")?.contains(&sender) {
+                if is_whisper && globals.get::<Vec<String>>("Owners")?.contains(sender) {
                     if let Err(error) = state.commands.execute(
-                        content,
+                        content.clone(),
                         CommandSource {
                             client: client.clone(),
                             message: message.clone(),
@@ -63,7 +66,14 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                 }
             }
 
-            call_listeners(&state, "chat", formatted_message.to_string()).await;
+            let table = state.lua.create_table()?;
+            table.set("text", text.to_string())?;
+            table.set("ansi_text", ansi_text)?;
+            table.set("sender", sender)?;
+            table.set("content", content)?;
+            table.set("uuid", uuid)?;
+            table.set("is_whisper", is_whisper)?;
+            call_listeners(&state, "chat", table).await;
         }
         Event::Death(packet) => {
             if let Some(packet) = packet {
