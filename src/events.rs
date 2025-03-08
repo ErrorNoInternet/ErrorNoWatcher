@@ -48,7 +48,10 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                 }
 
                 if is_whisper
-                    && globals.get::<Vec<String>>("Owners")?.contains(sender)
+                    && globals
+                        .get::<Vec<String>>("Owners")
+                        .unwrap_or_default()
+                        .contains(sender)
                     && let Err(error) = state.commands.execute(
                         content.clone(),
                         CommandSource {
