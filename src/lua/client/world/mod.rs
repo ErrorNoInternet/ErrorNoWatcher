@@ -51,7 +51,11 @@ pub fn find_blocks(
         .collect())
 }
 
-pub async fn find_all_entities(lua: Lua, client: UserDataRef<Client>, (): ()) -> Result<Vec<Table>> {
+pub async fn find_all_entities(
+    lua: Lua,
+    client: UserDataRef<Client>,
+    (): (),
+) -> Result<Vec<Table>> {
     let mut matched = Vec::new();
     for (position, custom_name, kind, uuid, direction, id, owner_uuid, pose) in
         get_entities!(client)
