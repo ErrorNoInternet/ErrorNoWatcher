@@ -86,8 +86,11 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
         }
         Event::Death(packet) => {
             if let Some(packet) = packet {
+                let message_table = state.lua.create_table()?;
+                message_table.set("text", packet.message.to_string())?;
+                message_table.set("ansi_text", packet.message.to_ansi())?;
                 let table = state.lua.create_table()?;
-                table.set("message", packet.message.to_string())?;
+                table.set("message", message_table)?;
                 table.set("player_id", packet.player_id.0)?;
                 call_listeners(&state, "death", table).await;
             } else {
@@ -95,7 +98,14 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             }
         }
         Event::Disconnect(message) => {
-            call_listeners(&state, "disconnect", message.map(|m| m.to_string())).await;
+            if let Some(message) = message {
+                let table = state.lua.create_table()?;
+                table.set("text", message.to_string())?;
+                table.set("ansi_text", message.to_ansi())?;
+                call_listeners(&state, "disconnect", table).await;
+            } else {
+                call_listeners(&state, "disconnect", ()).await;
+            }
         }
         Event::KeepAlive(id) => call_listeners(&state, "keep_alive", id).await,
         Event::Login => call_listeners(&state, "login", ()).await,
