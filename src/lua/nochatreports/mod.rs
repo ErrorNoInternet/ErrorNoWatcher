@@ -42,24 +42,14 @@ pub fn register_globals(lua: &Lua, globals: &Table) -> Result<()> {
     globals.set(
         "ncr_encrypt",
         lua.create_function(|_, (options, plaintext): (Table, String)| {
-            Ok(crypt!(
-                encrypt,
-                options.get("encoding").unwrap_or_default(),
-                options,
-                plaintext
-            ))
+            Ok(crypt!(encrypt, options, &plaintext))
         })?,
     )?;
 
     globals.set(
         "ncr_decrypt",
         lua.create_function(|_, (options, ciphertext): (Table, String)| {
-            Ok(crypt!(
-                decrypt,
-                options.get("encoding").unwrap_or_default(),
-                options,
-                ciphertext
-            ))
+            Ok(crypt!(decrypt, options, &ciphertext))
         })?,
     )?;
 
