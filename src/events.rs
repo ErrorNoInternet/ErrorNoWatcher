@@ -2,9 +2,11 @@ use crate::{
     State,
     commands::CommandSource,
     http::serve,
-    lua::{self, direction::Direction, player::Player, vec3::Vec3},
+    lua::{client, direction::Direction, player::Player, vec3::Vec3},
     particle,
+    replay::Recorder,
 };
+use anyhow::Context;
 use azalea::{
     brigadier::exceptions::BuiltInExceptions::DispatcherUnknownCommand, prelude::*,
     protocol::packets::game::ClientboundGamePacket,
@@ -12,7 +14,7 @@ use azalea::{
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
-use mlua::{Function, IntoLuaMulti, Table};
+use mlua::{Error, Function, IntoLuaMulti, Table};
 use ncr::utils::trim_header;
 use tokio::net::TcpListener;
 
@@ -167,9 +169,23 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
         Event::Init => {
             debug!("received initialize event");
 
-            state.lua.globals().set(
+            let globals = state.lua.globals();
+            let lua_ecs = client.ecs.clone();
+            globals.set(
+                "finish_replay_recording",
+                state.lua.create_function_mut(move |_, (): ()| {
+                    lua_ecs
+                        .lock()
+                        .remove_resource::<Recorder>()
+                        .context("recording not active")
+                        .map_err(Error::external)?
+                        .finish()
+                        .map_err(Error::external)
+                })?,
+            )?;
+            globals.set(
                 "client",
-                lua::client::Client {
+                client::Client {
                     inner: Some(client),
                 },
             )?;

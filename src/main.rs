@@ -7,6 +7,7 @@ mod events;
 mod http;
 mod lua;
 mod particle;
+mod replay;
 
 use arguments::Arguments;
 use azalea::{
@@ -21,7 +22,8 @@ use clap::Parser;
 use commands::{CommandSource, register};
 use futures::lock::Mutex;
 use futures_locks::RwLock;
-use mlua::{Function, Lua};
+use mlua::{Function, Lua, Table};
+use replay::{Recorder, plugin::RecordPlugin};
 use std::{
     collections::HashMap,
     env,
@@ -37,10 +39,10 @@ type ListenerMap = Arc<RwLock<HashMap<String, Vec<(String, Function)>>>>;
 
 #[derive(Default, Clone, Component)]
 pub struct State {
+    http_address: Option<SocketAddr>,
     lua: Arc<Lua>,
     event_listeners: ListenerMap,
     commands: Arc<CommandDispatcher<Mutex<CommandSource>>>,
-    http_address: Option<SocketAddr>,
 }
 
 #[tokio::main]
@@ -91,15 +93,33 @@ async fn main() -> anyhow::Result<()> {
             ..Default::default()
         })
     };
+    let record_plugin = RecordPlugin {
+        recorder: Arc::new(parking_lot::Mutex::new(
+            if let Ok(options) = globals.get::<Table>("ReplayRecordingOptions")
+                && let Ok(path) = options.get::<String>("path")
+            {
+                Some(Recorder::new(
+                    path,
+                    server.clone(),
+                    options
+                        .get::<bool>("ignore_compression")
+                        .unwrap_or_default(),
+                )?)
+            } else {
+                None
+            },
+        )),
+    };
     let Err(error) = ClientBuilder::new_without_plugins()
         .add_plugins(default_plugins)
+        .add_plugins(record_plugin)
         .add_plugins(DefaultBotPlugins)
         .set_handler(events::handle_event)
         .set_state(State {
+            http_address: args.http_address,
             lua: Arc::new(lua),
             event_listeners,
             commands: Arc::new(commands),
-            http_address: args.http_address,
         })
         .start(
             if username.contains('@') {

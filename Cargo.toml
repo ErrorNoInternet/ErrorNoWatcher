@@ -22,6 +22,7 @@ built = { version = "0", features = ["git2"] }
 anyhow = "1"
 azalea = { git = "https://github.com/azalea-rs/azalea.git" }
 bevy_app = "0"
+bevy_ecs = "0"
 bevy_log = "0"
 clap = { version = "4", features = ["derive", "string"] }
 console-subscriber = { version = "0", optional = true }
@@ -33,7 +34,10 @@ hyper-util = "0"
 log = { version = "0" }
 mlua = { version = "0", features = ["async", "luajit", "send"] }
 ncr = { version = "0", features = ["cfb8", "ecb", "gcm"] }
+parking_lot = "0"
+serde_json = "1"
 tokio = { version = "1", features = ["macros"] }
+zip = "2"
 
 [features]
 console-subscriber = ["dep:console-subscriber"]
