@@ -8,6 +8,7 @@ use azalea::{
     protocol::packets::{PROTOCOL_VERSION, ProtocolPacket, VERSION_NAME},
 };
 use serde_json::json;
+use smallvec::SmallVec;
 use std::{
     fs::File,
     io::Write,
@@ -72,15 +73,16 @@ impl Recorder {
     }
 
     fn save_raw_packet(&mut self, raw_packet: &[u8]) -> Result<()> {
-        let mut data = Vec::from(self.get_timestamp()?);
-        data.extend(TryInto::<u32>::try_into(raw_packet.len())?.to_be_bytes());
+        let mut data = Vec::with_capacity(raw_packet.len() + 8);
+        data.extend(self.get_timestamp()?);
+        data.extend(&TryInto::<u32>::try_into(raw_packet.len())?.to_be_bytes());
         data.extend(raw_packet);
         self.zip_writer.write_all(&data)?;
         Ok(())
     }
 
     fn save_packet<T: ProtocolPacket>(&mut self, packet: &T) -> Result<()> {
-        let mut raw_packet = Vec::new();
+        let mut raw_packet = SmallVec::<[u8; 256]>::new();
         packet.id().azalea_write_var(&mut raw_packet)?;
         packet.write(&mut raw_packet)?;
         self.save_raw_packet(&raw_packet)

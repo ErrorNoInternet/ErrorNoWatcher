@@ -13,7 +13,7 @@ pub struct Player {
 impl From<PlayerInfo> for Player {
     fn from(p: PlayerInfo) -> Self {
         Self {
-            display_name: p.display_name.map(|n| n.to_string()),
+            display_name: p.display_name.map(|text| text.to_string()),
             gamemode: p.gamemode.to_id(),
             latency: p.latency,
             name: p.profile.name,

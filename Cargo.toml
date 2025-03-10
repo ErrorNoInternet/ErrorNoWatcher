@@ -36,6 +36,7 @@ mlua = { version = "0", features = ["async", "luajit", "send"] }
 ncr = { version = "0", features = ["cfb8", "ecb", "gcm"] }
 parking_lot = "0"
 serde_json = "1"
+smallvec = { version = "1", features = ["write"] }
 tokio = { version = "1", features = ["macros"] }
 zip = "2"
 

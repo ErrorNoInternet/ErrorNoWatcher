@@ -109,11 +109,7 @@ fn id(_lua: &Lua, client: &Client) -> Result<i32> {
 }
 
 fn tab_list(_lua: &Lua, client: &Client) -> Result<Vec<Player>> {
-    let mut tab_list = Vec::new();
-    for (_, player_info) in client.tab_list() {
-        tab_list.push(Player::from(player_info));
-    }
-    Ok(tab_list)
+    Ok(client.tab_list().into_values().map(Player::from).collect())
 }
 
 fn username(_lua: &Lua, client: &Client) -> Result<String> {

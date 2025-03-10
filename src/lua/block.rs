@@ -41,7 +41,7 @@ pub async fn get_block_states(
     lua: Lua,
     (block_names, filter_fn): (Vec<String>, Option<Function>),
 ) -> Result<Vec<u16>> {
-    let mut matched = Vec::new();
+    let mut matched = Vec::with_capacity(16);
     for block_name in block_names {
         for block in
             (u32::MIN..u32::MAX).map_while(|possible_id| BlockState::try_from(possible_id).ok())

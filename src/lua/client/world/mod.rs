@@ -56,7 +56,7 @@ pub async fn find_all_entities(
     client: UserDataRef<Client>,
     (): (),
 ) -> Result<Vec<Table>> {
-    let mut matched = Vec::new();
+    let mut matched = Vec::with_capacity(256);
     for (position, custom_name, kind, uuid, direction, id, owner_uuid, pose) in
         get_entities!(client)
     {

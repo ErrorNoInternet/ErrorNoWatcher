@@ -1471,6 +1471,7 @@ dependencies = [
  "ncr",
  "parking_lot",
  "serde_json",
+ "smallvec",
  "tokio",
  "zip",
 ]
