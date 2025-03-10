@@ -1,6 +1,6 @@
 Center = { x = 0, y = 64, z = 0 }
 Radius = 100
-Whitelist = Owners
+Whitelist = table.shallow_copy(Owners)
 Ticks = -1
 
 function check_radius()

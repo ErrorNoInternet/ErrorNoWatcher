@@ -145,7 +145,7 @@ function interact_bed()
 		return
 	end
 
-	client:go_to(bed, { type = REACH_BLOCK_POS_GOAL, options = { without_mining = true } })
+	client:go_to({ position = bed, radius = 2 }, { type = RADIUS_GOAL, options = { without_mining = true } })
 	while client.pathfinder.is_calculating or client.pathfinder.is_executing do
 		sleep(500)
 	end
