@@ -28,7 +28,6 @@ use std::{
     collections::HashMap,
     env,
     fs::{OpenOptions, read_to_string},
-    net::SocketAddr,
     path::PathBuf,
     sync::Arc,
 };
@@ -39,7 +38,6 @@ type ListenerMap = Arc<RwLock<HashMap<String, Vec<(String, Function)>>>>;
 
 #[derive(Default, Clone, Component)]
 pub struct State {
-    http_address: Option<SocketAddr>,
     lua: Arc<Lua>,
     event_listeners: ListenerMap,
     commands: Arc<CommandDispatcher<Mutex<CommandSource>>>,
@@ -116,7 +114,6 @@ async fn main() -> anyhow::Result<()> {
         .add_plugins(DefaultBotPlugins)
         .set_handler(events::handle_event)
         .set_state(State {
-            http_address: args.http_address,
             lua: Arc::new(lua),
             event_listeners,
             commands: Arc::new(commands),

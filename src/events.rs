@@ -16,6 +16,7 @@ use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
 use mlua::{Error, Function, IntoLuaMulti, Table};
 use ncr::utils::trim_header;
+use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
 #[allow(clippy::too_many_lines)]
@@ -191,7 +192,11 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             )?;
             call_listeners(&state, "init", ()).await;
 
-            let Some(address) = state.http_address else {
+            let Some(address): Option<SocketAddr> = globals
+                .get::<String>("HttpAddress")
+                .ok()
+                .and_then(|string| string.parse().ok())
+            else {
                 return Ok(());
             };
 
