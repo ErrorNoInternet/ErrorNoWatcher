@@ -52,7 +52,7 @@ pub fn reload(lua: &Lua, sender: Option<String>) -> Result<(), Error> {
     lua.load(
         &std::fs::read_to_string(
             lua.globals()
-                .get::<String>("script_path")
+                .get::<String>("SCRIPT_PATH")
                 .map_err(Error::MissingPath)?,
         )
         .map_err(Error::ReadFile)?,

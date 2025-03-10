@@ -54,13 +54,17 @@ async fn main() -> anyhow::Result<()> {
     let lua = unsafe { Lua::unsafe_new() };
     let globals = lua.globals();
 
-    globals.set("script_path", &*script_path)?;
     lua::register_globals(&lua, &globals, event_listeners.clone())?;
+    globals.set("SCRIPT_PATH", &*script_path)?;
     lua.load(
         read_to_string(script_path)
             .expect(&(DEFAULT_SCRIPT_PATH.to_owned() + " should be in current directory")),
     )
     .exec()?;
+    if let Some(code) = args.exec {
+        lua.load(code).exec()?;
+    }
+
     let server = globals
         .get::<String>("Server")
         .expect("Server should be in lua globals");
