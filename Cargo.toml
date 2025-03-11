@@ -32,6 +32,7 @@ http-body-util = "0"
 hyper = { version = "1", features = ["server"] }
 hyper-util = "0"
 log = { version = "0" }
+mimalloc = { version = "0", optional = true }
 mlua = { version = "0", features = ["async", "luajit", "send"] }
 ncr = { version = "0", features = ["cfb8", "ecb", "gcm"] }
 parking_lot = "0"
@@ -42,3 +43,4 @@ zip = "2"
 
 [features]
 console-subscriber = ["dep:console-subscriber"]
+mimalloc = ["dep:mimalloc"]

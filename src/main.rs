@@ -33,6 +33,9 @@ use std::{
     sync::Arc,
 };
 
+#[cfg(feature = "mimalloc")]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 type ListenerMap = Arc<RwLock<HashMap<String, Vec<(String, Function)>>>>;
 
