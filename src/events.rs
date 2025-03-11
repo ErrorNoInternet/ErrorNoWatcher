@@ -165,6 +165,13 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
                 table.set("passengers", &*packet.passengers)?;
                 call_listeners(&state, "set_passengers", table).await;
             }
+            ClientboundGamePacket::SetTime(packet) => {
+                let table = state.lua.create_table()?;
+                table.set("day_time", packet.day_time)?;
+                table.set("game_time", packet.game_time)?;
+                table.set("tick_day_time", packet.tick_day_time)?;
+                call_listeners(&state, "set_time", table).await;
+            }
             _ => (),
         },
         Event::Init => {
