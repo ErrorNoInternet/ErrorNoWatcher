@@ -12,14 +12,14 @@ use smallvec::SmallVec;
 use std::{
     fs::File,
     io::Write,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Instant, SystemTime, UNIX_EPOCH},
 };
 use zip::{ZipWriter, write::SimpleFileOptions};
 
 #[derive(Resource)]
 pub struct Recorder {
     zip_writer: ZipWriter<File>,
-    start_time: u128,
+    start: Instant,
     server: String,
     ignore_compression: bool,
 }
@@ -36,21 +36,23 @@ impl Recorder {
         zip_writer.start_file("recording.tmcpr", SimpleFileOptions::default())?;
         Ok(Self {
             zip_writer,
-            start_time: SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
+            start: Instant::now(),
             server,
             ignore_compression,
         })
     }
 
     pub fn finish(mut self) -> Result<()> {
+        let elapsed = self.start.elapsed();
+
         self.zip_writer
             .start_file("metaData.json", SimpleFileOptions::default())?;
         self.zip_writer.write_all(
             json!({
                 "singleplayer": false,
                 "serverName": self.server,
-                "duration": SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() - self.start_time,
-                "date": self.start_time,
+                "duration": elapsed.as_millis(),
+                "date": SystemTime::now().duration_since(UNIX_EPOCH)? - elapsed,
                 "mcversion": VERSION_NAME,
                 "fileFormat": "MCPR",
                 "fileFormatVersion": 14,
@@ -66,10 +68,7 @@ impl Recorder {
     }
 
     fn get_timestamp(&self) -> Result<[u8; 4]> {
-        Ok(TryInto::<u32>::try_into(
-            SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() - self.start_time,
-        )?
-        .to_be_bytes())
+        Ok(TryInto::<u32>::try_into(self.start.elapsed().as_millis())?.to_be_bytes())
     }
 
     fn save_raw_packet(&mut self, raw_packet: &[u8]) -> Result<()> {
