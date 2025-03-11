@@ -52,12 +52,12 @@ impl Recorder {
                 "singleplayer": false,
                 "serverName": self.server,
                 "duration": elapsed.as_millis(),
-                "date": SystemTime::now().duration_since(UNIX_EPOCH)? - elapsed,
+                "date": (SystemTime::now().duration_since(UNIX_EPOCH)? - elapsed).as_millis(),
                 "mcversion": VERSION_NAME,
                 "fileFormat": "MCPR",
                 "fileFormatVersion": 14,
                 "protocol": PROTOCOL_VERSION,
-                "generator": build_info::version_formatted(),
+                "generator": format!("errornowatcher {}", build_info::version_formatted()),
             })
             .to_string()
             .as_bytes(),
