@@ -937,8 +937,7 @@ dependencies = [
 [[package]]
 name = "built"
 version = "0.7.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56ed6191a7e78c36abdb16ab65341eefd73d64d303fffccdbb00d51e4205967b"
+source = "git+https://github.com/lukaslueg/built#9468c3a117265cc5976bb82631861aa133f32aec"
 dependencies = [
  "git2",
 ]

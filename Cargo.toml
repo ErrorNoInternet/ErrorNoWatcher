@@ -16,7 +16,7 @@ lto = true
 strip = true
 
 [build-dependencies]
-built = { version = "0", features = ["git2"] }
+built = { git = "https://github.com/lukaslueg/built", features = ["git2"] }
 
 [dependencies]
 anyhow = "1"
