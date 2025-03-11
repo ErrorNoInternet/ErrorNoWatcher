@@ -1,0 +1,68 @@
+name: Lint
+on:
+    push:
+        paths:
+            - "**.rs"
+            - "Cargo.*"
+    pull_request:
+    workflow_dispatch:
+
+jobs:
+    cargo-toml:
+        name: Cargo.toml
+        runs-on: ubuntu-24.04
+
+        steps:
+            - name: Clone repository
+              uses: actions/checkout@v4
+
+            - name: Install taplo
+              uses: uncenter/setup-taplo@v1
+
+            - name: Run taplo lint
+              run: taplo lint Cargo.toml
+
+            - name: Run taplo fmt
+              if: always()
+              run: taplo fmt --check Cargo.toml
+
+    rust:
+        name: Rust
+        runs-on: ubuntu-24.04
+
+        steps:
+            - name: Clone repository
+              uses: actions/checkout@v4
+
+            - name: Install build dependencies
+              run: sudo apt install -y libluajit-5.1-dev mold
+
+            - name: Set up build cache
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/bin/
+                      ~/.cargo/registry/index/
+                      ~/.cargo/registry/cache/
+                      ~/.cargo/git/db/
+                      target/
+                  key: build-${{ runner.os }}-${{ hashFiles('Cargo.*') }}
+
+            - name: Switch to nightly toolchain
+              run: rustup default nightly
+
+            - name: Install components
+              run: rustup component add clippy rustfmt
+
+            - name: cargo clippy
+              run: >-
+                  cargo clippy -- -D clippy::pedantic
+                  -A clippy::missing_errors_doc
+                  -A clippy::missing_panics_doc
+                  -A clippy::must_use_candidate
+                  -A clippy::needless-pass-by-value
+                  -A clippy::unnecessary-wraps
+
+            - name: cargo fmt
+              if: always()
+              run: cargo fmt --check
