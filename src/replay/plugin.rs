@@ -1,4 +1,4 @@
-use super::Recorder;
+use super::recorder::Recorder;
 use azalea::{
     ecs::{event::EventReader, system::Query},
     packet_handling::{
@@ -36,7 +36,7 @@ fn record_login_packets(
 ) {
     if let Some(mut recorder) = recorder {
         for event in events.read() {
-            if recorder.ignore_compression
+            if recorder.should_ignore_compression
                 && let ClientboundLoginPacket::LoginCompression(_) = *event.packet
             {
                 continue;

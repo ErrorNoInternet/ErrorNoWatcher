@@ -24,7 +24,7 @@ use commands::{CommandSource, register};
 use futures::lock::Mutex;
 use futures_locks::RwLock;
 use mlua::{Function, Lua, Table};
-use replay::{Recorder, plugin::RecordPlugin};
+use replay::{plugin::RecordPlugin, recorder::Recorder};
 use std::{
     collections::HashMap,
     env,

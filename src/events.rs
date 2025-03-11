@@ -4,7 +4,7 @@ use crate::{
     http::serve,
     lua::{client, direction::Direction, player::Player, vec3::Vec3},
     particle,
-    replay::Recorder,
+    replay::recorder::Recorder,
 };
 use anyhow::Context;
 use azalea::{
