@@ -9,6 +9,7 @@ mod lua;
 mod particle;
 mod replay;
 
+use anyhow::Context;
 use arguments::Arguments;
 use azalea::{
     DefaultBotPlugins, DefaultPlugins, brigadier::prelude::CommandDispatcher, prelude::*,
@@ -32,7 +33,6 @@ use std::{
     sync::Arc,
 };
 
-const DEFAULT_SCRIPT_PATH: &str = "errornowatcher.lua";
 
 type ListenerMap = Arc<RwLock<HashMap<String, Vec<(String, Function)>>>>;
 
@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
     console_subscriber::init();
 
     let args = Arguments::parse();
-    let script_path = args.script.unwrap_or(PathBuf::from(DEFAULT_SCRIPT_PATH));
+    let script_path = args.script.unwrap_or(PathBuf::from("errornowatcher.lua"));
     let event_listeners = Arc::new(RwLock::new(HashMap::new()));
     let lua = unsafe { Lua::unsafe_new() };
     let globals = lua.globals();
@@ -57,8 +57,7 @@ async fn main() -> anyhow::Result<()> {
     lua::register_globals(&lua, &globals, event_listeners.clone())?;
     globals.set("SCRIPT_PATH", &*script_path)?;
     lua.load(
-        read_to_string(script_path)
-            .expect(&(DEFAULT_SCRIPT_PATH.to_owned() + " should be in current directory")),
+        read_to_string(&script_path).with_context(|| format!("failed to read {script_path:?}"))?,
     )
     .exec()?;
     if let Some(code) = args.exec {
