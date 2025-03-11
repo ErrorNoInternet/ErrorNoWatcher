@@ -60,7 +60,8 @@ async fn main() -> anyhow::Result<()> {
     lua::register_globals(&lua, &globals, event_listeners.clone())?;
     globals.set("SCRIPT_PATH", &*script_path)?;
     lua.load(
-        read_to_string(&script_path).with_context(|| format!("failed to read {script_path:?}"))?,
+        read_to_string(&script_path)
+            .with_context(|| format!("failed to read {}", script_path.display()))?,
     )
     .exec()?;
     if let Some(code) = args.exec {
