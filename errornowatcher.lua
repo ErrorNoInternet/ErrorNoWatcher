@@ -4,11 +4,11 @@ HttpAddress = "127.0.0.1:8080"
 Owners = { "ErrorNoInternet" }
 
 for _, module in ipairs({
+	"lib",
 	"automation",
 	"enum",
 	"events",
 	"inventory",
-	"lib",
 	"movement",
 	"utils",
 }) do
