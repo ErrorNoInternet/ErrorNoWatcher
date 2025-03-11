@@ -65,13 +65,9 @@ impl Recorder {
         Ok(())
     }
 
-    fn get_timestamp(&self) -> Result<[u8; 4]> {
-        Ok(TryInto::<u32>::try_into(self.start.elapsed().as_millis())?.to_be_bytes())
-    }
-
     pub fn save_raw_packet(&mut self, raw_packet: &[u8]) -> Result<()> {
         let mut data = Vec::with_capacity(raw_packet.len() + 8);
-        data.extend(self.get_timestamp()?);
+        data.extend(&TryInto::<u32>::try_into(self.start.elapsed().as_millis())?.to_be_bytes());
         data.extend(&TryInto::<u32>::try_into(raw_packet.len())?.to_be_bytes());
         data.extend(raw_packet);
         self.zip_writer.write_all(&data)?;
