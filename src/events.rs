@@ -6,7 +6,7 @@ use crate::{
     particle,
     replay::recorder::Recorder,
 };
-use anyhow::Context;
+use anyhow::{Context, Result};
 use azalea::{
     brigadier::exceptions::BuiltInExceptions::DispatcherUnknownCommand, prelude::*,
     protocol::packets::game::ClientboundGamePacket,
@@ -20,7 +20,7 @@ use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
 #[allow(clippy::too_many_lines)]
-pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow::Result<()> {
+pub async fn handle_event(client: Client, event: Event, state: State) -> Result<()> {
     match event {
         Event::AddPlayer(player_info) => {
             call_listeners(&state, "add_player", Player::from(player_info)).await;
@@ -178,12 +178,11 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> anyhow:
             debug!("received initialize event");
 
             let globals = state.lua.globals();
-            let lua_ecs = client.ecs.clone();
+            let ecs = client.ecs.clone();
             globals.set(
                 "finish_replay_recording",
                 state.lua.create_function_mut(move |_, (): ()| {
-                    lua_ecs
-                        .lock()
+                    ecs.lock()
                         .remove_resource::<Recorder>()
                         .context("recording not active")
                         .map_err(Error::external)?

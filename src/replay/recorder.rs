@@ -41,7 +41,7 @@ impl Recorder {
     }
 
     pub fn finish(mut self) -> Result<()> {
-        let elapsed = self.start.elapsed();
+        let elapsed = self.start.elapsed().as_millis();
 
         self.zip_writer
             .start_file("metaData.json", SimpleFileOptions::default())?;
@@ -49,8 +49,8 @@ impl Recorder {
             json!({
                 "singleplayer": false,
                 "serverName": self.server,
-                "duration": elapsed.as_millis(),
-                "date": (SystemTime::now().duration_since(UNIX_EPOCH)? - elapsed).as_millis(),
+                "duration": elapsed,
+                "date": SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() - elapsed,
                 "mcversion": VERSION_NAME,
                 "fileFormat": "MCPR",
                 "fileFormatVersion": 14,
