@@ -9,8 +9,12 @@ on:
 
 jobs:
     errornowatcher:
-        name: errornowatcher
-        runs-on: ubuntu-24.04
+        name: errornowatcher (${{ matrix.os }})
+        runs-on: ${{ matrix.os }}
+
+        strategy:
+            matrix:
+                os: [ubuntu-24.04, ubuntu-24.04-arm]
 
         steps:
             - name: Clone repository
@@ -28,7 +32,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       target/
-                  key: build-${{ runner.os }}-${{ hashFiles('Cargo.*') }}
+                  key: build-${{ matrix.os }}-${{ hashFiles('Cargo.*') }}
 
             - name: Switch to nightly toolchain
               run: rustup default nightly
