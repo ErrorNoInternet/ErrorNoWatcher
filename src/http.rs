@@ -3,44 +3,45 @@ use crate::{
     lua::{eval, exec, reload},
 };
 use http_body_util::{BodyExt, Empty, Full, combinators::BoxBody};
-use hyper::{Method, Request, Response, StatusCode, body::Bytes};
+use hyper::{
+    Error, Method, Request, Response, StatusCode,
+    body::{Bytes, Incoming},
+};
 
 pub async fn serve(
-    request: Request<hyper::body::Incoming>,
+    request: Request<Incoming>,
     state: State,
-) -> Result<Response<BoxBody<Bytes, hyper::Error>>, hyper::Error> {
-    let path = request.uri().path().to_owned();
-
-    Ok(match (request.method(), path.as_str()) {
-        (&Method::POST, "/reload") => {
-            Response::new(full(format!("{:#?}", reload(&state.lua, None))))
-        }
-
-        (&Method::POST, "/eval" | "/exec") => {
-            let bytes = request.into_body().collect().await?.to_bytes();
-            match std::str::from_utf8(&bytes) {
-                Ok(code) => Response::new(full(match path.as_str() {
-                    "/eval" => format!("{:#?}", eval(&state.lua, code, None).await),
-                    "/exec" => format!("{:#?}", exec(&state.lua, code, None).await),
-                    _ => unreachable!(),
-                })),
+) -> Result<Response<BoxBody<Bytes, Error>>, Error> {
+    macro_rules! handle_code {
+        ($handler:ident) => {
+            match std::str::from_utf8(&request.into_body().collect().await?.to_bytes()) {
+                Ok(code) => Response::new(full(format!(
+                    "{:#?}",
+                    $handler(&state.lua, code, None).await
+                ))),
                 Err(error) => status_code_response(
                     StatusCode::BAD_REQUEST,
                     full(format!("invalid utf-8 data received: {error:?}")),
                 ),
             }
+        };
+    }
+
+    Ok(match (request.method(), request.uri().path()) {
+        (&Method::POST, "/reload") => {
+            Response::new(full(format!("{:#?}", reload(&state.lua, None))))
         }
-
+        (&Method::POST, "/eval") => handle_code!(eval),
+        (&Method::POST, "/exec") => handle_code!(exec),
         (&Method::GET, "/ping") => Response::new(full("pong!")),
-
         _ => status_code_response(StatusCode::NOT_FOUND, empty()),
     })
 }
 
 fn status_code_response(
     status_code: StatusCode,
-    bytes: BoxBody<Bytes, hyper::Error>,
-) -> Response<BoxBody<Bytes, hyper::Error>> {
+    bytes: BoxBody<Bytes, Error>,
+) -> Response<BoxBody<Bytes, Error>> {
     let mut response = Response::new(bytes);
     *response.status_mut() = status_code;
     response
