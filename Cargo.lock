@@ -1405,6 +1405,7 @@ dependencies = [
  "built",
  "clap",
  "console-subscriber",
+ "ctrlc",
  "futures",
  "futures-locks",
  "http-body-util",

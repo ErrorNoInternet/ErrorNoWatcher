@@ -16,7 +16,7 @@ use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
 use mlua::{Error, Function, IntoLuaMulti, Table};
 use ncr::utils::trim_header;
-use std::net::SocketAddr;
+use std::{net::SocketAddr, process::exit};
 use tokio::net::TcpListener;
 
 #[allow(clippy::too_many_lines)]
@@ -177,26 +177,17 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
         Event::Init => {
             debug!("received initialize event");
 
-            let globals = state.lua.globals();
             let ecs = client.ecs.clone();
-            globals.set(
-                "finish_replay_recording",
-                state.lua.create_function_mut(move |_, (): ()| {
-                    ecs.lock()
-                        .remove_resource::<Recorder>()
-                        .context("recording not active")
-                        .map_err(Error::external)?
-                        .finish()
-                        .map_err(Error::external)
-                })?,
-            )?;
-            globals.set(
-                "client",
-                client::Client {
-                    inner: Some(client),
-                },
-            )?;
-            call_listeners(&state, "init", ()).await;
+            ctrlc::set_handler(move || {
+                debug!("finishing replay recording");
+                ecs.lock()
+                    .remove_resource::<Recorder>()
+                    .map(Recorder::finish);
+                exit(0);
+            })?;
+
+            let globals = state.lua.globals();
+            lua_init(client, &state, &globals).await?;
 
             let Some(address): Option<SocketAddr> = globals
                 .get::<String>("HttpAddress")
@@ -234,6 +225,29 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
         }
     }
 
+    Ok(())
+}
+
+async fn lua_init(client: Client, state: &State, globals: &Table) -> Result<()> {
+    let ecs = client.ecs.clone();
+    globals.set(
+        "finish_replay_recording",
+        state.lua.create_function_mut(move |_, (): ()| {
+            ecs.lock()
+                .remove_resource::<Recorder>()
+                .context("recording not active")
+                .map_err(Error::external)?
+                .finish()
+                .map_err(Error::external)
+        })?,
+    )?;
+    globals.set(
+        "client",
+        client::Client {
+            inner: Some(client),
+        },
+    )?;
+    call_listeners(state, "init", ()).await;
     Ok(())
 }
 
