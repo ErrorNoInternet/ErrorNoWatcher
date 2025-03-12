@@ -9,13 +9,11 @@ use log::error;
 use mlua::{Lua, Result, Table, UserDataRef};
 
 pub fn container(_lua: &Lua, client: &Client) -> Result<Option<ContainerRef>> {
-    Ok(client
-        .get_open_container()
-        .map(|c| ContainerRef { inner: c }))
+    Ok(client.get_open_container().map(ContainerRef))
 }
 
 pub fn held_item(_lua: &Lua, client: &Client) -> Result<ItemStack> {
-    Ok(ItemStack::from(client.component::<Inventory>().held_item()))
+    Ok(ItemStack(client.component::<Inventory>().held_item()))
 }
 
 pub fn held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
@@ -26,7 +24,7 @@ pub fn held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
 pub fn menu(lua: &Lua, client: &Client) -> Result<Table> {
     fn from_slot_list<const N: usize>(s: SlotList<N>) -> Vec<ItemStack> {
         s.iter()
-            .map(|i| ItemStack::from(i.to_owned()))
+            .map(|i| ItemStack(i.to_owned()))
             .collect::<Vec<_>>()
     }
 
@@ -40,11 +38,11 @@ pub fn menu(lua: &Lua, client: &Client) -> Result<Table> {
             offhand,
         }) => {
             table.set("type", 0)?;
-            table.set("craft_result", ItemStack::from(craft_result))?;
+            table.set("craft_result", ItemStack(craft_result))?;
             table.set("craft", from_slot_list(craft))?;
             table.set("armor", from_slot_list(armor))?;
             table.set("inventory", from_slot_list(inventory))?;
-            table.set("offhand", ItemStack::from(offhand))?;
+            table.set("offhand", ItemStack(offhand))?;
         }
         Menu::Generic9x3 { contents, player } => {
             table.set("type", 3)?;
@@ -62,7 +60,7 @@ pub fn menu(lua: &Lua, client: &Client) -> Result<Table> {
             player,
         } => {
             table.set("type", 13)?;
-            table.set("result", ItemStack::from(result))?;
+            table.set("result", ItemStack(result))?;
             table.set("grid", from_slot_list(grid))?;
             table.set("player", from_slot_list(player))?;
         }
@@ -78,7 +76,7 @@ pub fn menu(lua: &Lua, client: &Client) -> Result<Table> {
         } => {
             table.set("type", 20)?;
             table.set("payments", from_slot_list(payments))?;
-            table.set("result", ItemStack::from(result))?;
+            table.set("result", ItemStack(result))?;
             table.set("player", from_slot_list(player))?;
         }
         Menu::ShulkerBox { contents, player } => {
@@ -105,11 +103,11 @@ pub async fn open_container_at(
             position.z as i32,
         ))
         .await
-        .map(|c| Container { inner: c }))
+        .map(Container))
 }
 
 pub fn open_inventory(_lua: &Lua, client: &mut Client, _: ()) -> Result<Option<Container>> {
-    Ok(client.open_inventory().map(|c| Container { inner: c }))
+    Ok(client.open_inventory().map(Container))
 }
 
 pub fn set_held_slot(_lua: &Lua, client: &Client, slot: u8) -> Result<()> {

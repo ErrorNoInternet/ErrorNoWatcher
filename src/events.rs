@@ -241,12 +241,7 @@ async fn lua_init(client: Client, state: &State, globals: &Table) -> Result<()> 
                 .map_err(Error::external)
         })?,
     )?;
-    globals.set(
-        "client",
-        client::Client {
-            inner: Some(client),
-        },
-    )?;
+    globals.set("client", client::Client(Some(client)))?;
     call_listeners(state, "init", ()).await;
     Ok(())
 }

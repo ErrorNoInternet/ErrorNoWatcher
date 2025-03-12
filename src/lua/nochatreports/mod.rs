@@ -14,29 +14,23 @@ pub fn register_globals(lua: &Lua, globals: &Table) -> Result<()> {
     globals.set(
         "ncr_aes_key_from_passphrase",
         lua.create_function(|_, passphrase: Vec<u8>| {
-            Ok(AesKey {
-                inner: ncr::AesKey::gen_from_passphrase(&passphrase),
-            })
+            Ok(AesKey(ncr::AesKey::gen_from_passphrase(&passphrase)))
         })?,
     )?;
 
     globals.set(
         "ncr_aes_key_from_base64",
         lua.create_function(|_, base64: String| {
-            Ok(AesKey {
-                inner: ncr::AesKey::decode_base64(&base64)
+            Ok(AesKey(
+                ncr::AesKey::decode_base64(&base64)
                     .map_err(|error| Error::external(error.to_string()))?,
-            })
+            ))
         })?,
     )?;
 
     globals.set(
         "ncr_generate_random_aes_key",
-        lua.create_function(|_, (): ()| {
-            Ok(AesKey {
-                inner: ncr::AesKey::gen_random_key(),
-            })
-        })?,
+        lua.create_function(|_, (): ()| Ok(AesKey(ncr::AesKey::gen_random_key())))?,
     )?;
 
     globals.set(

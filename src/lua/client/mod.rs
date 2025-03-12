@@ -14,25 +14,19 @@ use azalea::{Client as AzaleaClient, world::MinecraftEntityId};
 use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
 use std::ops::{Deref, DerefMut};
 
-pub struct Client {
-    pub inner: Option<AzaleaClient>,
-}
+pub struct Client(pub Option<AzaleaClient>);
 
 impl Deref for Client {
     type Target = AzaleaClient;
 
     fn deref(&self) -> &Self::Target {
-        self.inner
-            .as_ref()
-            .expect("should have received init event")
+        self.0.as_ref().expect("should have received init event")
     }
 }
 
 impl DerefMut for Client {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.inner
-            .as_mut()
-            .expect("should have received init event")
+        self.0.as_mut().expect("should have received init event")
     }
 }
 
