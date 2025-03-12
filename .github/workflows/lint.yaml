@@ -3,6 +3,7 @@ on:
     push:
         paths:
             - "**.rs"
+            - "**.toml"
             - "Cargo.*"
     pull_request:
     workflow_dispatch:
@@ -46,7 +47,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       target/
-                  key: build-${{ runner.os }}-${{ hashFiles('Cargo.*') }}
+                  key: build-${{ matrix.os }}-${{ hashFiles('**.toml', 'Cargo.*') }}
 
             - name: Switch to nightly toolchain
               run: rustup default nightly
