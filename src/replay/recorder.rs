@@ -69,16 +69,16 @@ impl Recorder {
     }
 
     pub fn save_raw_packet(&mut self, raw_packet: &[u8]) -> Result<()> {
-        let mut data = Vec::with_capacity(raw_packet.len() + 8);
-        data.extend(&TryInto::<u32>::try_into(self.start.elapsed().as_millis())?.to_be_bytes());
-        data.extend(&TryInto::<u32>::try_into(raw_packet.len())?.to_be_bytes());
-        data.extend(raw_packet);
+        let mut data = SmallVec::<[u8; 128]>::with_capacity(raw_packet.len() + 8);
+        data.write_all(&TryInto::<u32>::try_into(self.start.elapsed().as_millis())?.to_be_bytes())?;
+        data.write_all(&TryInto::<u32>::try_into(raw_packet.len())?.to_be_bytes())?;
+        data.write_all(raw_packet)?;
         self.zip_writer.write_all(&data)?;
         Ok(())
     }
 
     pub fn save_packet<T: ProtocolPacket>(&mut self, packet: &T) -> Result<()> {
-        let mut raw_packet = SmallVec::<[u8; 64]>::new();
+        let mut raw_packet = SmallVec::<[u8; 128]>::new();
         packet.id().azalea_write_var(&mut raw_packet)?;
         packet.write(&mut raw_packet)?;
         self.save_raw_packet(&raw_packet)
