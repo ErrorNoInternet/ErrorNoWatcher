@@ -175,11 +175,10 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             _ => (),
         },
         Event::Init => {
-            debug!("received initialize event");
+            debug!("received init event");
 
             let ecs = client.ecs.clone();
             ctrlc::set_handler(move || {
-                debug!("finishing replay recording");
                 ecs.lock()
                     .remove_resource::<Recorder>()
                     .map(Recorder::finish);

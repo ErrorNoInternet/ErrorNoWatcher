@@ -5,6 +5,7 @@ use azalea::{
     prelude::Resource,
     protocol::packets::{PROTOCOL_VERSION, ProtocolPacket, VERSION_NAME},
 };
+use log::debug;
 use serde_json::json;
 use smallvec::SmallVec;
 use std::{
@@ -41,8 +42,9 @@ impl Recorder {
     }
 
     pub fn finish(mut self) -> Result<()> {
-        let elapsed = self.start.elapsed().as_millis();
+        debug!("finishing replay recording");
 
+        let elapsed = self.start.elapsed().as_millis();
         self.zip_writer
             .start_file("metaData.json", SimpleFileOptions::default())?;
         self.zip_writer.write_all(
@@ -62,6 +64,7 @@ impl Recorder {
         )?;
         self.zip_writer.finish()?;
 
+        debug!("finished replay recording");
         Ok(())
     }
 
