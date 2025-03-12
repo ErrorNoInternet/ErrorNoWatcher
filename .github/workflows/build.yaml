@@ -39,3 +39,9 @@ jobs:
 
             - name: Build in release mode
               run: cargo build --release
+
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: errornowatcher_${{ matrix.os }}
+                  path: target/release/errornowatcher
