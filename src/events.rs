@@ -23,7 +23,7 @@ use tokio::net::TcpListener;
 pub async fn handle_event(client: Client, event: Event, state: State) -> Result<()> {
     match event {
         Event::AddPlayer(player_info) => {
-            call_listeners(&state, "add_player", Player::from(player_info)).await;
+            call_listeners(&state, "add_player", || Ok(Player::from(player_info))).await
         }
         Event::Chat(message) => {
             let globals = state.lua.globals();
@@ -78,101 +78,123 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                 }
             }
 
-            let table = state.lua.create_table()?;
-            table.set("text", text.to_string())?;
-            table.set("ansi_text", ansi_text)?;
-            table.set("sender", sender)?;
-            table.set("content", content)?;
-            table.set("uuid", uuid)?;
-            table.set("is_whisper", is_whisper)?;
-            table.set("is_encrypted", is_encrypted)?;
-            call_listeners(&state, "chat", table).await;
+            call_listeners(&state, "chat", || {
+                let table = state.lua.create_table()?;
+                table.set("text", text.to_string())?;
+                table.set("ansi_text", ansi_text)?;
+                table.set("sender", sender)?;
+                table.set("content", content)?;
+                table.set("uuid", uuid)?;
+                table.set("is_whisper", is_whisper)?;
+                table.set("is_encrypted", is_encrypted)?;
+                Ok(table)
+            })
+            .await
         }
         Event::Death(packet) => {
             if let Some(packet) = packet {
-                let message_table = state.lua.create_table()?;
-                message_table.set("text", packet.message.to_string())?;
-                message_table.set("ansi_text", packet.message.to_ansi())?;
-                let table = state.lua.create_table()?;
-                table.set("message", message_table)?;
-                table.set("player_id", packet.player_id.0)?;
-                call_listeners(&state, "death", table).await;
+                call_listeners(&state, "death", || {
+                    let message_table = state.lua.create_table()?;
+                    message_table.set("text", packet.message.to_string())?;
+                    message_table.set("ansi_text", packet.message.to_ansi())?;
+                    let table = state.lua.create_table()?;
+                    table.set("message", message_table)?;
+                    table.set("player_id", packet.player_id.0)?;
+                    Ok(table)
+                })
+                .await
             } else {
-                call_listeners(&state, "death", ()).await;
+                call_listeners(&state, "death", || Ok(())).await
             }
         }
         Event::Disconnect(message) => {
             if let Some(message) = message {
-                let table = state.lua.create_table()?;
-                table.set("text", message.to_string())?;
-                table.set("ansi_text", message.to_ansi())?;
-                call_listeners(&state, "disconnect", table).await;
+                call_listeners(&state, "disconnect", || {
+                    let table = state.lua.create_table()?;
+                    table.set("text", message.to_string())?;
+                    table.set("ansi_text", message.to_ansi())?;
+                    Ok(table)
+                })
+                .await
             } else {
-                call_listeners(&state, "disconnect", ()).await;
+                call_listeners(&state, "disconnect", || Ok(())).await
             }
         }
-        Event::KeepAlive(id) => call_listeners(&state, "keep_alive", id).await,
-        Event::Login => call_listeners(&state, "login", ()).await,
+        Event::KeepAlive(id) => call_listeners(&state, "keep_alive", || Ok(id)).await,
+        Event::Login => call_listeners(&state, "login", || Ok(())).await,
         Event::RemovePlayer(player_info) => {
-            call_listeners(&state, "remove_player", Player::from(player_info)).await;
+            call_listeners(&state, "remove_player", || Ok(Player::from(player_info))).await
         }
-        Event::Tick => call_listeners(&state, "tick", ()).await,
+        Event::Tick => call_listeners(&state, "tick", || Ok(())).await,
         Event::UpdatePlayer(player_info) => {
-            call_listeners(&state, "update_player", Player::from(player_info)).await;
+            call_listeners(&state, "update_player", || Ok(Player::from(player_info))).await
         }
         Event::Packet(packet) => match packet.as_ref() {
             ClientboundGamePacket::AddEntity(packet) => {
-                let table = state.lua.create_table()?;
-                table.set("id", packet.id.0)?;
-                table.set("uuid", packet.uuid.to_string())?;
-                table.set("kind", packet.entity_type.to_string())?;
-                table.set("position", Vec3::from(packet.position))?;
-                table.set(
-                    "direction",
-                    Direction {
-                        y: f32::from(packet.y_rot) / (256.0 / 360.0),
-                        x: f32::from(packet.x_rot) / (256.0 / 360.0),
-                    },
-                )?;
-                table.set("data", packet.data)?;
-                call_listeners(&state, "add_entity", table).await;
+                call_listeners(&state, "add_entity", || {
+                    let table = state.lua.create_table()?;
+                    table.set("id", packet.id.0)?;
+                    table.set("uuid", packet.uuid.to_string())?;
+                    table.set("kind", packet.entity_type.to_string())?;
+                    table.set("position", Vec3::from(packet.position))?;
+                    table.set(
+                        "direction",
+                        Direction {
+                            y: f32::from(packet.y_rot) / (256.0 / 360.0),
+                            x: f32::from(packet.x_rot) / (256.0 / 360.0),
+                        },
+                    )?;
+                    table.set("data", packet.data)?;
+                    Ok(table)
+                })
+                .await
             }
             ClientboundGamePacket::LevelParticles(packet) => {
-                let table = state.lua.create_table()?;
-                table.set("position", Vec3::from(packet.pos))?;
-                table.set("count", packet.count)?;
-                table.set("kind", particle::to_kind(&packet.particle) as u8)?;
-                call_listeners(&state, "level_particles", table).await;
+                call_listeners(&state, "level_particles", || {
+                    let table = state.lua.create_table()?;
+                    table.set("position", Vec3::from(packet.pos))?;
+                    table.set("count", packet.count)?;
+                    table.set("kind", particle::to_kind(&packet.particle) as u8)?;
+                    Ok(table)
+                })
+                .await
             }
             ClientboundGamePacket::RemoveEntities(packet) => {
-                call_listeners(
-                    &state,
-                    "remove_entities",
-                    packet.entity_ids.iter().map(|id| id.0).collect::<Vec<_>>(),
-                )
-                .await;
+                call_listeners(&state, "remove_entities", || {
+                    Ok(packet.entity_ids.iter().map(|id| id.0).collect::<Vec<_>>())
+                })
+                .await
             }
             ClientboundGamePacket::SetHealth(packet) => {
-                let table = state.lua.create_table()?;
-                table.set("food", packet.food)?;
-                table.set("health", packet.health)?;
-                table.set("saturation", packet.saturation)?;
-                call_listeners(&state, "set_health", table).await;
+                call_listeners(&state, "set_health", || {
+                    let table = state.lua.create_table()?;
+                    table.set("food", packet.food)?;
+                    table.set("health", packet.health)?;
+                    table.set("saturation", packet.saturation)?;
+                    Ok(table)
+                })
+                .await
             }
             ClientboundGamePacket::SetPassengers(packet) => {
-                let table = state.lua.create_table()?;
-                table.set("vehicle", packet.vehicle)?;
-                table.set("passengers", &*packet.passengers)?;
-                call_listeners(&state, "set_passengers", table).await;
+                call_listeners(&state, "set_passengers", || {
+                    let table = state.lua.create_table()?;
+                    table.set("vehicle", packet.vehicle)?;
+                    table.set("passengers", &*packet.passengers)?;
+                    Ok(table)
+                })
+                .await
             }
             ClientboundGamePacket::SetTime(packet) => {
-                let table = state.lua.create_table()?;
-                table.set("day_time", packet.day_time)?;
-                table.set("game_time", packet.game_time)?;
-                table.set("tick_day_time", packet.tick_day_time)?;
-                call_listeners(&state, "set_time", table).await;
+                call_listeners(&state, "set_time", || {
+                    let table = state.lua.create_table()?;
+                    table.set("day_time", packet.day_time)?;
+                    table.set("game_time", packet.game_time)?;
+                    table.set("tick_day_time", packet.tick_day_time)?;
+                    Ok(table)
+                })
+                .await
             }
-            _ => (),
+            _ => Ok(()),
         },
         Event::Init => {
             debug!("received init event");
@@ -202,7 +224,13 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             debug!("http server listening on {address}");
 
             loop {
-                let (stream, peer) = listener.accept().await?;
+                let (stream, peer) = match listener.accept().await {
+                    Ok(pair) => pair,
+                    Err(error) => {
+                        error!("failed to accept connection: {error:?}");
+                        continue;
+                    }
+                };
                 trace!("http server got connection from {peer}");
 
                 let conn_state = state.clone();
@@ -222,8 +250,6 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             }
         }
     }
-
-    Ok(())
 }
 
 async fn lua_init(client: Client, state: &State, globals: &Table) -> Result<()> {
@@ -240,16 +266,16 @@ async fn lua_init(client: Client, state: &State, globals: &Table) -> Result<()> 
         })?,
     )?;
     globals.set("client", client::Client(Some(client)))?;
-    call_listeners(state, "init", ()).await;
-    Ok(())
+    call_listeners(state, "init", || Ok(())).await
 }
 
-async fn call_listeners<T: Clone + IntoLuaMulti + Send + 'static>(
-    state: &State,
-    event_type: &'static str,
-    data: T,
-) {
+async fn call_listeners<T, F>(state: &State, event_type: &'static str, getter: F) -> Result<()>
+where
+    T: Clone + IntoLuaMulti + Send + 'static,
+    F: FnOnce() -> Result<T>,
+{
     if let Some(listeners) = state.event_listeners.read().await.get(event_type).cloned() {
+        let data = getter()?;
         for (id, callback) in listeners {
             let data = data.clone();
             tokio::spawn(async move {
@@ -259,4 +285,5 @@ async fn call_listeners<T: Clone + IntoLuaMulti + Send + 'static>(
             });
         }
     }
+    Ok(())
 }
