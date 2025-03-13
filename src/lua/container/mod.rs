@@ -30,7 +30,7 @@ impl UserData for Container {
             "click",
             |_, this, (operation, operation_type): (Table, Option<u8>)| {
                 this.0
-                    .click(operation_from_table(operation, operation_type)?);
+                    .click(operation_from_table(&operation, operation_type)?);
                 Ok(())
             },
         );
@@ -66,7 +66,7 @@ impl UserData for ContainerRef {
             "click",
             |_, this, (operation, operation_type): (Table, Option<u8>)| {
                 this.0
-                    .click(operation_from_table(operation, operation_type)?);
+                    .click(operation_from_table(&operation, operation_type)?);
                 Ok(())
             },
         );

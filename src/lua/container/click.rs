@@ -4,7 +4,7 @@ use azalea::inventory::operations::{
 };
 use mlua::{Result, Table};
 
-pub fn operation_from_table(op: Table, op_type: Option<u8>) -> Result<ClickOperation> {
+pub fn operation_from_table(op: &Table, op_type: Option<u8>) -> Result<ClickOperation> {
     Ok(match op_type.unwrap_or_default() {
         0 => ClickOperation::Pickup(PickupClick::Left {
             slot: op.get("slot")?,

@@ -1,3 +1,5 @@
+#![allow(clippy::needless_pass_by_value)]
+
 use super::recorder::Recorder;
 use azalea::{
     ecs::{event::EventReader, system::Query},

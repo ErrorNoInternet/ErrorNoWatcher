@@ -1,3 +1,5 @@
+#![allow(clippy::needless_pass_by_value, clippy::unnecessary_wraps)]
+
 mod container;
 mod interaction;
 mod movement;
