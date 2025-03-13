@@ -29,7 +29,6 @@ use std::{
     collections::HashMap,
     env,
     fs::{OpenOptions, read_to_string},
-    path::PathBuf,
     sync::Arc,
 };
 
@@ -52,16 +51,15 @@ async fn main() -> anyhow::Result<()> {
     console_subscriber::init();
 
     let args = Arguments::parse();
-    let script_path = args.script.unwrap_or(PathBuf::from("errornowatcher.lua"));
     let event_listeners = Arc::new(RwLock::new(HashMap::new()));
     let lua = unsafe { Lua::unsafe_new() };
     let globals = lua.globals();
 
     lua::register_globals(&lua, &globals, event_listeners.clone())?;
-    globals.set("SCRIPT_PATH", &*script_path)?;
+    globals.set("SCRIPT_PATH", &*args.script)?;
     lua.load(
-        read_to_string(&script_path)
-            .with_context(|| format!("failed to read {}", script_path.display()))?,
+        read_to_string(&args.script)
+            .with_context(|| format!("failed to read {}", args.script.display()))?,
     )
     .exec()?;
     if let Some(code) = args.exec {

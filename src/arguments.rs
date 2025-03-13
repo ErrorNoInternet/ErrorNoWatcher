@@ -7,8 +7,8 @@ use std::path::PathBuf;
 #[command(version = build_info::version_formatted())]
 pub struct Arguments {
     /// Path to Lua entry point
-    #[arg(short, long)]
-    pub script: Option<PathBuf>,
+    #[arg(short, long, default_value = "errornowatcher.lua")]
+    pub script: PathBuf,
 
     /// Code to execute after loading script
     #[arg(short, long)]
