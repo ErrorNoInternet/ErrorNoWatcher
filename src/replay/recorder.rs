@@ -9,14 +9,14 @@ use log::debug;
 use serde_json::json;
 use std::{
     fs::File,
-    io::Write,
+    io::{BufWriter, Write},
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 use zip::{ZipWriter, write::SimpleFileOptions};
 
 #[derive(Resource)]
 pub struct Recorder {
-    zip_writer: ZipWriter<File>,
+    zip_writer: BufWriter<ZipWriter<File>>,
     start: Instant,
     server: String,
     pub should_ignore_compression: bool,
@@ -33,20 +33,20 @@ impl Recorder {
         );
         zip_writer.start_file("recording.tmcpr", SimpleFileOptions::default())?;
         Ok(Self {
-            zip_writer,
+            zip_writer: BufWriter::new(zip_writer),
             start: Instant::now(),
             server,
             should_ignore_compression,
         })
     }
 
-    pub fn finish(mut self) -> Result<()> {
+    pub fn finish(self) -> Result<()> {
         debug!("finishing replay recording");
 
         let elapsed = self.start.elapsed().as_millis();
-        self.zip_writer
-            .start_file("metaData.json", SimpleFileOptions::default())?;
-        self.zip_writer.write_all(
+        let mut zip_writer = self.zip_writer.into_inner()?;
+        zip_writer.start_file("metaData.json", SimpleFileOptions::default())?;
+        zip_writer.write_all(
             json!({
                 "singleplayer": false,
                 "serverName": self.server,
@@ -61,7 +61,7 @@ impl Recorder {
             .to_string()
             .as_bytes(),
         )?;
-        self.zip_writer.finish()?;
+        zip_writer.finish()?;
 
         debug!("finished replay recording");
         Ok(())
