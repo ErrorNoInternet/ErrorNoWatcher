@@ -2,7 +2,7 @@ use crate::build_info;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// A Minecraft utility bot
+/// A Minecraft bot with Lua scripting support
 #[derive(Parser)]
 #[command(version = build_info::version_formatted())]
 pub struct Arguments {
