@@ -6,7 +6,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(version = build_info::version_formatted())]
 pub struct Arguments {
-    /// Path to Lua entrypoint
+    /// Path to Lua entry point
     #[arg(short, long)]
     pub script: Option<PathBuf>,
 

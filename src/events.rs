@@ -196,9 +196,8 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                 return Ok(());
             };
 
-            let listener = TcpListener::bind(address).await.map_err(|error| {
+            let listener = TcpListener::bind(address).await.inspect_err(|error| {
                 error!("failed to listen on {address}: {error:?}");
-                error
             })?;
             debug!("http server listening on {address}");
 

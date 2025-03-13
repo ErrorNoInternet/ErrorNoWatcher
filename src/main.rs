@@ -131,7 +131,7 @@ async fn main() -> anyhow::Result<()> {
             } else {
                 Account::offline(&username)
             },
-            server.as_ref(),
+            server,
         )
         .await;
     eprintln!("{error}");
