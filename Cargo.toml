@@ -20,7 +20,8 @@ built = { git = "https://github.com/lukaslueg/built", features = ["git2"] }
 
 [dependencies]
 anyhow = "1"
-azalea = { git = "https://github.com/azalea-rs/azalea.git" }
+azalea = { git = "https://github.com/azalea-rs/azalea" }
+azalea-hax = { git = "https://github.com/azalea-rs/azalea-hax" }
 bevy_app = "0"
 bevy_ecs = "0"
 bevy_log = "0"

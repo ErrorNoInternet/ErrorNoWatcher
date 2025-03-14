@@ -5,6 +5,7 @@ use azalea::{
     pathfinder::PathfinderDebugParticles,
     protocol::common::client_information::ModelCustomization,
 };
+use azalea_hax::AntiKnockback;
 use log::error;
 use mlua::{Error, Lua, Result, Table, UserDataRef};
 
@@ -80,6 +81,7 @@ pub fn set_component(
     }
 
     match name.as_str() {
+        "AntiKnockback" => set!(AntiKnockback),
         "PathfinderDebugParticles" => set!(PathfinderDebugParticles),
         _ => Err(Error::external("invalid component")),
     }
