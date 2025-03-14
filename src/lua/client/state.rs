@@ -2,10 +2,11 @@ use super::Client;
 use azalea::{
     ClientInformation,
     entity::metadata::{AirSupply, Score},
+    pathfinder::PathfinderDebugParticles,
     protocol::common::client_information::ModelCustomization,
 };
 use log::error;
-use mlua::{Lua, Result, Table, UserDataRef};
+use mlua::{Error, Lua, Result, Table, UserDataRef};
 
 pub fn air_supply(_lua: &Lua, client: &Client) -> Result<i32> {
     Ok(client.component::<AirSupply>().0)
@@ -58,4 +59,28 @@ pub async fn set_client_information(
         error!("failed to set client client information: {error:?}");
     }
     Ok(())
+}
+
+pub fn set_component(
+    _lua: &Lua,
+    client: &Client,
+    (name, enabled): (String, Option<bool>),
+) -> Result<()> {
+    macro_rules! set {
+        ($name:ident) => {{
+            let mut ecs = client.ecs.lock();
+            let mut entity = ecs.entity_mut(client.entity);
+            if enabled.unwrap_or(true) {
+                entity.insert($name)
+            } else {
+                entity.remove::<$name>()
+            };
+            Ok(())
+        }};
+    }
+
+    match name.as_str() {
+        "PathfinderDebugParticles" => set!(PathfinderDebugParticles),
+        _ => Err(Error::external("invalid component")),
+    }
 }
