@@ -7,11 +7,12 @@ pub mod logging;
 pub mod nochatreports;
 pub mod player;
 pub mod system;
+pub mod thread;
 pub mod vec3;
 
 use crate::{ListenerMap, build_info::built};
 use mlua::{Lua, Table};
-use std::{io, time::Duration};
+use std::io;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -33,19 +34,12 @@ pub fn register_globals(
     globals.set("GIT_COMMIT_HASH", built::GIT_COMMIT_HASH)?;
     globals.set("GIT_COMMIT_HASH_SHORT", built::GIT_COMMIT_HASH_SHORT)?;
 
-    globals.set(
-        "sleep",
-        lua.create_async_function(async |_, duration: u64| {
-            tokio::time::sleep(Duration::from_millis(duration)).await;
-            Ok(())
-        })?,
-    )?;
-
     block::register_globals(lua, globals)?;
     events::register_globals(lua, globals, event_listeners)?;
     logging::register_globals(lua, globals)?;
     nochatreports::register_globals(lua, globals)?;
-    system::register_globals(lua, globals)
+    system::register_globals(lua, globals)?;
+    thread::register_globals(lua, globals)
 }
 
 pub fn reload(lua: &Lua, sender: Option<String>) -> Result<(), Error> {
