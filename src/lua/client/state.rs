@@ -19,7 +19,6 @@ pub fn health(_lua: &Lua, client: &Client) -> Result<f32> {
 
 pub fn hunger(lua: &Lua, client: &Client) -> Result<Table> {
     let hunger = client.hunger();
-
     let table = lua.create_table()?;
     table.set("food", hunger.food)?;
     table.set("saturation", hunger.saturation)?;

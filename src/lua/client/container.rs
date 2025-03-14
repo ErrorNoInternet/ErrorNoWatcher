@@ -6,7 +6,7 @@ use azalea::{
     protocol::packets::game::ServerboundSetCarriedItem,
 };
 use log::error;
-use mlua::{Lua, Result, Table, UserDataRef};
+use mlua::{Lua, Result, UserDataRef, Value};
 
 pub fn container(_lua: &Lua, client: &Client) -> Result<Option<ContainerRef>> {
     Ok(client.get_open_container().map(ContainerRef))
@@ -21,7 +21,7 @@ pub fn held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn menu(lua: &Lua, client: &Client) -> Result<Table> {
+pub fn menu(lua: &Lua, client: &Client) -> Result<Value> {
     fn from_slot_list<const N: usize>(s: SlotList<N>) -> Vec<ItemStack> {
         s.iter()
             .map(|i| ItemStack(i.to_owned()))
@@ -84,9 +84,9 @@ pub fn menu(lua: &Lua, client: &Client) -> Result<Table> {
             table.set("contents", from_slot_list(contents))?;
             table.set("player", from_slot_list(player))?;
         }
-        _ => (),
+        _ => return Ok(Value::Nil),
     }
-    Ok(table)
+    Ok(Value::Table(table))
 }
 
 pub async fn open_container_at(

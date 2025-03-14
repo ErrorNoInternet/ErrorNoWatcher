@@ -55,15 +55,15 @@ pub fn start_mining(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<(
 }
 
 pub fn use_item(_lua: &Lua, client: &Client, hand: Option<u8>) -> Result<()> {
-    let d = client.direction();
+    let direction = client.direction();
     if let Err(error) = client.write_packet(ServerboundUseItem {
         hand: match hand {
             Some(1) => InteractionHand::OffHand,
             _ => InteractionHand::MainHand,
         },
         sequence: 0,
-        yaw: d.0,
-        pitch: d.1,
+        yaw: direction.0,
+        pitch: direction.1,
     }) {
         error!("failed to send UseItem packet: {error:?}");
     }

@@ -114,9 +114,9 @@ async fn main() -> anyhow::Result<()> {
         )),
     };
     let Err(error) = ClientBuilder::new_without_plugins()
+        .add_plugins(DefaultBotPlugins)
         .add_plugins(default_plugins)
         .add_plugins(record_plugin)
-        .add_plugins(DefaultBotPlugins)
         .set_handler(events::handle_event)
         .set_state(State {
             lua: Arc::new(lua),
