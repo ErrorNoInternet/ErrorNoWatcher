@@ -14,6 +14,7 @@ use arguments::Arguments;
 use azalea::{
     DefaultBotPlugins, DefaultPlugins, brigadier::prelude::CommandDispatcher, prelude::*,
 };
+use azalea_hax::HaxPlugin;
 use bevy_app::PluginGroup;
 use bevy_log::{
     LogPlugin,
@@ -113,8 +114,14 @@ async fn main() -> anyhow::Result<()> {
             },
         )),
     };
+    let account = if username.contains('@') {
+        Account::microsoft(&username).await?
+    } else {
+        Account::offline(&username)
+    };
     let Err(error) = ClientBuilder::new_without_plugins()
         .add_plugins(DefaultBotPlugins)
+        .add_plugins(HaxPlugin)
         .add_plugins(default_plugins)
         .add_plugins(record_plugin)
         .set_handler(events::handle_event)
@@ -123,14 +130,7 @@ async fn main() -> anyhow::Result<()> {
             event_listeners,
             commands: Arc::new(commands),
         })
-        .start(
-            if username.contains('@') {
-                Account::microsoft(&username).await?
-            } else {
-                Account::offline(&username)
-            },
-            server,
-        )
+        .start(account, server)
         .await;
     eprintln!("{error}");
 
