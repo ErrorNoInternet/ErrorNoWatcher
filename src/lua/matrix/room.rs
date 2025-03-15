@@ -1,6 +1,8 @@
 use super::member::Member;
 use matrix_sdk::{
-    RoomMemberships, room::Room as MatrixRoom, ruma::events::room::message::RoomMessageEventContent,
+    RoomMemberships,
+    room::Room as MatrixRoom,
+    ruma::{EventId, UserId, events::room::message::RoomMessageEventContent},
 };
 use mlua::{Error, UserData, UserDataFields, UserDataMethods};
 
@@ -17,16 +19,18 @@ impl UserData for Room {
     }
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
-        m.add_async_method("send", async |_, this, body: String| {
-            this.0
-                .send(RoomMessageEventContent::text_plain(body))
-                .await
-                .map_err(Error::external)
-                .map(|response| response.event_id.to_string())
-        });
-        m.add_async_method("leave", async |_, this, (): ()| {
-            this.0.leave().await.map_err(Error::external)
-        });
+        m.add_async_method(
+            "ban_user",
+            async |_, this, (user_id, reason): (String, Option<String>)| {
+                this.0
+                    .ban_user(
+                        &UserId::parse(user_id).map_err(Error::external)?,
+                        reason.as_deref(),
+                    )
+                    .await
+                    .map_err(Error::external)
+            },
+        );
         m.add_async_method("get_members", async |_, this, (): ()| {
             this.0
                 .members(RoomMemberships::all())
@@ -38,6 +42,42 @@ impl UserData for Room {
                         .map(|member| Member(member.clone()))
                         .collect::<Vec<_>>()
                 })
+        });
+        m.add_async_method(
+            "kick_user",
+            async |_, this, (user_id, reason): (String, Option<String>)| {
+                this.0
+                    .kick_user(
+                        &UserId::parse(user_id).map_err(Error::external)?,
+                        reason.as_deref(),
+                    )
+                    .await
+                    .map_err(Error::external)
+            },
+        );
+        m.add_async_method("leave", async |_, this, (): ()| {
+            this.0.leave().await.map_err(Error::external)
+        });
+        m.add_async_method(
+            "redact",
+            async |_, this, (event_id, reason): (String, Option<String>)| {
+                this.0
+                    .redact(
+                        &EventId::parse(event_id).map_err(Error::external)?,
+                        reason.as_deref(),
+                        None,
+                    )
+                    .await
+                    .map_err(Error::external)
+                    .map(|response| response.event_id.to_string())
+            },
+        );
+        m.add_async_method("send", async |_, this, body: String| {
+            this.0
+                .send(RoomMessageEventContent::text_plain(body))
+                .await
+                .map_err(Error::external)
+                .map(|response| response.event_id.to_string())
         });
     }
 }
