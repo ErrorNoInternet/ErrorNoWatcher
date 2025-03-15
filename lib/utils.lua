@@ -45,30 +45,28 @@ function entity_speed(uuid, seconds)
 	return speed
 end
 
-function tps(seconds)
-	if not seconds then
-		seconds = 1
+function tps(ms)
+	if not ms then
+		ms = 1000
 	end
 
 	add_listener("tick", function()
 		if not TpsTracking.ticks then
 			TpsTracking.ticks = 0
-			TpsTracking.start = clock_gettime(0)
+			sleep(ms)
+			TpsTracking.result = TpsTracking.ticks
+			remove_listeners("tick", "tps_tracking")
 		else
 			TpsTracking.ticks = TpsTracking.ticks + 1
-			if TpsTracking.ticks >= seconds * 20 then
-				TpsTracking.stop = clock_gettime(0)
-				remove_listeners("tick", "tps_tracking")
-			end
 		end
 	end, "tps_tracking")
 
-	sleep(seconds * 1000)
+	sleep(ms)
 	repeat
 		sleep(20)
-	until TpsTracking.stop
+	until TpsTracking.result
 
-	local tps = seconds * 20 / (TpsTracking.stop - TpsTracking.start)
+	local tps = TpsTracking.result / (ms / 1000)
 	TpsTracking = {}
 	return tps
 end
