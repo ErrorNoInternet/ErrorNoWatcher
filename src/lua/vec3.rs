@@ -1,5 +1,5 @@
 use azalea::{BlockPos, entity::Position};
-use mlua::{FromLua, IntoLua, Lua, Result, Value};
+use mlua::{Error, FromLua, IntoLua, Lua, Result, Value};
 
 #[derive(Clone)]
 pub struct Vec3 {
@@ -63,7 +63,7 @@ impl FromLua for Vec3 {
                 },
             )
         } else {
-            Err(mlua::Error::FromLuaConversionError {
+            Err(Error::FromLuaConversionError {
                 from: value.type_name(),
                 to: "Vec3".to_string(),
                 message: None,

@@ -2,12 +2,12 @@ use super::member::Member;
 use matrix_sdk::{
     RoomMemberships, room::Room as MatrixRoom, ruma::events::room::message::RoomMessageEventContent,
 };
-use mlua::{Error, UserData};
+use mlua::{Error, UserData, UserDataFields, UserDataMethods};
 
 pub struct Room(pub MatrixRoom);
 
 impl UserData for Room {
-    fn add_fields<F: mlua::UserDataFields<Self>>(f: &mut F) {
+    fn add_fields<F: UserDataFields<Self>>(f: &mut F) {
         f.add_field_method_get("id", |_, this| Ok(this.0.room_id().to_string()));
         f.add_field_method_get("name", |_, this| Ok(this.0.name()));
         f.add_field_method_get("topic", |_, this| Ok(this.0.topic()));
@@ -16,7 +16,7 @@ impl UserData for Room {
         });
     }
 
-    fn add_methods<M: mlua::UserDataMethods<Self>>(m: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
         m.add_async_method("send", async |_, this, body: String| {
             this.0
                 .send(RoomMessageEventContent::text_plain(body))
