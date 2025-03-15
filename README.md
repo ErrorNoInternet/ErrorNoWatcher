@@ -7,12 +7,14 @@ A Minecraft bot with Lua scripting support, written in Rust with [azalea](https:
 - Running Lua from
     - `errornowatcher.lua`
     - in-game chat messages
+    - Matrix chat messages
     - POST requests to HTTP server
 - Listening to in-game events
 - Pathfinding (from azalea)
 - Entity and chest interaction
 - NoChatReports encryption
 - Saving ReplayMod recordings
+- Matrix integration
 
 ## Usage
 

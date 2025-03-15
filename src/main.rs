@@ -1,4 +1,4 @@
-#![feature(let_chains)]
+#![feature(if_let_guard, let_chains)]
 
 mod arguments;
 mod build_info;
@@ -6,6 +6,7 @@ mod commands;
 mod events;
 mod http;
 mod lua;
+mod matrix;
 mod particle;
 mod replay;
 

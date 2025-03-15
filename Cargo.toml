@@ -28,12 +28,14 @@ bevy_log = "0"
 clap = { version = "4", features = ["derive", "string"] }
 console-subscriber = { version = "0", optional = true }
 ctrlc = { version = "3", features = ["termination"] }
+dirs = "6"
 futures = "0"
 futures-locks = "0"
 http-body-util = "0"
 hyper = { version = "1", features = ["server"] }
 hyper-util = "0"
 log = { version = "0" }
+matrix-sdk = { version = "0", optional = true }
 mimalloc = { version = "0", optional = true }
 mlua = { version = "0", features = ["async", "luajit", "send"] }
 ncr = { version = "0", features = ["cfb8", "ecb", "gcm"] }
@@ -43,5 +45,7 @@ tokio = { version = "1", features = ["macros"] }
 zip = { version = "2", default-features = false, features = ["flate2"] }
 
 [features]
+default = ["matrix"]
 console-subscriber = ["dep:console-subscriber"]
 mimalloc = ["dep:mimalloc"]
+matrix = ["dep:matrix-sdk"]

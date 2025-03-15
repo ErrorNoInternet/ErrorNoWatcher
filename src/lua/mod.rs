@@ -4,6 +4,7 @@ pub mod container;
 pub mod direction;
 pub mod events;
 pub mod logging;
+pub mod matrix;
 pub mod nochatreports;
 pub mod player;
 pub mod system;

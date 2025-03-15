@@ -3,7 +3,7 @@ use crate::{
     commands::CommandSource,
     http::serve,
     lua::{client, direction::Direction, player::Player, vec3::Vec3},
-    particle,
+    matrix, particle,
     replay::recorder::Recorder,
 };
 use anyhow::{Context, Result};
@@ -209,6 +209,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
 
             let globals = state.lua.globals();
             lua_init(client, &state, &globals).await?;
+            matrix_init(state.clone(), &globals);
 
             let Some(address): Option<SocketAddr> = globals
                 .get::<String>("HttpAddress")
@@ -269,7 +270,20 @@ async fn lua_init(client: Client, state: &State, globals: &Table) -> Result<()> 
     call_listeners(state, "init", || Ok(())).await
 }
 
-async fn call_listeners<T, F>(state: &State, event_type: &'static str, getter: F) -> Result<()>
+fn matrix_init(state: State, globals: &Table) {
+    if let Ok(homeserver_url) = globals.get::<String>("MatrixHomeserverUrl")
+        && let Ok(username) = globals.get::<String>("MatrixUsername")
+        && let Ok(password) = globals.get::<String>("MatrixPassword")
+    {
+        tokio::spawn(async move {
+            if let Err(error) = matrix::login(state, homeserver_url, username, &password).await {
+                error!("failed to log into matrix account: {error:?}");
+            }
+        });
+    }
+}
+
+pub async fn call_listeners<T, F>(state: &State, event_type: &'static str, getter: F) -> Result<()>
 where
     T: Clone + IntoLuaMulti + Send + 'static,
     F: FnOnce() -> Result<T>,
