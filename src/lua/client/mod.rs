@@ -56,10 +56,10 @@ impl UserData for Client {
     }
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
-        m.add_async_method("find_all_entities", world::find_all_entities);
-        m.add_async_method("find_all_players", world::find_all_players);
-        m.add_async_method("find_entities", world::find_entities);
-        m.add_async_method("find_players", world::find_players);
+        m.add_async_method("find_all_entities", world::find::all_entities);
+        m.add_async_method("find_all_players", world::find::all_players);
+        m.add_async_method("find_entities", world::find::entities);
+        m.add_async_method("find_players", world::find::players);
         m.add_async_method("go_to", movement::go_to);
         m.add_async_method("mine", interaction::mine);
         m.add_async_method("open_container_at", container::open_container_at);
@@ -67,7 +67,7 @@ impl UserData for Client {
         m.add_method("best_tool_for_block", world::best_tool_for_block);
         m.add_method("chat", chat);
         m.add_method("disconnect", disconnect);
-        m.add_method("find_blocks", world::find_blocks);
+        m.add_method("find_blocks", world::find::blocks);
         m.add_method("get_block_state", world::get_block_state);
         m.add_method("get_fluid_state", world::get_fluid_state);
         m.add_method("set_component", state::set_component);
