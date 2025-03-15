@@ -10,12 +10,17 @@ on:
 
 jobs:
     errornowatcher:
-        name: errornowatcher (${{ matrix.os }})
+        name: errornowatcher (${{ matrix.os }}, ${{ matrix.feature.name }})
         runs-on: ${{ matrix.os }}
 
         strategy:
             matrix:
                 os: [ubuntu-24.04, ubuntu-24.04-arm]
+                feature:
+                    - name: default
+
+                    - name: mimalloc
+                      flags: "-F mimalloc"
 
         steps:
             - name: Clone repository
@@ -33,16 +38,15 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       target/
-                  key: build-${{ matrix.os }}-${{ hashFiles('**.toml', 'Cargo.*') }}
+                  key: build_${{ matrix.os }}_${{ matrix.feature.name }}_${{ hashFiles('**.toml', 'Cargo.*') }}
 
             - name: Switch to nightly toolchain
               run: rustup default nightly
 
-            - name: Build in release mode
-              run: cargo build --release
+            - run: cargo build --release ${{ matrix.feature.flags }}
 
             - name: Upload build artifacts
               uses: actions/upload-artifact@v4
               with:
-                  name: errornowatcher_${{ matrix.os }}
+                  name: errornowatcher_${{ matrix.feature.name }}_${{ matrix.os }}
                   path: target/release/errornowatcher

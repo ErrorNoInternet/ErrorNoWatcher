@@ -3,7 +3,7 @@ use crate::{
     commands::CommandSource,
     http::serve,
     lua::{client, direction::Direction, player::Player, vec3::Vec3},
-    matrix, particle,
+    particle,
     replay::recorder::Recorder,
 };
 use anyhow::{Context, Result};
@@ -18,6 +18,9 @@ use mlua::{Error, Function, IntoLuaMulti, Table};
 use ncr::utils::trim_header;
 use std::{net::SocketAddr, process::exit};
 use tokio::net::TcpListener;
+
+#[cfg(feature = "matrix")]
+use crate::matrix;
 
 #[allow(clippy::too_many_lines)]
 pub async fn handle_event(client: Client, event: Event, state: State) -> Result<()> {
@@ -209,6 +212,8 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
 
             let globals = state.lua.globals();
             lua_init(client, &state, &globals).await?;
+
+            #[cfg(feature = "matrix")]
             matrix_init(state.clone(), &globals);
 
             let Some(address): Option<SocketAddr> = globals
@@ -270,6 +275,7 @@ async fn lua_init(client: Client, state: &State, globals: &Table) -> Result<()> 
     call_listeners(state, "init", || Ok(())).await
 }
 
+#[cfg(feature = "matrix")]
 fn matrix_init(state: State, globals: &Table) {
     if let Ok(homeserver_url) = globals.get::<String>("MatrixHomeserverUrl")
         && let Ok(username) = globals.get::<String>("MatrixUsername")

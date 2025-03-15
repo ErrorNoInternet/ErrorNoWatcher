@@ -4,12 +4,14 @@ pub mod container;
 pub mod direction;
 pub mod events;
 pub mod logging;
-pub mod matrix;
 pub mod nochatreports;
 pub mod player;
 pub mod system;
 pub mod thread;
 pub mod vec3;
+
+#[cfg(feature = "matrix")]
+pub mod matrix;
 
 use crate::{ListenerMap, build_info::built};
 use mlua::{Lua, Table};

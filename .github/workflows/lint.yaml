@@ -28,8 +28,22 @@ jobs:
               run: taplo fmt --check Cargo.toml
 
     rust:
-        name: Rust
+        name: Rust (${{ matrix.feature.name }})
         runs-on: ubuntu-24.04
+
+        strategy:
+            matrix:
+                feature:
+                    - name: default
+
+                    - name: minimal-mimalloc
+                      flags: "--no-default-features -F mimalloc"
+
+                    - name: minimal
+                      flags: "--no-default-features"
+
+                    - name: mimalloc
+                      flags: "-F mimalloc"
 
         steps:
             - name: Clone repository
@@ -47,7 +61,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       target/
-                  key: build-${{ matrix.os }}-${{ hashFiles('**.toml', 'Cargo.*') }}
+                  key: build_${{ matrix.os }}_${{ matrix.feature.name }}_${{ hashFiles('**.toml', 'Cargo.*') }}
 
             - name: Switch to nightly toolchain
               run: rustup default nightly
@@ -55,9 +69,7 @@ jobs:
             - name: Install components
               run: rustup component add clippy rustfmt
 
-            - name: cargo clippy
-              run: cargo clippy -- -D clippy::pedantic
+            - run: cargo clippy ${{ matrix.feature.flags }} -- -D warnings -D clippy::pedantic
 
-            - name: cargo fmt
-              if: always()
+            - if: always()
               run: cargo fmt --check

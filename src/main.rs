@@ -6,9 +6,11 @@ mod commands;
 mod events;
 mod http;
 mod lua;
-mod matrix;
 mod particle;
 mod replay;
+
+#[cfg(feature = "matrix")]
+mod matrix;
 
 use anyhow::Context;
 use arguments::Arguments;
