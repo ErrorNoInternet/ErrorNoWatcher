@@ -36,7 +36,7 @@ jobs:
                 feature:
                     - name: default
 
-                    - name: minimal-mimalloc
+                    - name: minimal+mimalloc
                       flags: "--no-default-features -F mimalloc"
 
                     - name: minimal
@@ -61,7 +61,7 @@ jobs:
                       ~/.cargo/registry/cache/
                       ~/.cargo/git/db/
                       target/
-                  key: build_${{ matrix.os }}_${{ matrix.feature.name }}_${{ hashFiles('**.toml', 'Cargo.*') }}
+                  key: lint_${{ matrix.feature.name }}_${{ hashFiles('**.toml', 'Cargo.*') }}
 
             - name: Switch to nightly toolchain
               run: rustup default nightly
