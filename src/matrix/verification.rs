@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use anyhow::{Context, Result};
 use futures::StreamExt;
 use log::{error, info, warn};
@@ -17,6 +15,7 @@ use matrix_sdk::{
         },
     },
 };
+use std::time::Duration;
 use tokio::time::sleep;
 
 async fn confirm_emojis(sas: SasVerification, emoji: [Emoji; 7]) {

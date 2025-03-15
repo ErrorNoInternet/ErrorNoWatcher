@@ -11,7 +11,7 @@ impl UserData for Client {
             Ok(this.0.rooms().into_iter().map(Room).collect::<Vec<_>>())
         });
         f.add_field_method_get("user_id", |_, this| {
-            Ok(this.0.user_id().map(std::string::ToString::to_string))
+            Ok(this.0.user_id().map(ToString::to_string))
         });
     }
 

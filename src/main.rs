@@ -122,6 +122,7 @@ async fn main() -> anyhow::Result<()> {
     } else {
         Account::offline(&username)
     };
+
     let Err(error) = ClientBuilder::new_without_plugins()
         .add_plugins(DefaultBotPlugins)
         .add_plugins(HaxPlugin)
