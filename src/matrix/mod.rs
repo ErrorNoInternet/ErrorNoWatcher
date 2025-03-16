@@ -17,6 +17,7 @@ use verification::{on_device_key_verification_request, on_room_message_verificat
 #[derive(Clone)]
 pub struct MatrixContext {
     state: State,
+    name: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -87,7 +88,7 @@ pub async fn login(
         fs::write(&session_file, serde_json::to_string(&new_session)?).await?;
     }
 
-    client.add_event_handler_context(MatrixContext { state });
+    client.add_event_handler_context(MatrixContext { state, name });
     client.add_event_handler(on_stripped_state_member);
     loop {
         match client.sync_once(sync_settings.clone()).await {

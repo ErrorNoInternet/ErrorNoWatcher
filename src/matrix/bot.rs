@@ -1,4 +1,4 @@
-use super::{COMMAND_PREFIX, MatrixContext};
+use super::MatrixContext;
 use crate::{
     events::call_listeners,
     lua::{self, matrix::room::Room as LuaRoom},
@@ -35,9 +35,9 @@ pub async fn on_regular_room_message(
         .get::<Vec<String>>("MatrixOwners")
         .unwrap_or_default()
         .contains(&event.sender.to_string())
-        && text_content.body.starts_with(COMMAND_PREFIX)
+        && text_content.body.starts_with(&ctx.name)
     {
-        let body = text_content.body[COMMAND_PREFIX.len()..]
+        let body = text_content.body[ctx.name.len()..]
             .trim_start_matches(':')
             .trim();
         let split = body.split_once(char::is_whitespace).unzip();
