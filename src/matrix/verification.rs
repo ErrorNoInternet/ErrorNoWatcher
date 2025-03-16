@@ -30,16 +30,14 @@ async fn confirm_emojis(sas: SasVerification, emoji: [Emoji; 7]) {
 async fn print_devices(user_id: &UserId, client: &Client) -> Result<()> {
     info!("devices of user {user_id}");
 
+    let own_id = client.device_id().context("missing own device id")?;
     for device in client
         .encryption()
         .get_user_devices(user_id)
         .await?
         .devices()
+        .filter(|device| device.device_id() != own_id)
     {
-        if device.device_id() == client.device_id().context("missing device id")? {
-            continue;
-        }
-
         info!(
             "\t{:<10} {:<30} {:<}",
             device.device_id(),
@@ -68,13 +66,13 @@ async fn sas_verification_handler(client: Client, sas: SasVerification) -> Resul
             } => {
                 tokio::spawn(confirm_emojis(
                     sas.clone(),
-                    emojis.context("only emojis supported")?.emojis,
+                    emojis.context("only emoji verification supported")?.emojis,
                 ));
             }
             SasState::Done { .. } => {
                 let device = sas.other_device();
                 info!(
-                    "successfully verified device {} {} trust {:?}",
+                    "successfully verified device {} {} with trust {:?}",
                     device.user_id(),
                     device.device_id(),
                     device.local_trust_state()

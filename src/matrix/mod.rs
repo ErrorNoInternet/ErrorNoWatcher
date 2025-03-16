@@ -55,7 +55,7 @@ pub async fn login(
     if !fs::try_exists(&root_dir).await.unwrap_or_default()
         && let Err(error) = fs::create_dir_all(&root_dir).await
     {
-        warn!("failed to create directory for matrix sqlite3 store: {error:?}");
+        warn!("failed to create directory for matrix sqlite store: {error:?}");
     } else {
         builder = builder.sqlite_store(&root_dir, None);
     }
