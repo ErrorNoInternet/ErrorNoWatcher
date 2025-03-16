@@ -5,7 +5,6 @@ A Minecraft bot with Lua scripting support, written in Rust with [azalea](https:
 ## Features
 
 - Running Lua from
-    - `errornowatcher.lua`
     - in-game chat messages
     - Matrix chat messages
     - POST requests to HTTP server
@@ -25,4 +24,4 @@ $ cargo build --release
 $ # ./target/release/errornowatcher
 ```
 
-Make sure the `Server` and `Username` globals are defined in `errornowatcher.lua` before starting the bot.
+Make sure the `Server` and `Username` globals are defined in `main.lua` before starting the bot.

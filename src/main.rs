@@ -27,6 +27,7 @@ use clap::Parser;
 use commands::{CommandSource, register};
 use futures::lock::Mutex;
 use futures_locks::RwLock;
+use log::debug;
 use mlua::{Function, Lua, Table};
 use replay::{plugin::RecordPlugin, recorder::Recorder};
 use std::{
@@ -58,24 +59,28 @@ async fn main() -> anyhow::Result<()> {
     let event_listeners = Arc::new(RwLock::new(HashMap::new()));
     let lua = unsafe { Lua::unsafe_new() };
     let globals = lua.globals();
-
     lua::register_globals(&lua, &globals, event_listeners.clone())?;
-    globals.set("SCRIPT_PATH", &*args.script)?;
-    lua.load(
-        read_to_string(&args.script)
-            .with_context(|| format!("failed to read {}", args.script.display()))?,
-    )
-    .exec()?;
+
+    if let Some(path) = args.script {
+        globals.set("SCRIPT_PATH", &*path)?;
+        lua.load(read_to_string(path)?).exec()?;
+    } else if let Some(code) = ["main.lua", "errornowatcher.lua"].iter().find_map(|path| {
+        debug!("trying to load code from {path}");
+        globals.set("SCRIPT_PATH", *path).ok()?;
+        read_to_string(path).ok()
+    }) {
+        lua.load(code).exec()?;
+    }
     if let Some(code) = args.exec {
         lua.load(code).exec()?;
     }
 
     let server = globals
         .get::<String>("Server")
-        .expect("Server should be in lua globals");
+        .context("lua globals missing Server variable")?;
     let username = globals
         .get::<String>("Username")
-        .expect("Username should be in lua globals");
+        .context("lua globals missing Username variable")?;
 
     let mut commands = CommandDispatcher::new();
     register(&mut commands);

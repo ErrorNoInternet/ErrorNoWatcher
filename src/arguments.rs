@@ -6,11 +6,11 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(version = build_info::version_formatted())]
 pub struct Arguments {
-    /// Path to Lua entry point
-    #[arg(short, long, default_value = "errornowatcher.lua")]
-    pub script: PathBuf,
+    /// Path to main Lua file
+    #[arg(short, long)]
+    pub script: Option<PathBuf>,
 
-    /// Code to execute after loading script
+    /// Code to execute (after script)
     #[arg(short, long)]
     pub exec: Option<String>,
 }
