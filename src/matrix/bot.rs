@@ -1,4 +1,4 @@
-use super::{COMMAND_PREFIX, Context};
+use super::{COMMAND_PREFIX, MatrixContext};
 use crate::{
     events::call_listeners,
     lua::{self, matrix::room::Room as LuaRoom},
@@ -19,7 +19,7 @@ use tokio::time::sleep;
 pub async fn on_regular_room_message(
     event: OriginalSyncRoomMessageEvent,
     room: Room,
-    ctx: Ctx<Context>,
+    ctx: Ctx<MatrixContext>,
 ) -> Result<()> {
     if room.state() != RoomState::Joined {
         return Ok(());
@@ -90,7 +90,7 @@ pub async fn on_stripped_state_member(
     member: StrippedRoomMemberEvent,
     client: Client,
     room: Room,
-    ctx: Ctx<Context>,
+    ctx: Ctx<MatrixContext>,
 ) -> Result<()> {
     if let Some(user_id) = client.user_id()
         && member.state_key == user_id

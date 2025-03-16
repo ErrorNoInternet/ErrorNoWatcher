@@ -210,11 +210,11 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                 exit(0);
             })?;
 
+            #[cfg(feature = "matrix")]
+            matrix_init(&client, state.clone());
+
             let globals = state.lua.globals();
             lua_init(client, &state, &globals).await?;
-
-            #[cfg(feature = "matrix")]
-            matrix_init(state.clone(), &globals);
 
             let Some(address): Option<SocketAddr> = globals
                 .get::<String>("HttpAddress")
@@ -276,13 +276,17 @@ async fn lua_init(client: Client, state: &State, globals: &Table) -> Result<()> 
 }
 
 #[cfg(feature = "matrix")]
-fn matrix_init(state: State, globals: &Table) {
+fn matrix_init(client: &Client, state: State) {
+    let globals = state.lua.globals();
     if let Ok(homeserver_url) = globals.get::<String>("MatrixHomeserverUrl")
         && let Ok(username) = globals.get::<String>("MatrixUsername")
         && let Ok(password) = globals.get::<String>("MatrixPassword")
     {
+        let name = client.username();
         tokio::spawn(async move {
-            if let Err(error) = matrix::login(state, homeserver_url, username, &password).await {
+            if let Err(error) =
+                matrix::login(homeserver_url, username, &password, state, globals, name).await
+            {
                 error!("failed to log into matrix account: {error:?}");
             }
         });
