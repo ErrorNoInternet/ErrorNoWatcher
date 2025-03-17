@@ -6,7 +6,6 @@ use azalea::{
     protocol::common::client_information::ModelCustomization,
 };
 use azalea_hax::AntiKnockback;
-use log::error;
 use mlua::{Error, Lua, Result, Table, UserDataRef};
 
 pub fn air_supply(_lua: &Lua, client: &Client) -> Result<i32> {
@@ -35,8 +34,7 @@ pub async fn set_client_information(
     info: Table,
 ) -> Result<()> {
     let get_bool = |table: &Table, name| table.get(name).unwrap_or(true);
-
-    if let Err(error) = client
+    client
         .set_client_information(ClientInformation {
             allows_listing: info.get("allows_listing")?,
             model_customization: info
@@ -55,10 +53,7 @@ pub async fn set_client_information(
             ..ClientInformation::default()
         })
         .await
-    {
-        error!("failed to set client client information: {error:?}");
-    }
-    Ok(())
+        .map_err(Error::external)
 }
 
 pub fn set_component(
