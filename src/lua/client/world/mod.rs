@@ -8,7 +8,6 @@ use mlua::{Lua, Result, Table};
 
 pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Result<Table> {
     let result = client.best_tool_in_hotbar_for_block(BlockState { id: block_state });
-
     let table = lua.create_table()?;
     table.set("index", result.index)?;
     table.set("percentage_per_tick", result.percentage_per_tick)?;

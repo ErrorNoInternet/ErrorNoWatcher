@@ -2,7 +2,7 @@ mod bot;
 mod verification;
 
 use crate::{State, lua::matrix::client::Client as LuaClient};
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use bot::{on_regular_room_message, on_stripped_state_member};
 use log::{error, warn};
 use matrix_sdk::{
@@ -15,7 +15,7 @@ use tokio::fs;
 use verification::{on_device_key_verification_request, on_room_message_verification_request};
 
 #[derive(Clone)]
-pub struct MatrixContext {
+pub struct Context {
     state: State,
     name: String,
 }
@@ -62,8 +62,8 @@ pub async fn login(
     let client = builder.build().await?;
 
     let mut new_session;
-    let session_file = root_dir.join("session.json");
     let mut sync_settings = SyncSettings::default();
+    let session_file = root_dir.join("session.json");
     if let Some(session) = fs::read_to_string(&session_file)
         .await
         .ok()
@@ -88,7 +88,7 @@ pub async fn login(
         fs::write(&session_file, serde_json::to_string(&new_session)?).await?;
     }
 
-    client.add_event_handler_context(MatrixContext { state, name });
+    client.add_event_handler_context(Context { state, name });
     client.add_event_handler(on_stripped_state_member);
     loop {
         match client.sync_once(sync_settings.clone()).await {
