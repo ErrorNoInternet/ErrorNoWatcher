@@ -2971,6 +2971,7 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e27119e566a60f5681eb8d05f51ef10862dd9af611ac6c6e0dc9aa9bf3bcc493"
 dependencies = [
+ "anyhow",
  "anymap2",
  "aquamarine",
  "as_variant",

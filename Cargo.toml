@@ -35,7 +35,7 @@ http-body-util = "0"
 hyper = { version = "1", features = ["server"] }
 hyper-util = "0"
 log = { version = "0" }
-matrix-sdk = { version = "0", optional = true }
+matrix-sdk = { version = "0", features = ["anyhow"], optional = true }
 mimalloc = { version = "0", optional = true }
 mlua = { version = "0", features = ["async", "luajit", "send"] }
 ncr = { version = "0", features = ["cfb8", "ecb", "gcm"] }
