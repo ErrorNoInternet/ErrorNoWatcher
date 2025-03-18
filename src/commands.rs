@@ -48,10 +48,10 @@ pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
         let source = ctx.source.clone();
         tokio::spawn(async move {
             let source = source.lock().await;
-            source.reply(&format!(
-                "{:?}",
-                reload(&source.state.lua, source.message.username())
-            ));
+            source.reply(
+                &reload(&source.state.lua, source.message.username())
+                    .map_or_else(|error| error.to_string(), |()| String::from("ok")),
+            );
         });
         1
     }));
@@ -62,10 +62,11 @@ pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
             let code = get_string(ctx, "code").expect("argument should exist");
             tokio::spawn(async move {
                 let source = source.lock().await;
-                source.reply(&format!(
-                    "{:?}",
-                    eval(&source.state.lua, &code, source.message.username()).await
-                ));
+                source.reply(
+                    &eval(&source.state.lua, &code, source.message.username())
+                        .await
+                        .unwrap_or_else(|error| error.to_string()),
+                );
             });
             1
         })),
@@ -77,10 +78,11 @@ pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
             let code = get_string(ctx, "code").expect("argument should exist");
             tokio::spawn(async move {
                 let source = source.lock().await;
-                source.reply(&format!(
-                    "{:?}",
-                    exec(&source.state.lua, &code, source.message.username()).await
-                ));
+                source.reply(
+                    &exec(&source.state.lua, &code, source.message.username())
+                        .await
+                        .map_or_else(|error| error.to_string(), |()| String::from("ok")),
+                );
             });
             1
         })),

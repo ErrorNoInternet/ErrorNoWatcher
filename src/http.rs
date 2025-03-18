@@ -12,27 +12,28 @@ pub async fn serve(
     request: Request<Incoming>,
     state: State,
 ) -> Result<Response<BoxBody<Bytes, Error>>, Error> {
-    macro_rules! handle_code {
-        ($handler:ident) => {
-            match std::str::from_utf8(&request.into_body().collect().await?.to_bytes()) {
-                Ok(code) => Response::new(full(format!(
-                    "{:#?}",
-                    $handler(&state.lua, code, None).await
-                ))),
-                Err(error) => status_code_response(
-                    StatusCode::BAD_REQUEST,
-                    full(format!("invalid utf-8 data received: {error:?}")),
-                ),
-            }
-        };
-    }
-
     Ok(match (request.method(), request.uri().path()) {
-        (&Method::POST, "/reload") => {
-            Response::new(full(format!("{:#?}", reload(&state.lua, None))))
-        }
-        (&Method::POST, "/eval") => handle_code!(eval),
-        (&Method::POST, "/exec") => handle_code!(exec),
+        (&Method::POST, "/reload") => Response::new(
+            reload(&state.lua, None).map_or_else(|error| full(error.to_string()), |()| empty()),
+        ),
+        (&Method::POST, "/eval") => Response::new(full(
+            eval(
+                &state.lua,
+                &String::from_utf8_lossy(&request.into_body().collect().await?.to_bytes()),
+                None,
+            )
+            .await
+            .unwrap_or_else(|error| error.to_string()),
+        )),
+        (&Method::POST, "/exec") => Response::new(
+            exec(
+                &state.lua,
+                &String::from_utf8_lossy(&request.into_body().collect().await?.to_bytes()),
+                None,
+            )
+            .await
+            .map_or_else(|error| full(error.to_string()), |()| empty()),
+        ),
         (&Method::GET, "/ping") => Response::new(full("pong!")),
         _ => status_code_response(StatusCode::NOT_FOUND, empty()),
     })

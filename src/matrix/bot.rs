@@ -1,7 +1,7 @@
 use super::Context;
 use crate::{
     events::call_listeners,
-    lua::{self, matrix::room::Room as LuaRoom},
+    lua::{eval, exec, matrix::room::Room as LuaRoom, reload},
 };
 use anyhow::Result;
 use log::{debug, error};
@@ -47,18 +47,25 @@ pub async fn on_regular_room_message(
 
         let mut output = None;
         match split.0.unwrap_or(body).to_lowercase().as_str() {
-            "reload" => output = Some(format!("{:#?}", lua::reload(&ctx.state.lua, None))),
+            "reload" => {
+                output = Some(
+                    reload(&ctx.state.lua, None)
+                        .map_or_else(|error| error.to_string(), |()| String::from("ok")),
+                );
+            }
             "eval" if let Some(code) = code => {
-                output = Some(format!(
-                    "{:#?}",
-                    lua::eval(&ctx.state.lua, code, None).await
-                ));
+                output = Some(
+                    eval(&ctx.state.lua, code, None)
+                        .await
+                        .unwrap_or_else(|error| error.to_string()),
+                );
             }
             "exec" if let Some(code) = code => {
-                output = Some(format!(
-                    "{:#?}",
-                    lua::exec(&ctx.state.lua, code, None).await
-                ));
+                output = Some(
+                    exec(&ctx.state.lua, code, None)
+                        .await
+                        .map_or_else(|error| error.to_string(), |()| String::from("ok")),
+                );
             }
             "ping" => {
                 room.send(RoomMessageEventContent::text_plain("pong!"))

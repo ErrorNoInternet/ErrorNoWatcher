@@ -15,10 +15,12 @@ pub mod matrix;
 
 use crate::{ListenerMap, build_info::built};
 use mlua::{Lua, Table};
-use std::io;
+use std::{
+    fmt::{self, Display, Formatter},
+    io,
+};
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum Error {
     CreateEnv(mlua::Error),
     EvalChunk(mlua::Error),
@@ -26,6 +28,23 @@ pub enum Error {
     LoadChunk(mlua::Error),
     MissingPath(mlua::Error),
     ReadFile(io::Error),
+}
+
+impl Display for Error {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "failed to {}",
+            match self {
+                Error::CreateEnv(error) => format!("create environment: {error}"),
+                Error::EvalChunk(error) => format!("evaluate chunk: {error}"),
+                Error::ExecChunk(error) => format!("execute chunk: {error}"),
+                Error::LoadChunk(error) => format!("load chunk: {error}"),
+                Error::MissingPath(error) => format!("get SCRIPT_PATH global: {error}"),
+                Error::ReadFile(error) => format!("read script file: {error}"),
+            }
+        )
+    }
 }
 
 pub fn register_globals(
