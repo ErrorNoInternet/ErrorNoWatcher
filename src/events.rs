@@ -304,7 +304,7 @@ where
             let data = data.clone();
             tokio::spawn(async move {
                 if let Err(error) = callback.call_async::<()>(data).await {
-                    error!("failed to call lua event listener {id} for {event_type}: {error:?}");
+                    error!("failed to call lua event listener {id} for {event_type}: {error}");
                 }
             });
         }
