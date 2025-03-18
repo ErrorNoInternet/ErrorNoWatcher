@@ -1,3 +1,5 @@
+use crate::hacks::anti_knockback::AntiKnockback;
+
 use super::Client;
 use azalea::{
     ClientInformation,
@@ -5,7 +7,6 @@ use azalea::{
     pathfinder::PathfinderDebugParticles,
     protocol::common::client_information::ModelCustomization,
 };
-use azalea_hax::AntiKnockback;
 use mlua::{Error, Lua, Result, Table, UserDataRef};
 
 pub fn air_supply(_lua: &Lua, client: &Client) -> Result<i32> {

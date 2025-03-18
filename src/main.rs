@@ -4,6 +4,7 @@ mod arguments;
 mod build_info;
 mod commands;
 mod events;
+mod hacks;
 mod http;
 mod lua;
 mod particle;
@@ -17,7 +18,6 @@ use arguments::Arguments;
 use azalea::{
     DefaultBotPlugins, DefaultPlugins, brigadier::prelude::CommandDispatcher, prelude::*,
 };
-use azalea_hax::HaxPlugin;
 use bevy_app::PluginGroup;
 use bevy_log::{
     LogPlugin,
@@ -27,6 +27,7 @@ use clap::Parser;
 use commands::{CommandSource, register};
 use futures::lock::Mutex;
 use futures_locks::RwLock;
+use hacks::HacksPlugin;
 use log::debug;
 use mlua::{Function, Lua, Table};
 use replay::{plugin::RecordPlugin, recorder::Recorder};
@@ -130,7 +131,7 @@ async fn main() -> anyhow::Result<()> {
 
     let Err(error) = ClientBuilder::new_without_plugins()
         .add_plugins(DefaultBotPlugins)
-        .add_plugins(HaxPlugin)
+        .add_plugins(HacksPlugin)
         .add_plugins(default_plugins)
         .add_plugins(record_plugin)
         .set_handler(events::handle_event)

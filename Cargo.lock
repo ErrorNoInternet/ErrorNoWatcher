@@ -594,14 +594,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "azalea-hax"
-version = "0.1.0"
-source = "git+https://github.com/azalea-rs/azalea-hax#2af9e0759aded7df01770b717f207b3c1083f942"
-dependencies = [
- "azalea",
-]
-
-[[package]]
 name = "azalea-inventory"
 version = "0.11.0+mc1.21.4"
 source = "git+https://github.com/azalea-rs/azalea#f8130c3c92946d2293634ba4e252d6bc93026c3c"
@@ -1749,7 +1741,6 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "azalea",
- "azalea-hax",
  "bevy_app",
  "bevy_ecs",
  "bevy_log",
