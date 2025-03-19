@@ -3,9 +3,9 @@
 use super::recorder::Recorder;
 use azalea::{
     ecs::{event::EventReader, system::Query},
-    packet_handling::{
-        configuration::ConfigurationEvent,
-        game::send_packet_events,
+    packet::{
+        config::ReceiveConfigPacketEvent,
+        game::emit_receive_packet_events,
         login::{LoginPacketEvent, process_packet_events},
     },
     protocol::packets::login::ClientboundLoginPacket,
@@ -27,7 +27,10 @@ impl Plugin for RecordPlugin {
             app.insert_resource(recorder)
                 .add_systems(First, record_login_packets.before(process_packet_events))
                 .add_systems(First, record_configuration_packets)
-                .add_systems(First, record_game_packets.before(send_packet_events));
+                .add_systems(
+                    First,
+                    record_game_packets.before(emit_receive_packet_events),
+                );
         }
     }
 }
@@ -53,7 +56,7 @@ fn record_login_packets(
 
 fn record_configuration_packets(
     recorder: Option<ResMut<Recorder>>,
-    mut events: EventReader<ConfigurationEvent>,
+    mut events: EventReader<ReceiveConfigPacketEvent>,
 ) {
     if let Some(mut recorder) = recorder {
         for event in events.read() {
