@@ -1,6 +1,6 @@
 use azalea::inventory::{
     self,
-    components::{CustomName, Damage, Food, MaxDamage},
+    components::{Consumable, CustomName, Damage, Food, MaxDamage},
 };
 use mlua::{UserData, UserDataFields, UserDataMethods};
 
@@ -30,6 +30,24 @@ impl UserData for ItemStack {
                 .0
                 .as_present()
                 .map(|data| data.components.get::<MaxDamage>().map(|d| d.amount)))
+        });
+
+        f.add_field_method_get("consumable", |lua, this| {
+            Ok(
+                if let Some(consumable) = this
+                    .0
+                    .as_present()
+                    .and_then(|data| data.components.get::<Consumable>())
+                {
+                    let table = lua.create_table()?;
+                    table.set("animation", consumable.animation as u8)?;
+                    table.set("consume_seconds", consumable.consume_seconds)?;
+                    table.set("has_consume_particles", consumable.has_consume_particles)?;
+                    Some(table)
+                } else {
+                    None
+                },
+            )
         });
 
         f.add_field_method_get("food", |lua, this| {
