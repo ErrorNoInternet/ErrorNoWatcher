@@ -28,7 +28,7 @@ pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Op
             position.y as i32,
             position.z as i32,
         ))
-        .map(|b| b.id))
+        .map(|block| block.id))
 }
 
 pub fn get_fluid_state(lua: &Lua, client: &Client, position: Vec3) -> Result<Option<Table>> {

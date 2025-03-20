@@ -46,7 +46,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                         .call::<String>((options.clone(), content.clone()))
                         .ok()
                         .as_deref()
-                        .and_then(|s| trim_header(s).ok())
+                        .and_then(|string| trim_header(string).ok())
                 {
                     is_encrypted = true;
                     ncr_options = Some(options);

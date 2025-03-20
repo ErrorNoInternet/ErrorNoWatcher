@@ -22,9 +22,10 @@ pub fn held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
 
 #[allow(clippy::too_many_lines)]
 pub fn menu(lua: &Lua, client: &Client) -> Result<Value> {
-    fn from_slot_list<const N: usize>(s: SlotList<N>) -> Vec<ItemStack> {
-        s.iter()
-            .map(|i| ItemStack(i.to_owned()))
+    fn from_slot_list<const N: usize>(slot_list: SlotList<N>) -> Vec<ItemStack> {
+        slot_list
+            .iter()
+            .map(|item_stack| ItemStack(item_stack.to_owned()))
             .collect::<Vec<_>>()
     }
 
