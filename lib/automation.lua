@@ -111,6 +111,10 @@ function attack_entities(target_kind, minimum)
 end
 
 function check_food(hunger)
+	if not hunger then
+		hunger = client.hunger
+	end
+
 	if hunger.food >= 20 then
 		return
 	end
