@@ -128,6 +128,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
         Event::RemovePlayer(player_info) => {
             call_listeners(&state, "remove_player", || Ok(Player::from(player_info))).await
         }
+        Event::Spawn => call_listeners(&state, "spawn", || Ok(())).await,
         Event::Tick => call_listeners(&state, "tick", || Ok(())).await,
         Event::UpdatePlayer(player_info) => {
             call_listeners(&state, "update_player", || Ok(Player::from(player_info))).await
@@ -255,6 +256,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                 });
             }
         }
+        _ => todo!(),
     }
 }
 
