@@ -28,15 +28,7 @@ pub async fn on_regular_room_message(
         return Ok(());
     };
 
-    if ctx
-        .state
-        .lua
-        .globals()
-        .get::<Vec<String>>("MatrixOwners")
-        .unwrap_or_default()
-        .contains(&event.sender.to_string())
-        && text_content.body.starts_with(&ctx.name)
-    {
+    if ctx.is_owner(&event.sender.to_string()) && text_content.body.starts_with(&ctx.name) {
         let body = text_content.body[ctx.name.len()..]
             .trim_start_matches(':')
             .trim();
@@ -101,13 +93,7 @@ pub async fn on_stripped_state_member(
 ) -> Result<()> {
     if let Some(user_id) = client.user_id()
         && member.state_key == user_id
-        && ctx
-            .state
-            .lua
-            .globals()
-            .get::<Vec<String>>("MatrixOwners")
-            .unwrap_or_default()
-            .contains(&member.sender.to_string())
+        && ctx.is_owner(&member.sender.to_string())
     {
         debug!("joining room {}", room.room_id());
         while let Err(error) = room.join().await {

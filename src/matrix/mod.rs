@@ -20,6 +20,23 @@ pub struct Context {
     name: String,
 }
 
+impl Context {
+    fn is_owner(&self, name: &String) -> bool {
+        self.state
+            .lua
+            .globals()
+            .get::<Table>("MatrixOptions")
+            .ok()
+            .and_then(|options| {
+                options
+                    .get::<Vec<String>>("owners")
+                    .ok()
+                    .and_then(|owners| owners.contains(name).then_some(()))
+            })
+            .is_some()
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -37,14 +54,13 @@ async fn persist_sync_token(
     Ok(())
 }
 
-pub async fn login(
-    homeserver_url: String,
-    username: String,
-    password: &str,
-    state: State,
-    globals: Table,
-    name: String,
-) -> Result<()> {
+pub async fn login(state: State, options: Table, globals: Table, name: String) -> Result<()> {
+    let (homeserver_url, username, password) = (
+        options.get::<String>("homeserver_url")?,
+        options.get::<String>("username")?,
+        &options.get::<String>("password")?,
+    );
+
     let root_dir = dirs::data_dir()
         .context("no data directory")?
         .join("errornowatcher")

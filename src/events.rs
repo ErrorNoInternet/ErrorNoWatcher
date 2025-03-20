@@ -278,15 +278,10 @@ async fn lua_init(client: Client, state: &State, globals: &Table) -> Result<()> 
 #[cfg(feature = "matrix")]
 fn matrix_init(client: &Client, state: State) {
     let globals = state.lua.globals();
-    if let Ok(homeserver_url) = globals.get::<String>("MatrixHomeserverUrl")
-        && let Ok(username) = globals.get::<String>("MatrixUsername")
-        && let Ok(password) = globals.get::<String>("MatrixPassword")
-    {
+    if let Ok(options) = globals.get::<Table>("MatrixOptions") {
         let name = client.username();
         tokio::spawn(async move {
-            if let Err(error) =
-                matrix::login(homeserver_url, username, &password, state, globals, name).await
-            {
+            if let Err(error) = matrix::login(state, options, globals, name).await {
                 error!("failed to log into matrix account: {error:?}");
             }
         });

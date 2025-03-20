@@ -2,7 +2,7 @@ Server = "localhost"
 Username = "ErrorNoWatcher"
 HttpAddress = "127.0.0.1:8080"
 Owners = { "ErrorNoInternet" }
-MatrixOwners = { "@errornointernet:envs.net" }
+MatrixOptions = { owners = { "@errornointernet:envs.net" } }
 
 for _, module in ipairs({
 	"lib",
