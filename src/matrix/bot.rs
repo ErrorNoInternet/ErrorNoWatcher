@@ -28,7 +28,7 @@ pub async fn on_regular_room_message(
         return Ok(());
     };
 
-    if ctx.is_owner(&event.sender.to_string()) && text_content.body.starts_with(&ctx.name) {
+    if text_content.body.starts_with(&ctx.name) && ctx.is_owner(&event.sender.to_string()) {
         let body = text_content.body[ctx.name.len()..]
             .trim_start_matches(':')
             .trim();
