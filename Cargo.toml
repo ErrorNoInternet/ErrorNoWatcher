@@ -33,13 +33,13 @@ futures-locks = "0"
 http-body-util = "0"
 hyper = { version = "1", features = ["server"] }
 hyper-util = "0"
-log = { version = "0" }
+log = "0"
 matrix-sdk = { version = "0", features = ["anyhow"], optional = true }
 mimalloc = { version = "0", optional = true }
 mlua = { version = "0", features = ["async", "luajit", "send"] }
 ncr = { version = "0", features = ["cfb8", "ecb", "gcm"] }
 parking_lot = "0"
-serde = { version = "1", features = ["derive"] }
+serde = "1"
 serde_json = "1"
 tokio = { version = "1", features = ["macros"] }
 zip = { version = "2", default-features = false, features = ["flate2"] }
