@@ -1,8 +1,5 @@
-use super::Context;
-use crate::{
-    events::call_listeners,
-    lua::{eval, exec, matrix::room::Room as LuaRoom, reload},
-};
+use std::time::Duration;
+
 use anyhow::Result;
 use log::{debug, error};
 use matrix_sdk::{
@@ -13,8 +10,13 @@ use matrix_sdk::{
         message::{MessageType, OriginalSyncRoomMessageEvent, RoomMessageEventContent},
     },
 };
-use std::time::Duration;
 use tokio::time::sleep;
+
+use super::Context;
+use crate::{
+    events::call_listeners,
+    lua::{eval, exec, matrix::room::Room as LuaRoom, reload},
+};
 
 pub async fn on_regular_room_message(
     event: OriginalSyncRoomMessageEvent,

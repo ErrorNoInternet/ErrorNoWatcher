@@ -6,15 +6,17 @@ mod movement;
 mod state;
 mod world;
 
+use std::ops::{Deref, DerefMut};
+
+use azalea::{Client as AzaleaClient, world::MinecraftEntityId};
+use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
+
 use super::{
     container::{Container, ContainerRef, item_stack::ItemStack},
     direction::Direction,
     player::Player,
     vec3::Vec3,
 };
-use azalea::{Client as AzaleaClient, world::MinecraftEntityId};
-use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
-use std::ops::{Deref, DerefMut};
 
 pub struct Client(pub Option<AzaleaClient>);
 

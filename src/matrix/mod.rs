@@ -1,7 +1,8 @@
 mod bot;
 mod verification;
 
-use crate::{State, lua::matrix::client::Client as LuaClient};
+use std::{path::Path, sync::Arc};
+
 use anyhow::{Context as _, Result};
 use bot::{on_regular_room_message, on_stripped_state_member};
 use log::{error, warn};
@@ -10,9 +11,10 @@ use matrix_sdk::{
 };
 use mlua::Table;
 use serde::{Deserialize, Serialize};
-use std::{path::Path, sync::Arc};
 use tokio::fs;
 use verification::{on_device_key_verification_request, on_room_message_verification_request};
+
+use crate::{State, lua::matrix::client::Client as LuaClient};
 
 #[derive(Clone)]
 pub struct Context {

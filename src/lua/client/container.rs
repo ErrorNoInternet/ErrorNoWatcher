@@ -1,4 +1,3 @@
-use super::{Client, Container, ContainerRef, ItemStack, Vec3};
 use azalea::{
     BlockPos,
     inventory::{Inventory, Menu, Player, SlotList},
@@ -7,6 +6,8 @@ use azalea::{
 };
 use log::error;
 use mlua::{Lua, Result, UserDataRef, Value};
+
+use super::{Client, Container, ContainerRef, ItemStack, Vec3};
 
 pub fn container(_lua: &Lua, client: &Client) -> Result<Option<ContainerRef>> {
     Ok(client.get_open_container().map(ContainerRef))

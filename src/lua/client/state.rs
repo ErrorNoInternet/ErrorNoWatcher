@@ -1,6 +1,3 @@
-use crate::hacks::anti_knockback::AntiKnockback;
-
-use super::Client;
 use azalea::{
     ClientInformation,
     entity::metadata::{AirSupply, Score},
@@ -8,6 +5,9 @@ use azalea::{
     protocol::common::client_information::ModelCustomization,
 };
 use mlua::{Error, Lua, Result, Table, UserDataRef};
+
+use super::Client;
+use crate::hacks::anti_knockback::AntiKnockback;
 
 pub fn air_supply(_lua: &Lua, client: &Client) -> Result<i32> {
     Ok(client.component::<AirSupply>().0)

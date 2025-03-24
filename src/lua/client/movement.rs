@@ -1,4 +1,3 @@
-use super::{Client, Direction, Vec3};
 use azalea::{
     BlockPos, BotClientExt, SprintDirection, WalkDirection,
     entity::Position,
@@ -12,6 +11,8 @@ use azalea::{
 };
 use log::error;
 use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
+
+use super::{Client, Direction, Vec3};
 
 pub fn direction(_lua: &Lua, client: &Client) -> Result<Direction> {
     let direction = client.direction();

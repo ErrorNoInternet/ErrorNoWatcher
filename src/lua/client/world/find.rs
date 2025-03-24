@@ -1,4 +1,3 @@
-use super::{Client, Direction, Vec3};
 use azalea::{
     BlockPos,
     blocks::{BlockState, BlockStates},
@@ -10,6 +9,8 @@ use azalea::{
     world::MinecraftEntityId,
 };
 use mlua::{Function, Lua, Result, Table, UserDataRef};
+
+use super::{Client, Direction, Vec3};
 
 pub fn blocks(
     _lua: &Lua,

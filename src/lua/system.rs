@@ -1,10 +1,11 @@
-use log::error;
-use mlua::{Lua, Result, Table};
 use std::{
     ffi::OsString,
     process::{Command, Stdio},
     thread,
 };
+
+use log::error;
+use mlua::{Lua, Result, Table};
 
 pub fn register_globals(lua: &Lua, globals: &Table) -> Result<()> {
     globals.set(

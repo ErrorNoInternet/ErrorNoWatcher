@@ -1,4 +1,3 @@
-use super::{Client, Vec3};
 use azalea::{
     BlockPos, BotClientExt,
     protocol::packets::game::{ServerboundUseItem, s_interact::InteractionHand},
@@ -6,6 +5,8 @@ use azalea::{
 };
 use log::error;
 use mlua::{Lua, Result, UserDataRef};
+
+use super::{Client, Vec3};
 
 pub fn attack(_lua: &Lua, client: &mut Client, entity_id: i32) -> Result<()> {
     client.attack(MinecraftEntityId(entity_id));

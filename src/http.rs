@@ -1,11 +1,12 @@
-use crate::{
-    State,
-    lua::{eval, exec, reload},
-};
 use http_body_util::{BodyExt, Empty, Full, combinators::BoxBody};
 use hyper::{
     Error, Method, Request, Response, StatusCode,
     body::{Bytes, Incoming},
+};
+
+use crate::{
+    State,
+    lua::{eval, exec, reload},
 };
 
 pub async fn serve(

@@ -13,6 +13,13 @@ mod replay;
 #[cfg(feature = "matrix")]
 mod matrix;
 
+use std::{
+    collections::HashMap,
+    env,
+    fs::{OpenOptions, read_to_string},
+    sync::Arc,
+};
+
 use anyhow::Context;
 use arguments::Arguments;
 use azalea::{
@@ -31,12 +38,6 @@ use hacks::HacksPlugin;
 use log::debug;
 use mlua::{Function, Lua, Table};
 use replay::{plugin::RecordPlugin, recorder::Recorder};
-use std::{
-    collections::HashMap,
-    env,
-    fs::{OpenOptions, read_to_string},
-    sync::Arc,
-};
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]

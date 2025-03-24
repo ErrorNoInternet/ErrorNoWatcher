@@ -1,10 +1,11 @@
-use super::member::Member;
 use matrix_sdk::{
     RoomMemberships,
     room::Room as MatrixRoom,
     ruma::{EventId, UserId, events::room::message::RoomMessageEventContent},
 };
 use mlua::{Error, UserData, UserDataFields, UserDataMethods};
+
+use super::member::Member;
 
 pub struct Room(pub MatrixRoom);
 

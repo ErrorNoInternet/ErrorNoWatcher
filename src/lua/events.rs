@@ -1,7 +1,9 @@
-use crate::ListenerMap;
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use futures::executor::block_on;
 use mlua::{Function, Lua, Result, Table};
-use std::time::{SystemTime, UNIX_EPOCH};
+
+use crate::ListenerMap;
 
 pub fn register_globals(lua: &Lua, globals: &Table, event_listeners: ListenerMap) -> Result<()> {
     let m = event_listeners.clone();

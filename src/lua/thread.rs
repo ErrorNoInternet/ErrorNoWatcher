@@ -1,5 +1,6 @@
-use mlua::{Error, Function, Lua, Result, Table};
 use std::time::Duration;
+
+use mlua::{Error, Function, Lua, Result, Table};
 use tokio::time::{sleep, timeout};
 
 pub fn register_globals(lua: &Lua, globals: &Table) -> Result<()> {

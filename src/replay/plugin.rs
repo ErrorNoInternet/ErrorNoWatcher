@@ -1,6 +1,7 @@
 #![allow(clippy::needless_pass_by_value)]
 
-use super::recorder::Recorder;
+use std::sync::Arc;
+
 use azalea::{
     ecs::{event::EventReader, system::Query},
     packet::{
@@ -15,7 +16,8 @@ use bevy_app::{First, Plugin};
 use bevy_ecs::{schedule::IntoSystemConfigs, system::ResMut};
 use log::error;
 use parking_lot::Mutex;
-use std::sync::Arc;
+
+use super::recorder::Recorder;
 
 pub struct RecordPlugin {
     pub recorder: Arc<Mutex<Option<Recorder>>>,

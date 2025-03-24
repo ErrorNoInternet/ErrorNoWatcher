@@ -1,10 +1,12 @@
-use super::room::Room;
+use std::sync::Arc;
+
 use matrix_sdk::{
     Client as MatrixClient,
     ruma::{RoomId, UserId},
 };
 use mlua::{Error, UserData, UserDataFields, UserDataMethods};
-use std::sync::Arc;
+
+use super::room::Room;
 
 pub struct Client(pub Arc<MatrixClient>);
 

@@ -1,11 +1,5 @@
-use crate::{
-    State,
-    commands::CommandSource,
-    http::serve,
-    lua::{client, direction::Direction, player::Player, vec3::Vec3},
-    particle,
-    replay::recorder::Recorder,
-};
+use std::{net::SocketAddr, process::exit};
+
 use anyhow::{Context, Result};
 use azalea::{
     brigadier::exceptions::BuiltInExceptions::DispatcherUnknownCommand, prelude::*,
@@ -16,11 +10,18 @@ use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
 use mlua::{Error, Function, IntoLuaMulti, Table};
 use ncr::utils::trim_header;
-use std::{net::SocketAddr, process::exit};
 use tokio::net::TcpListener;
 
 #[cfg(feature = "matrix")]
 use crate::matrix;
+use crate::{
+    State,
+    commands::CommandSource,
+    http::serve,
+    lua::{client, direction::Direction, player::Player, vec3::Vec3},
+    particle,
+    replay::recorder::Recorder,
+};
 
 #[allow(clippy::too_many_lines)]
 pub async fn handle_event(client: Client, event: Event, state: State) -> Result<()> {

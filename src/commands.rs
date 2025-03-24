@@ -1,11 +1,12 @@
-use crate::{
-    State,
-    lua::{eval, exec, reload},
-};
 use azalea::{brigadier::prelude::*, chat::ChatPacket, prelude::*};
 use futures::lock::Mutex;
 use mlua::{Function, Table};
 use ncr::utils::prepend_header;
+
+use crate::{
+    State,
+    lua::{eval, exec, reload},
+};
 
 pub type Ctx = CommandContext<Mutex<CommandSource>>;
 

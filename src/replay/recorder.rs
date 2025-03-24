@@ -1,4 +1,9 @@
-use crate::build_info;
+use std::{
+    fs::File,
+    io::{BufWriter, Write},
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
+
 use anyhow::Result;
 use azalea::{
     buf::AzaleaWriteVar,
@@ -7,12 +12,9 @@ use azalea::{
 };
 use log::debug;
 use serde_json::json;
-use std::{
-    fs::File,
-    io::{BufWriter, Write},
-    time::{Instant, SystemTime, UNIX_EPOCH},
-};
 use zip::{ZipWriter, write::SimpleFileOptions};
+
+use crate::build_info;
 
 #[derive(Resource)]
 pub struct Recorder {

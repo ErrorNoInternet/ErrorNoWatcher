@@ -13,12 +13,14 @@ pub mod vec3;
 #[cfg(feature = "matrix")]
 pub mod matrix;
 
-use crate::{ListenerMap, build_info::built};
-use mlua::{Lua, Table};
 use std::{
     fmt::{self, Display, Formatter},
     io,
 };
+
+use mlua::{Lua, Table};
+
+use crate::{ListenerMap, build_info::built};
 
 #[derive(Debug)]
 pub enum Error {

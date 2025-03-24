@@ -2,9 +2,10 @@
 mod queries;
 pub mod find;
 
-use super::{Client, Direction, Vec3};
 use azalea::{BlockPos, auto_tool::AutoToolClientExt, blocks::BlockState, world::InstanceName};
 use mlua::{Lua, Result, Table};
+
+use super::{Client, Direction, Vec3};
 
 pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Result<Table> {
     let result = client.best_tool_in_hotbar_for_block(BlockState { id: block_state });

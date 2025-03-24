@@ -1,6 +1,8 @@
-use crate::build_info;
-use clap::Parser;
 use std::path::PathBuf;
+
+use clap::Parser;
+
+use crate::build_info;
 
 /// A Minecraft bot with Lua scripting support
 #[derive(Parser)]
