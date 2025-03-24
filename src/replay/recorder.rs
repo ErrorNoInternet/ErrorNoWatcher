@@ -56,7 +56,7 @@ impl Recorder {
                 "fileFormat": "MCPR",
                 "fileFormatVersion": 14,
                 "protocol": PROTOCOL_VERSION,
-                "generator": format!("errornowatcher {}", build_info::version_formatted()),
+                "generator": format!("ErrorNoWatcher {}", build_info::version_formatted()),
             })
             .to_string()
             .as_bytes(),
