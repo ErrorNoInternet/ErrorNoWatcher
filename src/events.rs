@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, process::exit, time::Duration};
+use std::{net::SocketAddr, process::exit};
 
 use anyhow::{Context, Result};
 use azalea::{
@@ -10,10 +10,10 @@ use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
 use mlua::{Error, Function, IntoLuaMulti, Table};
 use ncr::utils::trim_header;
-use tokio::{net::TcpListener, time::sleep};
-
+use tokio::net::TcpListener;
 #[cfg(feature = "matrix")]
-use crate::matrix;
+use {crate::matrix, std::time::Duration, tokio::time::sleep};
+
 use crate::{
     State,
     commands::CommandSource,
