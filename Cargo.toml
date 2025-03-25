@@ -41,7 +41,7 @@ ncr = { version = "0", features = ["cfb8", "ecb", "gcm"] }
 parking_lot = "0"
 serde = "1"
 serde_json = "1"
-tokio = { version = "1", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
 zip = { version = "2", default-features = false, features = ["flate2"] }
 
 [features]
