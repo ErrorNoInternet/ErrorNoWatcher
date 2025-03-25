@@ -56,7 +56,7 @@ async fn persist_sync_token(
     Ok(())
 }
 
-pub async fn login(state: State, options: Table, globals: Table, name: String) -> Result<()> {
+pub async fn login(state: &State, options: &Table, globals: &Table, name: String) -> Result<()> {
     let (homeserver_url, username, password) = (
         options.get::<String>("homeserver_url")?,
         options.get::<String>("username")?,
@@ -106,7 +106,10 @@ pub async fn login(state: State, options: Table, globals: Table, name: String) -
         fs::write(&session_file, serde_json::to_string(&new_session)?).await?;
     }
 
-    client.add_event_handler_context(Context { state, name });
+    client.add_event_handler_context(Context {
+        state: state.to_owned(),
+        name,
+    });
     client.add_event_handler(on_stripped_state_member);
     loop {
         match client.sync_once(sync_settings.clone()).await {

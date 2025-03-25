@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, process::exit};
+use std::{net::SocketAddr, process::exit, time::Duration};
 
 use anyhow::{Context, Result};
 use azalea::{
@@ -10,7 +10,7 @@ use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
 use mlua::{Error, Function, IntoLuaMulti, Table};
 use ncr::utils::trim_header;
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, time::sleep};
 
 #[cfg(feature = "matrix")]
 use crate::matrix;
@@ -284,8 +284,12 @@ fn matrix_init(client: &Client, state: State) {
     if let Ok(options) = globals.get::<Table>("MatrixOptions") {
         let name = client.username();
         tokio::spawn(async move {
-            if let Err(error) = matrix::login(state, options, globals, name).await {
-                error!("failed to log into matrix account: {error:?}");
+            loop {
+                let name = name.clone();
+                if let Err(error) = matrix::login(&state, &options, &globals, name).await {
+                    error!("failed to log into matrix: {error:?}");
+                }
+                sleep(Duration::from_secs(10)).await;
             }
         });
     }

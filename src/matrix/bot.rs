@@ -99,10 +99,7 @@ pub async fn on_stripped_state_member(
     {
         debug!("joining room {}", room.room_id());
         while let Err(error) = room.join().await {
-            error!(
-                "failed to join room {}: {error:?}, retrying...",
-                room.room_id()
-            );
+            error!("failed to join room {}: {error:?}", room.room_id());
             sleep(Duration::from_secs(10)).await;
         }
         debug!("successfully joined room {}", room.room_id());
