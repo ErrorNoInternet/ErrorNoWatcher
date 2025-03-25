@@ -80,5 +80,15 @@ impl UserData for Room {
                 .map_err(Error::external)
                 .map(|response| response.event_id.to_string())
         });
+        m.add_async_method(
+            "send_html",
+            async |_, this, (body, html_body): (String, String)| {
+                this.0
+                    .send(RoomMessageEventContent::text_html(body, html_body))
+                    .await
+                    .map_err(Error::external)
+                    .map(|response| response.event_id.to_string())
+            },
+        );
     }
 }
