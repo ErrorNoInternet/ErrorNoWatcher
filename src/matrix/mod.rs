@@ -1,7 +1,7 @@
 mod bot;
 mod verification;
 
-use std::{path::Path, sync::Arc};
+use std::{path::Path, sync::Arc, time::Duration};
 
 use anyhow::{Context as _, Result};
 use bot::{on_regular_room_message, on_stripped_state_member};
@@ -80,7 +80,7 @@ pub async fn login(state: &State, options: &Table, globals: &Table, name: String
     let client = builder.build().await?;
 
     let mut new_session;
-    let mut sync_settings = SyncSettings::default();
+    let mut sync_settings = SyncSettings::new().timeout(Duration::from_secs(60));
     let session_file = root_dir.join("session.json");
     if let Some(session) = fs::read_to_string(&session_file)
         .await
