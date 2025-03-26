@@ -46,7 +46,7 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 type ListenerMap = Arc<RwLock<HashMap<String, Vec<(String, Function)>>>>;
 
 #[derive(Default, Clone, Component)]
-pub struct State {
+struct State {
     lua: Arc<Lua>,
     event_listeners: ListenerMap,
     commands: Arc<CommandDispatcher<Mutex<CommandSource>>>,

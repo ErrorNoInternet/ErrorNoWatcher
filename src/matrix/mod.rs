@@ -17,7 +17,7 @@ use verification::{on_device_key_verification_request, on_room_message_verificat
 use crate::{State, lua::matrix::client::Client as LuaClient};
 
 #[derive(Clone)]
-pub struct Context {
+struct Context {
     state: State,
     name: String,
 }
