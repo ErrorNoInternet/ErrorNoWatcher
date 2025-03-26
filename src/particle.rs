@@ -34,6 +34,7 @@ pub fn to_kind(particle: &Particle) -> ParticleKind {
         Particle::Flame => ParticleKind::Flame,
         Particle::CherryLeaves => ParticleKind::CherryLeaves,
         Particle::PaleOakLeaves => ParticleKind::PaleOakLeaves,
+        Particle::TintedLeaves => ParticleKind::TintedLeaves,
         Particle::SculkSoul => ParticleKind::SculkSoul,
         Particle::SculkCharge(_) => ParticleKind::SculkCharge,
         Particle::SculkChargePop => ParticleKind::SculkChargePop,
@@ -115,5 +116,6 @@ pub fn to_kind(particle: &Particle) -> ParticleKind {
         Particle::TrialOmen => ParticleKind::TrialOmen,
         Particle::Trail => ParticleKind::Trail,
         Particle::BlockCrumble => ParticleKind::BlockCrumble,
+        Particle::Firefly => ParticleKind::Firefly,
     }
 }
