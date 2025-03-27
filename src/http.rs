@@ -49,13 +49,13 @@ fn status_code_response(
     response
 }
 
-fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
+fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, Error> {
     Full::new(chunk.into())
         .map_err(|never| match never {})
         .boxed()
 }
 
-fn empty() -> BoxBody<Bytes, hyper::Error> {
+fn empty() -> BoxBody<Bytes, Error> {
     Empty::<Bytes>::new()
         .map_err(|never| match never {})
         .boxed()
