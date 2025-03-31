@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use tokio::fs;
 use verification::{on_device_key_verification_request, on_room_message_verification_request};
 
-use crate::{State, lua::matrix::client::Client as LuaClient};
+use crate::{State, events::call_listeners, lua::matrix::client::Client as LuaClient};
 
 #[derive(Clone)]
 struct Context {
@@ -62,7 +62,6 @@ pub async fn login(state: &State, options: &Table, globals: &Table, name: String
         options.get::<String>("username")?,
         &options.get::<String>("password")?,
     );
-
     let root_dir = dirs::data_dir()
         .context("no data directory")?
         .join("errornowatcher")
@@ -130,6 +129,7 @@ pub async fn login(state: &State, options: &Table, globals: &Table, name: String
 
     let client = Arc::new(client);
     globals.set("matrix", LuaClient(client.clone()))?;
+    call_listeners(state, "matrix_init", || Ok(())).await?;
 
     client
         .sync_with_result_callback(sync_settings, |sync_result| async {
