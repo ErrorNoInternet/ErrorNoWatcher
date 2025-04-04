@@ -57,10 +57,11 @@ async fn persist_sync_token(
 }
 
 pub async fn login(state: &State, options: &Table, globals: &Table, name: String) -> Result<()> {
-    let (homeserver_url, username, password) = (
+    let (homeserver_url, username, password, sync_timeout) = (
         options.get::<String>("homeserver_url")?,
         options.get::<String>("username")?,
         &options.get::<String>("password")?,
+        options.get::<u64>("sync_timeout"),
     );
     let root_dir = dirs::data_dir()
         .context("no data directory")?
@@ -78,8 +79,12 @@ pub async fn login(state: &State, options: &Table, globals: &Table, name: String
     }
     let client = builder.build().await?;
 
+    let mut sync_settings = SyncSettings::new();
+    if let Ok(seconds) = sync_timeout {
+        sync_settings = sync_settings.timeout(Duration::from_secs(seconds));
+    }
+
     let mut new_session;
-    let mut sync_settings = SyncSettings::new().timeout(Duration::from_secs(60));
     let session_file = root_dir.join("session.json");
     if let Some(session) = fs::read_to_string(&session_file)
         .await
