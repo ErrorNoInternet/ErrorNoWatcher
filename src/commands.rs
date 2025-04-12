@@ -33,7 +33,7 @@ impl CommandSource {
             }
             self.client.chat(
                 &(if self.message.is_whisper()
-                    && let Some(username) = self.message.username()
+                    && let Some(username) = self.message.sender()
                 {
                     format!("/w {username} {chunk}")
                 } else {
@@ -50,7 +50,7 @@ pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
         tokio::spawn(async move {
             let source = source.lock().await;
             source.reply(
-                &reload(&source.state.lua, source.message.username())
+                &reload(&source.state.lua, source.message.sender())
                     .map_or_else(|error| error.to_string(), |()| String::from("ok")),
             );
         });
@@ -64,7 +64,7 @@ pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
             tokio::spawn(async move {
                 let source = source.lock().await;
                 source.reply(
-                    &eval(&source.state.lua, &code, source.message.username())
+                    &eval(&source.state.lua, &code, source.message.sender())
                         .await
                         .unwrap_or_else(|error| error.to_string()),
                 );
@@ -80,7 +80,7 @@ pub fn register(commands: &mut CommandDispatcher<Mutex<CommandSource>>) {
             tokio::spawn(async move {
                 let source = source.lock().await;
                 source.reply(
-                    &exec(&source.state.lua, &code, source.message.username())
+                    &exec(&source.state.lua, &code, source.message.sender())
                         .await
                         .map_or_else(|error| error.to_string(), |()| String::from("ok")),
                 );

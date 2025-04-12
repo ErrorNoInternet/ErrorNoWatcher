@@ -32,7 +32,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
         Event::Chat(message) => {
             let globals = state.lua.globals();
             let (sender, mut content) = message.split_sender_and_content();
-            let uuid = message.uuid().map(|uuid| uuid.to_string());
+            let uuid = message.sender_uuid().map(|uuid| uuid.to_string());
             let is_whisper = message.is_whisper();
             let text = message.message();
             let ansi_text = text.to_ansi();
