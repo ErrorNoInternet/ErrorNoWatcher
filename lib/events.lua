@@ -61,8 +61,6 @@ function update_listeners()
 			message = function()
 				info("bot successfully logged in!")
 			end,
-		},
-		spawn = {
 			eat = function()
 				sleep(5000)
 				check_food()
