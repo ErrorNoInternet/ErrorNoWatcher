@@ -97,7 +97,7 @@ pub async fn go_to(
     Ok(())
 }
 
-pub fn jump(_lua: &Lua, client: &mut Client, _: ()) -> Result<()> {
+pub fn jump(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
     client.jump();
     Ok(())
 }
@@ -115,7 +115,7 @@ pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
     })
 }
 
-pub fn look_at(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
+pub fn look_at(_lua: &Lua, client: &Client, position: Vec3) -> Result<()> {
     client.look_at(azalea::Vec3::new(position.x, position.y, position.z));
     Ok(())
 }
@@ -150,12 +150,12 @@ pub fn position(_lua: &Lua, client: &Client) -> Result<Vec3> {
     Ok(Vec3::from(&client.component::<Position>()))
 }
 
-pub fn set_direction(_lua: &Lua, client: &mut Client, direction: Direction) -> Result<()> {
+pub fn set_direction(_lua: &Lua, client: &Client, direction: Direction) -> Result<()> {
     client.set_direction(direction.y, direction.x);
     Ok(())
 }
 
-pub fn set_jumping(_lua: &Lua, client: &mut Client, jumping: bool) -> Result<()> {
+pub fn set_jumping(_lua: &Lua, client: &Client, jumping: bool) -> Result<()> {
     client.set_jumping(jumping);
     Ok(())
 }
@@ -184,7 +184,7 @@ pub fn set_sneaking(_lua: &Lua, client: &Client, sneaking: bool) -> Result<()> {
     Ok(())
 }
 
-pub fn sprint(_lua: &Lua, client: &mut Client, direction: u8) -> Result<()> {
+pub fn sprint(_lua: &Lua, client: &Client, direction: u8) -> Result<()> {
     client.sprint(match direction {
         5 => SprintDirection::ForwardRight,
         6 => SprintDirection::ForwardLeft,
@@ -209,7 +209,7 @@ pub fn stop_sleeping(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
     Ok(())
 }
 
-pub fn walk(_lua: &Lua, client: &mut Client, direction: u8) -> Result<()> {
+pub fn walk(_lua: &Lua, client: &Client, direction: u8) -> Result<()> {
     client.walk(match direction {
         1 => WalkDirection::Forward,
         2 => WalkDirection::Backward,

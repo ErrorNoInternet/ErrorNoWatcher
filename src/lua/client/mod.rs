@@ -66,30 +66,30 @@ impl UserData for Client {
         m.add_async_method("mine", interaction::mine);
         m.add_async_method("open_container_at", container::open_container_at);
         m.add_async_method("set_client_information", state::set_client_information);
+        m.add_method("attack", interaction::attack);
         m.add_method("best_tool_for_block", world::best_tool_for_block);
+        m.add_method("block_interact", interaction::block_interact);
         m.add_method("chat", chat);
         m.add_method("disconnect", disconnect);
         m.add_method("find_blocks", world::find::blocks);
         m.add_method("get_block_state", world::get_block_state);
         m.add_method("get_fluid_state", world::get_fluid_state);
+        m.add_method("jump", movement::jump);
+        m.add_method("look_at", movement::look_at);
+        m.add_method("open_inventory", container::open_inventory);
         m.add_method("set_component", state::set_component);
+        m.add_method("set_direction", movement::set_direction);
         m.add_method("set_held_slot", container::set_held_slot);
+        m.add_method("set_jumping", movement::set_jumping);
         m.add_method("set_mining", interaction::set_mining);
         m.add_method("set_position", movement::set_position);
         m.add_method("set_sneaking", movement::set_sneaking);
+        m.add_method("sprint", movement::sprint);
+        m.add_method("start_mining", interaction::start_mining);
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
         m.add_method("stop_sleeping", movement::stop_sleeping);
         m.add_method("use_item", interaction::use_item);
-        m.add_method_mut("attack", interaction::attack);
-        m.add_method_mut("block_interact", interaction::block_interact);
-        m.add_method_mut("jump", movement::jump);
-        m.add_method_mut("look_at", movement::look_at);
-        m.add_method_mut("open_inventory", container::open_inventory);
-        m.add_method_mut("set_direction", movement::set_direction);
-        m.add_method_mut("set_jumping", movement::set_jumping);
-        m.add_method_mut("sprint", movement::sprint);
-        m.add_method_mut("start_mining", interaction::start_mining);
-        m.add_method_mut("walk", movement::walk);
+        m.add_method("walk", movement::walk);
     }
 }
 

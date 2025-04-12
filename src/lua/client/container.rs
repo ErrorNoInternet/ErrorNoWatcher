@@ -108,7 +108,7 @@ pub async fn open_container_at(
         .map(Container))
 }
 
-pub fn open_inventory(_lua: &Lua, client: &mut Client, _: ()) -> Result<Option<Container>> {
+pub fn open_inventory(_lua: &Lua, client: &Client, _: ()) -> Result<Option<Container>> {
     Ok(client.open_inventory().map(Container))
 }
 

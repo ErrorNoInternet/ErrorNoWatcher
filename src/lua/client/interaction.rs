@@ -8,12 +8,12 @@ use mlua::{Lua, Result, UserDataRef};
 
 use super::{Client, Vec3};
 
-pub fn attack(_lua: &Lua, client: &mut Client, entity_id: i32) -> Result<()> {
+pub fn attack(_lua: &Lua, client: &Client, entity_id: i32) -> Result<()> {
     client.attack(MinecraftEntityId(entity_id));
     Ok(())
 }
 
-pub fn block_interact(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
+pub fn block_interact(_lua: &Lua, client: &Client, position: Vec3) -> Result<()> {
     #[allow(clippy::cast_possible_truncation)]
     client.block_interact(BlockPos::new(
         position.x as i32,
@@ -45,7 +45,7 @@ pub fn set_mining(_lua: &Lua, client: &Client, mining: bool) -> Result<()> {
     Ok(())
 }
 
-pub fn start_mining(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
+pub fn start_mining(_lua: &Lua, client: &Client, position: Vec3) -> Result<()> {
     #[allow(clippy::cast_possible_truncation)]
     client.start_mining(BlockPos::new(
         position.x as i32,
