@@ -40,7 +40,7 @@ impl From<&Position> for Vec3 {
 
 impl From<BlockPos> for Vec3 {
     fn from(p: BlockPos) -> Self {
-        Vec3 {
+        Self {
             x: f64::from(p.x),
             y: f64::from(p.y),
             z: f64::from(p.z),

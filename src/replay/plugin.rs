@@ -12,7 +12,7 @@ use azalea::{
     protocol::packets::login::ClientboundLoginPacket,
     raw_connection::RawConnection,
 };
-use bevy_app::{First, Plugin};
+use bevy_app::{App, First, Plugin};
 use bevy_ecs::{schedule::IntoSystemConfigs, system::ResMut};
 use log::error;
 use parking_lot::Mutex;
@@ -24,8 +24,9 @@ pub struct RecordPlugin {
 }
 
 impl Plugin for RecordPlugin {
-    fn build(&self, app: &mut bevy_app::App) {
-        if let Some(recorder) = self.recorder.lock().take() {
+    fn build(&self, app: &mut App) {
+        let recorder = self.recorder.lock().take();
+        if let Some(recorder) = recorder {
             app.insert_resource(recorder)
                 .add_systems(First, record_login_packets.before(process_packet_events))
                 .add_systems(First, record_configuration_packets)

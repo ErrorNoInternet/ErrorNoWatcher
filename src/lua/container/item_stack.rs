@@ -71,9 +71,7 @@ impl UserData for ItemStack {
     }
 
     fn add_methods<M: UserDataMethods<Self>>(m: &mut M) {
-        m.add_method_mut("split", |_, this, count: u32| {
-            Ok(ItemStack(this.0.split(count)))
-        });
+        m.add_method_mut("split", |_, this, count: u32| Ok(Self(this.0.split(count))));
         m.add_method_mut("update_empty", |_, this, (): ()| {
             this.0.update_empty();
             Ok(())

@@ -1,4 +1,6 @@
 #![feature(if_let_guard, let_chains)]
+#![warn(clippy::pedantic, clippy::nursery)]
+#![allow(clippy::significant_drop_tightening)]
 
 mod arguments;
 mod build_info;

@@ -32,21 +32,20 @@ pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Op
         .map(|block| block.id))
 }
 
+#[allow(clippy::cast_possible_truncation)]
 pub fn get_fluid_state(lua: &Lua, client: &Client, position: Vec3) -> Result<Option<Table>> {
-    #[allow(clippy::cast_possible_truncation)]
-    Ok(
-        if let Some(state) = client.world().read().get_fluid_state(&BlockPos::new(
-            position.x as i32,
-            position.y as i32,
-            position.z as i32,
-        )) {
-            let table = lua.create_table()?;
-            table.set("kind", state.kind as u8)?;
-            table.set("amount", state.amount)?;
-            table.set("falling", state.falling)?;
-            Some(table)
-        } else {
-            None
-        },
-    )
+    let fluid_state = client.world().read().get_fluid_state(&BlockPos::new(
+        position.x as i32,
+        position.y as i32,
+        position.z as i32,
+    ));
+    Ok(if let Some(state) = fluid_state {
+        let table = lua.create_table()?;
+        table.set("kind", state.kind as u8)?;
+        table.set("amount", state.amount)?;
+        table.set("falling", state.falling)?;
+        Some(table)
+    } else {
+        None
+    })
 }

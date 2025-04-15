@@ -1,7 +1,7 @@
 use azalea::{entity::particle::Particle, registry::ParticleKind};
 
 #[allow(clippy::too_many_lines)]
-pub fn to_kind(particle: &Particle) -> ParticleKind {
+pub const fn to_kind(particle: &Particle) -> ParticleKind {
     match particle {
         Particle::AngryVillager => ParticleKind::AngryVillager,
         Particle::Block(_) => ParticleKind::Block,

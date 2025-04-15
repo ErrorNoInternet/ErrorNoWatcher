@@ -37,12 +37,7 @@ impl UserData for Room {
                 .members(RoomMemberships::all())
                 .await
                 .map_err(Error::external)
-                .map(|members| {
-                    members
-                        .into_iter()
-                        .map(|member| Member(member.clone()))
-                        .collect::<Vec<_>>()
-                })
+                .map(|members| members.into_iter().map(Member).collect::<Vec<_>>())
         });
         m.add_async_method(
             "kick_user",

@@ -13,13 +13,15 @@ pub fn register_globals(lua: &Lua, globals: &Table, event_listeners: ListenerMap
             move |_, (event_type, callback, optional_id): (String, Function, Option<String>)| {
                 let m = m.clone();
                 let id = optional_id.unwrap_or_else(|| {
-                    callback.info().name.unwrap_or(format!(
-                        "anonymous @ {}",
-                        SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap_or_default()
-                            .as_millis()
-                    ))
+                    callback.info().name.unwrap_or_else(|| {
+                        format!(
+                            "anonymous @ {}",
+                            SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap_or_default()
+                                .as_millis()
+                        )
+                    })
                 });
                 tokio::spawn(async move {
                     m.write()
@@ -40,12 +42,10 @@ pub fn register_globals(lua: &Lua, globals: &Table, event_listeners: ListenerMap
             let m = m.clone();
             tokio::spawn(async move {
                 let mut m = m.write().await;
-                let empty = if let Some(listeners) = m.get_mut(&event_type) {
+                let empty = m.get_mut(&event_type).is_some_and(|listeners| {
                     listeners.retain(|(id, _)| target_id != *id);
                     listeners.is_empty()
-                } else {
-                    false
-                };
+                });
                 if empty {
                     m.remove(&event_type);
                 }

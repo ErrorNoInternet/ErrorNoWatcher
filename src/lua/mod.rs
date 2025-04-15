@@ -38,12 +38,12 @@ impl Display for Error {
             formatter,
             "failed to {}",
             match self {
-                Error::CreateEnv(error) => format!("create environment: {error}"),
-                Error::EvalChunk(error) => format!("evaluate chunk: {error}"),
-                Error::ExecChunk(error) => format!("execute chunk: {error}"),
-                Error::LoadChunk(error) => format!("load chunk: {error}"),
-                Error::MissingPath(error) => format!("get SCRIPT_PATH global: {error}"),
-                Error::ReadFile(error) => format!("read script file: {error}"),
+                Self::CreateEnv(error) => format!("create environment: {error}"),
+                Self::EvalChunk(error) => format!("evaluate chunk: {error}"),
+                Self::ExecChunk(error) => format!("execute chunk: {error}"),
+                Self::LoadChunk(error) => format!("load chunk: {error}"),
+                Self::MissingPath(error) => format!("get SCRIPT_PATH global: {error}"),
+                Self::ReadFile(error) => format!("read script file: {error}"),
             }
         )
     }
