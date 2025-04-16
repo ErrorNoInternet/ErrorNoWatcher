@@ -93,9 +93,6 @@ function nether_travel(pos, go_to_opts)
 
 	info(string.format("currently in nether, going to %.2f %.2f", nether_pos.x, nether_pos.z))
 	client:go_to(nether_pos, { type = XZ_GOAL })
-	while client.pathfinder.is_calculating or client.pathfinder.is_executing do
-		sleep(1000)
-	end
 
 	info("arrived, looking for nearest portal")
 	local portals_nether = client:find_blocks(client.position, portal_block_states)
@@ -144,10 +141,6 @@ function interact_bed()
 	end
 
 	client:go_to({ position = bed, radius = 2 }, { type = RADIUS_GOAL, options = { without_mining = true } })
-	while client.pathfinder.is_calculating or client.pathfinder.is_executing do
-		sleep(500)
-	end
-
 	client:look_at(bed)
 	client:block_interact(bed)
 end

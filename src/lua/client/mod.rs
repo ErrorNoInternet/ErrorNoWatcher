@@ -41,6 +41,7 @@ impl UserData for Client {
         f.add_field_method_get("dimension", world::dimension);
         f.add_field_method_get("direction", movement::direction);
         f.add_field_method_get("eye_position", movement::eye_position);
+        f.add_field_method_get("go_to_reached", movement::go_to_reached);
         f.add_field_method_get("has_attack_cooldown", interaction::has_attack_cooldown);
         f.add_field_method_get("health", state::health);
         f.add_field_method_get("held_item", container::held_item);
@@ -63,9 +64,14 @@ impl UserData for Client {
         m.add_async_method("find_entities", world::find::entities);
         m.add_async_method("find_players", world::find::players);
         m.add_async_method("go_to", movement::go_to);
+        m.add_async_method(
+            "go_to_wait_until_reached",
+            movement::go_to_wait_until_reached,
+        );
         m.add_async_method("mine", interaction::mine);
         m.add_async_method("open_container_at", container::open_container_at);
         m.add_async_method("set_client_information", state::set_client_information);
+        m.add_async_method("start_go_to", movement::start_go_to);
         m.add_method("attack", interaction::attack);
         m.add_method("best_tool_for_block", world::best_tool_for_block);
         m.add_method("block_interact", interaction::block_interact);
@@ -98,7 +104,7 @@ fn chat(_lua: &Lua, client: &Client, message: String) -> Result<()> {
     Ok(())
 }
 
-fn disconnect(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
+fn disconnect(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
     client.disconnect();
     Ok(())
 }

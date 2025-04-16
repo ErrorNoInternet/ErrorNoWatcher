@@ -14,6 +14,122 @@ use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
 
 use super::{Client, Direction, Vec3};
 
+#[derive(Debug)]
+struct AnyGoal(Box<dyn Goal>);
+
+impl Goal for AnyGoal {
+    fn success(&self, n: BlockPos) -> bool {
+        self.0.success(n)
+    }
+
+    fn heuristic(&self, n: BlockPos) -> f32 {
+        self.0.heuristic(n)
+    }
+}
+
+#[allow(clippy::cast_possible_truncation)]
+fn to_goal(lua: &Lua, client: &Client, data: Table, options: &Table, kind: u8) -> Result<AnyGoal> {
+    let goal: Box<dyn Goal> = match kind {
+        1 => {
+            let pos = Vec3::from_lua(data.get("position")?, lua)?;
+            Box::new(RadiusGoal {
+                pos: azalea::Vec3::new(pos.x, pos.y, pos.z),
+                radius: data.get("radius")?,
+            })
+        }
+        2 => {
+            let pos = Vec3::from_lua(Value::Table(data), lua)?;
+            Box::new(ReachBlockPosGoal {
+                pos: BlockPos::new(pos.x as i32, pos.y as i32, pos.z as i32),
+                chunk_storage: client.world().read().chunks.clone(),
+            })
+        }
+        3 => Box::new(XZGoal {
+            x: data.get("x")?,
+            z: data.get("z")?,
+        }),
+        4 => Box::new(YGoal { y: data.get("y")? }),
+        _ => {
+            let pos = Vec3::from_lua(Value::Table(data), lua)?;
+            Box::new(BlockPosGoal(BlockPos::new(
+                pos.x as i32,
+                pos.y as i32,
+                pos.z as i32,
+            )))
+        }
+    };
+
+    Ok(AnyGoal(if options.get("inverse").unwrap_or_default() {
+        Box::new(InverseGoal(AnyGoal(goal)))
+    } else {
+        goal
+    }))
+}
+
+pub fn go_to_reached(_lua: &Lua, client: &Client) -> Result<bool> {
+    Ok(client.is_goto_target_reached())
+}
+
+pub async fn go_to_wait_until_reached(
+    _lua: Lua,
+    client: UserDataRef<Client>,
+    (): (),
+) -> Result<()> {
+    client.wait_until_goto_target_reached().await;
+    Ok(())
+}
+
+pub async fn go_to(
+    lua: Lua,
+    client: UserDataRef<Client>,
+    (data, metadata): (Table, Option<Table>),
+) -> Result<()> {
+    let metadata = metadata.unwrap_or(lua.create_table()?);
+    let options = metadata.get("options").unwrap_or(lua.create_table()?);
+    let goal = to_goal(
+        &lua,
+        &client,
+        data,
+        &options,
+        metadata.get("type").unwrap_or_default(),
+    )?;
+    if options.get("without_mining").unwrap_or_default() {
+        client.start_goto_without_mining(goal);
+        client.wait_until_goto_target_reached().await;
+    } else {
+        client.goto(goal).await;
+    }
+    Ok(())
+}
+
+pub async fn start_go_to(
+    lua: Lua,
+    client: UserDataRef<Client>,
+    (data, metadata): (Table, Option<Table>),
+) -> Result<()> {
+    let metadata = metadata.unwrap_or(lua.create_table()?);
+    let options = metadata.get("options").unwrap_or(lua.create_table()?);
+    let goal = to_goal(
+        &lua,
+        &client,
+        data,
+        &options,
+        metadata.get("type").unwrap_or_default(),
+    )?;
+    if options.get("without_mining").unwrap_or_default() {
+        client.start_goto_without_mining(goal);
+    } else {
+        client.start_goto(goal);
+    }
+    while client.get_tick_broadcaster().recv().await.is_ok() {
+        if client.ecs.lock().get::<GotoEvent>(client.entity).is_none() {
+            break;
+        }
+    }
+
+    Ok(())
+}
+
 pub fn direction(_lua: &Lua, client: &Client) -> Result<Direction> {
     let direction = client.direction();
     Ok(Direction {
@@ -26,78 +142,7 @@ pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
     Ok(Vec3::from(client.eye_position()))
 }
 
-pub async fn go_to(
-    lua: Lua,
-    client: UserDataRef<Client>,
-    (data, metadata): (Table, Option<Table>),
-) -> Result<()> {
-    fn goto_with_options<G: Goal + Send + Sync + 'static>(
-        client: &Client,
-        options: &Table,
-        goal: G,
-    ) {
-        if options.get("without_mining").unwrap_or_default() {
-            client.goto_without_mining(goal);
-        } else {
-            client.goto(goal);
-        }
-    }
-
-    let table = metadata.unwrap_or(lua.create_table()?);
-    let goal_type = table.get("type").unwrap_or_default();
-    let options = table.get("options").unwrap_or(lua.create_table()?);
-
-    macro_rules! goto {
-        ($goal:expr) => {
-            if options.get("inverse").unwrap_or_default() {
-                goto_with_options(&client, &options, InverseGoal($goal));
-            } else {
-                goto_with_options(&client, &options, $goal);
-            }
-        };
-    }
-
-    #[allow(clippy::cast_possible_truncation)]
-    match goal_type {
-        1 => {
-            let p = Vec3::from_lua(data.get("position")?, &lua)?;
-            goto!(RadiusGoal {
-                pos: azalea::Vec3::new(p.x, p.y, p.z),
-                radius: data.get("radius")?,
-            });
-        }
-        2 => {
-            let p = Vec3::from_lua(Value::Table(data), &lua)?;
-            goto!(ReachBlockPosGoal {
-                pos: BlockPos::new(p.x as i32, p.y as i32, p.z as i32),
-                chunk_storage: client.world().read().chunks.clone(),
-            });
-        }
-        3 => {
-            goto!(XZGoal {
-                x: data.get("x")?,
-                z: data.get("z")?,
-            });
-        }
-        4 => goto!(YGoal { y: data.get("y")? }),
-        _ => {
-            let p = Vec3::from_lua(Value::Table(data), &lua)?;
-            goto!(BlockPosGoal(BlockPos::new(
-                p.x as i32, p.y as i32, p.z as i32
-            )));
-        }
-    }
-
-    while client.get_tick_broadcaster().recv().await.is_ok() {
-        if client.ecs.lock().get::<GotoEvent>(client.entity).is_none() {
-            break;
-        }
-    }
-
-    Ok(())
-}
-
-pub fn jump(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
+pub fn jump(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
     client.jump();
     Ok(())
 }
@@ -193,12 +238,12 @@ pub fn sprint(_lua: &Lua, client: &Client, direction: u8) -> Result<()> {
     Ok(())
 }
 
-pub fn stop_pathfinding(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
+pub fn stop_pathfinding(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
     client.stop_pathfinding();
     Ok(())
 }
 
-pub fn stop_sleeping(_lua: &Lua, client: &Client, _: ()) -> Result<()> {
+pub fn stop_sleeping(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
     if let Err(error) = client.write_packet(ServerboundPlayerCommand {
         id: client.component::<MinecraftEntityId>(),
         action: Action::StopSleeping,

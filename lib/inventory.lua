@@ -35,9 +35,6 @@ end
 function steal(item_name)
 	for _, chest_pos in ipairs(client:find_blocks(client.position, get_block_states({ "chest" }))) do
 		client:go_to({ position = chest_pos, radius = 3 }, { type = RADIUS_GOAL })
-		while client.pathfinder.is_calculating or client.pathfinder.is_executing do
-			sleep(500)
-		end
 		client:look_at(chest_pos)
 
 		local container = client:open_container_at(chest_pos)
