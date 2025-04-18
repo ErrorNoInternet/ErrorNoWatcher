@@ -10,8 +10,8 @@ pub struct Direction {
 impl From<&LookDirection> for Direction {
     fn from(d: &LookDirection) -> Self {
         Self {
-            y: d.y_rot,
-            x: d.x_rot,
+            y: d.y_rot(),
+            x: d.x_rot(),
         }
     }
 }

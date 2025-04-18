@@ -30,7 +30,7 @@ function auto_fish()
 				sleep(3000)
 			end
 			hold_fishing_rod()
-			client:use_item()
+			client:start_use_item()
 		end
 	end, "auto-fish_watch-bobber")
 
@@ -41,7 +41,7 @@ function auto_fish()
 			end)[1]
 			if distance(current_bobber.position, particle.position) <= 0.75 then
 				FishLastCaught = os.time()
-				client:use_item()
+				client:start_use_item()
 			end
 		end
 	end, "auto-fish")
@@ -54,11 +54,11 @@ function auto_fish()
 
 		if os.time() - FishLastCaught >= 60 then
 			hold_fishing_rod()
-			client:use_item()
+			client:start_use_item()
 		end
 	end, "auto-fish_watchdog")
 
-	client:use_item()
+	client:start_use_item()
 end
 
 function stop_auto_fish()
@@ -71,7 +71,7 @@ function stop_auto_fish()
 		return e.id == FishingBobber.id
 	end)[1] then
 		FishingBobber = nil
-		client:use_item()
+		client:start_use_item()
 	end
 end
 
@@ -131,6 +131,6 @@ function check_food(hunger)
 			sleep(1000)
 			LastEaten = current_time
 		end
-		client:use_item()
+		client:start_use_item()
 	end
 end

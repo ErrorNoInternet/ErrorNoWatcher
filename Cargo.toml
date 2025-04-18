@@ -21,6 +21,7 @@ built = { git = "https://github.com/lukaslueg/built", features = ["git2"] }
 [dependencies]
 anyhow = "1"
 azalea = { git = "https://github.com/azalea-rs/azalea" }
+azalea-hax = { git = "https://github.com/azalea-rs/azalea-hax" }
 bevy_app = "0"
 bevy_ecs = "0"
 bevy_log = "0"
@@ -42,10 +43,13 @@ parking_lot = "0"
 serde = "1"
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
-zip = { version = "2", default-features = false, features = ["flate2"] }
+zip = { version = "8", default-features = false, features = [
+  "deflate",
+], optional = true }
 
 [features]
 console-subscriber = ["dep:console-subscriber"]
 default = []
 matrix = ["dep:dirs", "dep:matrix-sdk"]
 mimalloc = ["dep:mimalloc"]
+replay = ["dep:zip"]

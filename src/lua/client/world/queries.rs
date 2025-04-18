@@ -1,11 +1,11 @@
 #[macro_export]
 macro_rules! get_entities {
     ($client:ident) => {{
-        let mut ecs = $client.ecs.lock();
+        let mut ecs = $client.ecs.write();
         ecs.query::<(
             &AzaleaPosition,
             &CustomName,
-            &EntityKind,
+            &EntityKindComponent,
             &EntityUuid,
             &LookDirection,
             &MinecraftEntityId,
@@ -16,7 +16,7 @@ macro_rules! get_entities {
         .map(
             |(position, custom_name, kind, uuid, direction, id, owner_uuid, pose)| {
                 (
-                    Vec3::from(position),
+                    Vec3::from(*position),
                     custom_name.as_ref().map(ToString::to_string),
                     kind.to_string(),
                     uuid.to_string(),
@@ -34,11 +34,11 @@ macro_rules! get_entities {
 #[macro_export]
 macro_rules! get_players {
     ($client:ident) => {{
-        let mut ecs = $client.ecs.lock();
+        let mut ecs = $client.ecs.write();
         ecs.query_filtered::<(
             &MinecraftEntityId,
             &EntityUuid,
-            &EntityKind,
+            &EntityKindComponent,
             &AzaleaPosition,
             &LookDirection,
             &Pose,
@@ -49,7 +49,7 @@ macro_rules! get_players {
                     id.0,
                     uuid.to_string(),
                     kind.to_string(),
-                    Vec3::from(position),
+                    Vec3::from(*position),
                     Direction::from(direction),
                     *pose as u8,
                 )

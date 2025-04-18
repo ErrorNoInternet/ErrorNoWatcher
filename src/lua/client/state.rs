@@ -1,13 +1,13 @@
 use azalea::{
     ClientInformation,
     entity::metadata::{AirSupply, Score},
-    pathfinder::PathfinderDebugParticles,
+    pathfinder::debug::PathfinderDebugParticles,
     protocol::common::client_information::ModelCustomization,
 };
+use azalea_hax::AntiKnockback;
 use mlua::{Error, Lua, Result, Table, UserDataRef};
 
 use super::Client;
-use crate::hacks::anti_knockback::AntiKnockback;
 
 pub fn air_supply(_lua: &Lua, client: &Client) -> Result<i32> {
     Ok(client.component::<AirSupply>().0)
@@ -35,26 +35,25 @@ pub async fn set_client_information(
     info: Table,
 ) -> Result<()> {
     let get_bool = |table: &Table, name| table.get(name).unwrap_or(true);
-    client
-        .set_client_information(ClientInformation {
-            allows_listing: info.get("allows_listing")?,
-            model_customization: info
-                .get::<Table>("model_customization")
-                .map(|t| ModelCustomization {
-                    cape: get_bool(&t, "cape"),
-                    jacket: get_bool(&t, "jacket"),
-                    left_sleeve: get_bool(&t, "left_sleeve"),
-                    right_sleeve: get_bool(&t, "right_sleeve"),
-                    left_pants: get_bool(&t, "left_pants"),
-                    right_pants: get_bool(&t, "right_pants"),
-                    hat: get_bool(&t, "hat"),
-                })
-                .unwrap_or_default(),
-            view_distance: info.get("view_distance").unwrap_or(8),
-            ..ClientInformation::default()
-        })
-        .await
-        .map_err(Error::external)
+    client.set_client_information(ClientInformation {
+        allows_listing: info.get("allows_listing")?,
+        model_customization: info
+            .get::<Table>("model_customization")
+            .as_ref()
+            .map(|t| ModelCustomization {
+                cape: get_bool(t, "cape"),
+                jacket: get_bool(t, "jacket"),
+                left_sleeve: get_bool(t, "left_sleeve"),
+                right_sleeve: get_bool(t, "right_sleeve"),
+                left_pants: get_bool(t, "left_pants"),
+                right_pants: get_bool(t, "right_pants"),
+                hat: get_bool(t, "hat"),
+            })
+            .unwrap_or_default(),
+        view_distance: info.get("view_distance").unwrap_or(8),
+        ..ClientInformation::default()
+    });
+    Ok(())
 }
 
 pub fn set_component(
@@ -64,7 +63,7 @@ pub fn set_component(
 ) -> Result<()> {
     macro_rules! set {
         ($name:ident) => {{
-            let mut ecs = client.ecs.lock();
+            let mut ecs = client.ecs.write();
             let mut entity = ecs.entity_mut(client.entity);
             if enabled.unwrap_or(true) {
                 entity.insert($name)

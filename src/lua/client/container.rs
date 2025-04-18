@@ -1,20 +1,19 @@
 use azalea::{
     BlockPos,
-    inventory::{Inventory, Menu, Player, SlotList},
-    prelude::ContainerClientExt,
+    entity::inventory::Inventory,
+    inventory::{Menu, Player, SlotList},
     protocol::packets::game::ServerboundSetCarriedItem,
 };
-use log::error;
 use mlua::{Lua, Result, UserDataRef, Value};
 
 use super::{Client, Container, ContainerRef, ItemStack, Vec3};
 
-pub fn container(_lua: &Lua, client: &Client) -> Result<Option<ContainerRef>> {
-    Ok(client.get_open_container().map(ContainerRef))
+pub fn container(_lua: &Lua, client: &Client) -> Result<ContainerRef> {
+    Ok(ContainerRef(client.get_inventory()))
 }
 
 pub fn held_item(_lua: &Lua, client: &Client) -> Result<ItemStack> {
-    Ok(ItemStack(client.component::<Inventory>().held_item()))
+    Ok(ItemStack(client.get_held_item()))
 }
 
 pub fn held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
@@ -117,20 +116,14 @@ pub fn set_held_slot(_lua: &Lua, client: &Client, slot: u8) -> Result<()> {
         return Ok(());
     }
 
-    {
-        let mut ecs = client.ecs.lock();
-        let mut inventory = client.query::<&mut Inventory>(&mut ecs);
-        if inventory.selected_hotbar_slot == slot {
-            return Ok(());
+    client.query_self::<&mut Inventory, _>(|mut inventory| {
+        if inventory.selected_hotbar_slot != slot {
+            inventory.selected_hotbar_slot = slot;
         }
-        inventory.selected_hotbar_slot = slot;
-    };
-
-    if let Err(error) = client.write_packet(ServerboundSetCarriedItem {
+    });
+    client.write_packet(ServerboundSetCarriedItem {
         slot: u16::from(slot),
-    }) {
-        error!("failed to send SetCarriedItem packet: {error:?}");
-    }
+    });
 
     Ok(())
 }

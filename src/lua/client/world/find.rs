@@ -1,16 +1,16 @@
 use azalea::{
     BlockPos,
-    blocks::{BlockState, BlockStates},
+    block::{BlockState, BlockStates},
     ecs::query::{With, Without},
     entity::{
-        Dead, EntityKind, EntityUuid, LookDirection, Pose, Position as AzaleaPosition,
+        Dead, EntityKindComponent, EntityUuid, LookDirection, Pose, Position as AzaleaPosition,
         metadata::{CustomName, Owneruuid, Player},
     },
-    world::MinecraftEntityId,
 };
 use mlua::{Function, Lua, Result, Table, UserDataRef};
 
 use super::{Client, Direction, Vec3};
+use crate::lua::client::MinecraftEntityId;
 
 pub fn blocks(
     _lua: &Lua,
@@ -28,7 +28,10 @@ pub fn blocks(
                 nearest_to.z as i32,
             ),
             &BlockStates {
-                set: block_states.iter().map(|&id| BlockState { id }).collect(),
+                set: block_states
+                    .into_iter()
+                    .flat_map(BlockState::try_from)
+                    .collect(),
             },
         )
         .map(Vec3::from)
