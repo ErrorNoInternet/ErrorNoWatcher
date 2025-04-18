@@ -3,17 +3,15 @@
 use std::sync::Arc;
 
 use azalea::{
-    ecs::{event::EventReader, system::Query},
+    ecs::event::EventReader,
     packet::{
-        config::ReceiveConfigPacketEvent,
-        game::emit_receive_packet_events,
-        login::{LoginPacketEvent, process_packet_events},
+        config::ReceiveConfigPacketEvent, game::ReceiveGamePacketEvent,
+        login::ReceiveLoginPacketEvent,
     },
     protocol::packets::login::ClientboundLoginPacket,
-    raw_connection::RawConnection,
 };
 use bevy_app::{App, First, Plugin};
-use bevy_ecs::{schedule::IntoSystemConfigs, system::ResMut};
+use bevy_ecs::system::ResMut;
 use log::error;
 use parking_lot::Mutex;
 
@@ -28,19 +26,16 @@ impl Plugin for RecordPlugin {
         let recorder = self.recorder.lock().take();
         if let Some(recorder) = recorder {
             app.insert_resource(recorder)
-                .add_systems(First, record_login_packets.before(process_packet_events))
+                .add_systems(First, record_login_packets)
                 .add_systems(First, record_configuration_packets)
-                .add_systems(
-                    First,
-                    record_game_packets.before(emit_receive_packet_events),
-                );
+                .add_systems(First, record_game_packets);
         }
     }
 }
 
 fn record_login_packets(
     recorder: Option<ResMut<Recorder>>,
-    mut events: EventReader<LoginPacketEvent>,
+    mut events: EventReader<ReceiveLoginPacketEvent>,
 ) {
     if let Some(mut recorder) = recorder {
         for event in events.read() {
@@ -63,20 +58,20 @@ fn record_configuration_packets(
 ) {
     if let Some(mut recorder) = recorder {
         for event in events.read() {
-            if let Err(error) = recorder.save_packet(&event.packet) {
+            if let Err(error) = recorder.save_packet(event.packet.as_ref()) {
                 error!("failed to record configuration packet: {error:?}");
             }
         }
     }
 }
 
-fn record_game_packets(recorder: Option<ResMut<Recorder>>, query: Query<&RawConnection>) {
-    if let Some(mut recorder) = recorder
-        && let Ok(raw_conn) = query.get_single()
-    {
-        let queue = raw_conn.incoming_packet_queue();
-        for raw_packet in queue.lock().iter() {
-            if let Err(error) = recorder.save_raw_packet(raw_packet) {
+fn record_game_packets(
+    recorder: Option<ResMut<Recorder>>,
+    mut events: EventReader<ReceiveGamePacketEvent>,
+) {
+    if let Some(mut recorder) = recorder {
+        for event in events.read() {
+            if let Err(error) = recorder.save_packet(event.packet.as_ref()) {
                 error!("failed to record game packet: {error:?}");
             }
         }

@@ -22,7 +22,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 use arguments::Arguments;
 use azalea::{
     DefaultBotPlugins, DefaultPlugins, brigadier::prelude::CommandDispatcher, prelude::*,
@@ -55,7 +55,7 @@ struct State {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<()> {
     #[cfg(feature = "console-subscriber")]
     console_subscriber::init();
 
@@ -131,8 +131,7 @@ async fn main() -> anyhow::Result<()> {
     } else {
         Account::offline(&username)
     };
-
-    let Err(error) = ClientBuilder::new_without_plugins()
+    let Err(err) = ClientBuilder::new_without_plugins()
         .add_plugins(DefaultBotPlugins)
         .add_plugins(HacksPlugin)
         .add_plugins(default_plugins)
@@ -145,7 +144,7 @@ async fn main() -> anyhow::Result<()> {
         })
         .start(account, server)
         .await;
-    eprintln!("{error}");
+    eprintln!("{err}");
 
     Ok(())
 }
