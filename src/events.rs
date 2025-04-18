@@ -125,7 +125,6 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             }
         }
         Event::KeepAlive(id) => call_listeners(&state, "keep_alive", || Ok(id)).await,
-        Event::Login => call_listeners(&state, "login", || Ok(())).await,
         Event::RemovePlayer(player_info) => {
             call_listeners(&state, "remove_player", || Ok(Player::from(player_info))).await
         }
@@ -201,6 +200,12 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             }
             _ => Ok(()),
         },
+        Event::Login => {
+            #[cfg(feature = "matrix")]
+            matrix_init(&client, state.clone());
+
+            call_listeners(&state, "login", || Ok(())).await
+        }
         Event::Init => {
             debug!("received init event");
 
@@ -211,9 +216,6 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                     .map(Recorder::finish);
                 exit(0);
             })?;
-
-            #[cfg(feature = "matrix")]
-            matrix_init(&client, state.clone());
 
             let globals = state.lua.globals();
             lua_init(client, &state, &globals).await?;

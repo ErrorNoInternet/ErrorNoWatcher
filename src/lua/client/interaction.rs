@@ -3,7 +3,6 @@ use azalea::{
     protocol::packets::game::{ServerboundUseItem, s_interact::InteractionHand},
     world::MinecraftEntityId,
 };
-use log::error;
 use mlua::{Lua, Result, UserDataRef};
 
 use super::{Client, Vec3};
@@ -57,7 +56,7 @@ pub fn start_mining(_lua: &Lua, client: &Client, position: Vec3) -> Result<()> {
 
 pub fn use_item(_lua: &Lua, client: &Client, hand: Option<u8>) -> Result<()> {
     let direction = client.direction();
-    if let Err(error) = client.write_packet(ServerboundUseItem {
+    client.write_packet(ServerboundUseItem {
         hand: match hand {
             Some(1) => InteractionHand::OffHand,
             _ => InteractionHand::MainHand,
@@ -65,8 +64,6 @@ pub fn use_item(_lua: &Lua, client: &Client, hand: Option<u8>) -> Result<()> {
         sequence: 0,
         yaw: direction.0,
         pitch: direction.1,
-    }) {
-        error!("failed to send UseItem packet: {error:?}");
-    }
+    });
     Ok(())
 }

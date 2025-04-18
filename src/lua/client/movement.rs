@@ -9,7 +9,6 @@ use azalea::{
     protocol::packets::game::{ServerboundPlayerCommand, s_player_command::Action},
     world::MinecraftEntityId,
 };
-use log::error;
 use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
 
 use super::{Client, Direction, Vec3};
@@ -215,7 +214,7 @@ pub fn set_position(_lua: &Lua, client: &Client, new_position: Vec3) -> Result<(
 }
 
 pub fn set_sneaking(_lua: &Lua, client: &Client, sneaking: bool) -> Result<()> {
-    if let Err(error) = client.write_packet(ServerboundPlayerCommand {
+    client.write_packet(ServerboundPlayerCommand {
         id: client.component::<MinecraftEntityId>(),
         action: if sneaking {
             Action::PressShiftKey
@@ -223,9 +222,7 @@ pub fn set_sneaking(_lua: &Lua, client: &Client, sneaking: bool) -> Result<()> {
             Action::ReleaseShiftKey
         },
         data: 0,
-    }) {
-        error!("failed to send PlayerCommand packet: {error:?}");
-    }
+    });
     Ok(())
 }
 
@@ -244,13 +241,11 @@ pub fn stop_pathfinding(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
 }
 
 pub fn stop_sleeping(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
-    if let Err(error) = client.write_packet(ServerboundPlayerCommand {
+    client.write_packet(ServerboundPlayerCommand {
         id: client.component::<MinecraftEntityId>(),
         action: Action::StopSleeping,
         data: 0,
-    }) {
-        error!("failed to send PlayerCommand packet: {error:?}");
-    }
+    });
     Ok(())
 }
 

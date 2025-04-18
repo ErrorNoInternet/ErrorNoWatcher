@@ -28,7 +28,10 @@ pub fn blocks(
                 nearest_to.z as i32,
             ),
             &BlockStates {
-                set: block_states.iter().map(|&id| BlockState { id }).collect(),
+                set: block_states
+                    .into_iter()
+                    .flat_map(BlockState::try_from)
+                    .collect(),
             },
         )
         .map(Vec3::from)
