@@ -4,7 +4,6 @@ use azalea::{
     prelude::ContainerClientExt,
     protocol::packets::game::ServerboundSetCarriedItem,
 };
-use log::error;
 use mlua::{Lua, Result, UserDataRef, Value};
 
 use super::{Client, Container, ContainerRef, ItemStack, Vec3};
@@ -126,11 +125,8 @@ pub fn set_held_slot(_lua: &Lua, client: &Client, slot: u8) -> Result<()> {
         inventory.selected_hotbar_slot = slot;
     };
 
-    if let Err(error) = client.write_packet(ServerboundSetCarriedItem {
+    client.write_packet(ServerboundSetCarriedItem {
         slot: u16::from(slot),
-    }) {
-        error!("failed to send SetCarriedItem packet: {error:?}");
-    }
-
+    });
     Ok(())
 }

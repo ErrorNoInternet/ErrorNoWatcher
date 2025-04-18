@@ -60,7 +60,7 @@ pub async fn get_block_states(
                     true
                 })
             {
-                matched.push(block.id);
+                matched.push(block.id());
             }
         }
     }

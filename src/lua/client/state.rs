@@ -1,7 +1,7 @@
 use azalea::{
     ClientInformation,
     entity::metadata::{AirSupply, Score},
-    pathfinder::PathfinderDebugParticles,
+    pathfinder::debug::PathfinderDebugParticles,
     protocol::common::client_information::ModelCustomization,
 };
 use mlua::{Error, Lua, Result, Table, UserDataRef};
@@ -40,21 +40,22 @@ pub async fn set_client_information(
             allows_listing: info.get("allows_listing")?,
             model_customization: info
                 .get::<Table>("model_customization")
+                .as_ref()
                 .map(|t| ModelCustomization {
-                    cape: get_bool(&t, "cape"),
-                    jacket: get_bool(&t, "jacket"),
-                    left_sleeve: get_bool(&t, "left_sleeve"),
-                    right_sleeve: get_bool(&t, "right_sleeve"),
-                    left_pants: get_bool(&t, "left_pants"),
-                    right_pants: get_bool(&t, "right_pants"),
-                    hat: get_bool(&t, "hat"),
+                    cape: get_bool(t, "cape"),
+                    jacket: get_bool(t, "jacket"),
+                    left_sleeve: get_bool(t, "left_sleeve"),
+                    right_sleeve: get_bool(t, "right_sleeve"),
+                    left_pants: get_bool(t, "left_pants"),
+                    right_pants: get_bool(t, "right_pants"),
+                    hat: get_bool(t, "hat"),
                 })
                 .unwrap_or_default(),
             view_distance: info.get("view_distance").unwrap_or(8),
             ..ClientInformation::default()
         })
-        .await
-        .map_err(Error::external)
+        .await;
+    Ok(())
 }
 
 pub fn set_component(

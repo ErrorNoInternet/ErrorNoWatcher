@@ -1,9 +1,7 @@
 use azalea::{
-    BlockPos, BotClientExt,
-    protocol::packets::game::{ServerboundUseItem, s_interact::InteractionHand},
-    world::MinecraftEntityId,
+    BlockPos, BotClientExt, interact::StartUseItemEvent,
+    protocol::packets::game::s_interact::InteractionHand, world::MinecraftEntityId,
 };
-use log::error;
 use mlua::{Lua, Result, UserDataRef};
 
 use super::{Client, Vec3};
@@ -40,8 +38,8 @@ pub async fn mine(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Res
     Ok(())
 }
 
-pub fn set_mining(_lua: &Lua, client: &Client, mining: bool) -> Result<()> {
-    client.left_click_mine(mining);
+pub fn set_mining(_lua: &Lua, client: &Client, state: bool) -> Result<()> {
+    client.left_click_mine(state);
     Ok(())
 }
 
@@ -55,18 +53,14 @@ pub fn start_mining(_lua: &Lua, client: &Client, position: Vec3) -> Result<()> {
     Ok(())
 }
 
-pub fn use_item(_lua: &Lua, client: &Client, hand: Option<u8>) -> Result<()> {
-    let direction = client.direction();
-    if let Err(error) = client.write_packet(ServerboundUseItem {
+pub fn start_use_item(_lua: &Lua, client: &Client, hand: Option<u8>) -> Result<()> {
+    client.ecs.lock().send_event(StartUseItemEvent {
+        entity: client.entity,
         hand: match hand {
             Some(1) => InteractionHand::OffHand,
             _ => InteractionHand::MainHand,
         },
-        sequence: 0,
-        yaw: direction.0,
-        pitch: direction.1,
-    }) {
-        error!("failed to send UseItem packet: {error:?}");
-    }
+        force_block: None,
+    });
     Ok(())
 }

@@ -64,14 +64,11 @@ impl UserData for Client {
         m.add_async_method("find_entities", world::find::entities);
         m.add_async_method("find_players", world::find::players);
         m.add_async_method("go_to", movement::go_to);
-        m.add_async_method(
-            "go_to_wait_until_reached",
-            movement::go_to_wait_until_reached,
-        );
         m.add_async_method("mine", interaction::mine);
         m.add_async_method("open_container_at", container::open_container_at);
         m.add_async_method("set_client_information", state::set_client_information);
         m.add_async_method("start_go_to", movement::start_go_to);
+        m.add_async_method("wait_until_goal_reached", movement::wait_until_goal_reached);
         m.add_method("attack", interaction::attack);
         m.add_method("best_tool_for_block", world::best_tool_for_block);
         m.add_method("block_interact", interaction::block_interact);
@@ -92,9 +89,9 @@ impl UserData for Client {
         m.add_method("set_sneaking", movement::set_sneaking);
         m.add_method("sprint", movement::sprint);
         m.add_method("start_mining", interaction::start_mining);
+        m.add_method("start_use_item", interaction::start_use_item);
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
         m.add_method("stop_sleeping", movement::stop_sleeping);
-        m.add_method("use_item", interaction::use_item);
         m.add_method("walk", movement::walk);
     }
 }

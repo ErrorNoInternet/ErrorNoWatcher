@@ -1,15 +1,15 @@
 use azalea::{
     BlockPos, BotClientExt, SprintDirection, WalkDirection,
+    core::hit_result::HitResult,
     entity::Position,
     interact::HitResultComponent,
     pathfinder::{
-        ExecutingPath, GotoEvent, Pathfinder, PathfinderClientExt,
+        ExecutingPath, Pathfinder, PathfinderClientExt,
         goals::{BlockPosGoal, Goal, InverseGoal, RadiusGoal, ReachBlockPosGoal, XZGoal, YGoal},
     },
     protocol::packets::game::{ServerboundPlayerCommand, s_player_command::Action},
     world::MinecraftEntityId,
 };
-use log::error;
 use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
 
 use super::{Client, Direction, Vec3};
@@ -38,11 +38,13 @@ fn to_goal(lua: &Lua, client: &Client, data: Table, options: &Table, kind: u8) -
             })
         }
         2 => {
+            let distance = data.get("distance").unwrap_or(4.5);
             let pos = Vec3::from_lua(Value::Table(data), lua)?;
-            Box::new(ReachBlockPosGoal {
-                pos: BlockPos::new(pos.x as i32, pos.y as i32, pos.z as i32),
-                chunk_storage: client.world().read().chunks.clone(),
-            })
+            Box::new(ReachBlockPosGoal::new_with_distance(
+                BlockPos::new(pos.x as i32, pos.y as i32, pos.z as i32),
+                distance,
+                client.world().read().chunks.clone(),
+            ))
         }
         3 => Box::new(XZGoal {
             x: data.get("x")?,
@@ -70,11 +72,7 @@ pub fn go_to_reached(_lua: &Lua, client: &Client) -> Result<bool> {
     Ok(client.is_goto_target_reached())
 }
 
-pub async fn go_to_wait_until_reached(
-    _lua: Lua,
-    client: UserDataRef<Client>,
-    (): (),
-) -> Result<()> {
+pub async fn wait_until_goal_reached(_lua: Lua, client: UserDataRef<Client>, (): ()) -> Result<()> {
     client.wait_until_goto_target_reached().await;
     Ok(())
 }
@@ -121,11 +119,7 @@ pub async fn start_go_to(
     } else {
         client.start_goto(goal);
     }
-    while client.get_tick_broadcaster().recv().await.is_ok() {
-        if client.ecs.lock().get::<GotoEvent>(client.entity).is_none() {
-            break;
-        }
-    }
+    let _ = client.get_tick_broadcaster().recv().await;
 
     Ok(())
 }
@@ -148,16 +142,19 @@ pub fn jump(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
 }
 
 pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
-    let result = client.component::<HitResultComponent>();
-    Ok(if result.miss {
-        None
-    } else {
-        let table = lua.create_table()?;
-        table.set("position", Vec3::from(result.block_pos))?;
-        table.set("inside", result.inside)?;
-        table.set("world_border", result.world_border)?;
-        Some(table)
-    })
+    Ok(
+        if let HitResult::Block(ref result) = *client.component::<HitResultComponent>() {
+            let table = lua.create_table()?;
+            table.set("direction", Vec3::from(result.direction.normal()))?;
+            table.set("inside", result.inside)?;
+            table.set("location", Vec3::from(result.location))?;
+            table.set("position", Vec3::from(result.block_pos))?;
+            table.set("world_border", result.world_border)?;
+            Some(table)
+        } else {
+            None
+        },
+    )
 }
 
 pub fn look_at(_lua: &Lua, client: &Client, position: Vec3) -> Result<()> {
@@ -215,7 +212,7 @@ pub fn set_position(_lua: &Lua, client: &Client, new_position: Vec3) -> Result<(
 }
 
 pub fn set_sneaking(_lua: &Lua, client: &Client, sneaking: bool) -> Result<()> {
-    if let Err(error) = client.write_packet(ServerboundPlayerCommand {
+    client.write_packet(ServerboundPlayerCommand {
         id: client.component::<MinecraftEntityId>(),
         action: if sneaking {
             Action::PressShiftKey
@@ -223,9 +220,7 @@ pub fn set_sneaking(_lua: &Lua, client: &Client, sneaking: bool) -> Result<()> {
             Action::ReleaseShiftKey
         },
         data: 0,
-    }) {
-        error!("failed to send PlayerCommand packet: {error:?}");
-    }
+    });
     Ok(())
 }
 
@@ -244,13 +239,11 @@ pub fn stop_pathfinding(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
 }
 
 pub fn stop_sleeping(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
-    if let Err(error) = client.write_packet(ServerboundPlayerCommand {
+    client.write_packet(ServerboundPlayerCommand {
         id: client.component::<MinecraftEntityId>(),
         action: Action::StopSleeping,
         data: 0,
-    }) {
-        error!("failed to send PlayerCommand packet: {error:?}");
-    }
+    });
     Ok(())
 }
 

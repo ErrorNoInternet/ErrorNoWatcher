@@ -23,7 +23,7 @@ use crate::{
     replay::recorder::Recorder,
 };
 
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 pub async fn handle_event(client: Client, event: Event, state: State) -> Result<()> {
     match event {
         Event::AddPlayer(player_info) => {
@@ -35,6 +35,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             let uuid = message.sender_uuid().map(|uuid| uuid.to_string());
             let is_whisper = message.is_whisper();
             let text = message.message();
+            let html_text = text.to_html();
             let ansi_text = text.to_ansi();
             info!("{ansi_text}");
 
@@ -86,6 +87,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                 let table = state.lua.create_table()?;
                 table.set("text", text.to_string())?;
                 table.set("ansi_text", ansi_text)?;
+                table.set("html_text", html_text)?;
                 table.set("sender", sender)?;
                 table.set("content", content)?;
                 table.set("uuid", uuid)?;
@@ -101,6 +103,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                     let message_table = state.lua.create_table()?;
                     message_table.set("text", packet.message.to_string())?;
                     message_table.set("ansi_text", packet.message.to_ansi())?;
+                    message_table.set("html_text", packet.message.to_html())?;
                     let table = state.lua.create_table()?;
                     table.set("message", message_table)?;
                     table.set("player_id", packet.player_id.0)?;
@@ -117,6 +120,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                     let table = state.lua.create_table()?;
                     table.set("text", message.to_string())?;
                     table.set("ansi_text", message.to_ansi())?;
+                    table.set("html_text", message.to_html())?;
                     Ok(table)
                 })
                 .await
@@ -125,7 +129,6 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             }
         }
         Event::KeepAlive(id) => call_listeners(&state, "keep_alive", || Ok(id)).await,
-        Event::Login => call_listeners(&state, "login", || Ok(())).await,
         Event::RemovePlayer(player_info) => {
             call_listeners(&state, "remove_player", || Ok(Player::from(player_info))).await
         }
@@ -201,6 +204,12 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             }
             _ => Ok(()),
         },
+        Event::Login => {
+            #[cfg(feature = "matrix")]
+            matrix_init(&client, state.clone());
+
+            call_listeners(&state, "login", || Ok(())).await
+        }
         Event::Init => {
             debug!("received init event");
 
@@ -211,9 +220,6 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                     .map(Recorder::finish);
                 exit(0);
             })?;
-
-            #[cfg(feature = "matrix")]
-            matrix_init(&client, state.clone());
 
             let globals = state.lua.globals();
             lua_init(client, &state, &globals).await?;
