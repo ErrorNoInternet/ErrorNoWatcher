@@ -1,11 +1,15 @@
 use azalea::{brigadier::prelude::*, chat::ChatPacket, prelude::*};
 use futures::lock::Mutex;
-use mlua::{Function, Table};
-use ncr::utils::prepend_header;
+use mlua::{Error, Result, Table, UserDataRef};
+use ncr::{
+    encoding::{Base64Encoding, Base64rEncoding, NewBase64rEncoding},
+    encryption::{CaesarEncryption, Cfb8Encryption, EcbEncryption, Encryption, GcmEncryption},
+    utils::prepend_header,
+};
 
 use crate::{
-    State,
-    lua::{eval, exec, reload},
+    State, crypt,
+    lua::{eval, exec, nochatreports::key::AesKey, reload},
 };
 
 pub type Ctx = CommandContext<Mutex<CommandSource>>;
@@ -19,18 +23,20 @@ pub struct CommandSource {
 
 impl CommandSource {
     pub fn reply(&self, message: &str) {
-        let ncr_data = self
-            .ncr_options
-            .as_ref()
-            .zip(self.state.lua.globals().get::<Function>("ncr_encrypt").ok());
+        fn encrypt(options: &Table, plaintext: &str) -> Result<String> {
+            Ok(crypt!(encrypt, options, &prepend_header(plaintext)))
+        }
+
         for mut chunk in message
             .chars()
             .collect::<Vec<char>>()
             .chunks(if self.ncr_options.is_some() { 150 } else { 236 })
             .map(|chars| chars.iter().collect::<String>())
         {
-            if let Some((options, ref encrypt)) = ncr_data
-                && let Ok(ciphertext) = encrypt.call::<String>((options, prepend_header(&chunk)))
+            if let Some(ciphertext) = self
+                .ncr_options
+                .as_ref()
+                .and_then(|options| encrypt(options, &chunk).ok())
             {
                 chunk = ciphertext;
             }

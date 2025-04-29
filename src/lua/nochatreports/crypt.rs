@@ -3,9 +3,8 @@ macro_rules! crypt {
     ($op:ident, $options:expr, $text:expr) => {{
         macro_rules! crypt_with {
             ($algo:ident) => {{
-                let encoding = $options.get("encoding").unwrap_or_default();
                 let key = &$options.get::<UserDataRef<AesKey>>("key")?.0;
-                match encoding {
+                match $options.get("encoding").unwrap_or_default() {
                     1 => $algo::<Base64Encoding>::$op($text, &key),
                     2 => $algo::<Base64rEncoding>::$op($text, &key),
                     _ => $algo::<NewBase64rEncoding>::$op($text, &key),
