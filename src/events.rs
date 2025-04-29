@@ -23,7 +23,7 @@ use crate::{
     replay::recorder::Recorder,
 };
 
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 pub async fn handle_event(client: Client, event: Event, state: State) -> Result<()> {
     match event {
         Event::AddPlayer(player_info) => {
