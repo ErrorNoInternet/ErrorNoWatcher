@@ -19,14 +19,17 @@ pub struct CommandSource {
 
 impl CommandSource {
     pub fn reply(&self, message: &str) {
+        let ncr_data = self
+            .ncr_options
+            .as_ref()
+            .zip(self.state.lua.globals().get::<Function>("ncr_encrypt").ok());
         for mut chunk in message
             .chars()
             .collect::<Vec<char>>()
             .chunks(if self.ncr_options.is_some() { 150 } else { 236 })
             .map(|chars| chars.iter().collect::<String>())
         {
-            if let Some(options) = &self.ncr_options
-                && let Ok(encrypt) = self.state.lua.globals().get::<Function>("ncr_encrypt")
+            if let Some((options, ref encrypt)) = ncr_data
                 && let Ok(ciphertext) = encrypt.call::<String>((options, prepend_header(&chunk)))
             {
                 chunk = ciphertext;
