@@ -46,6 +46,6 @@ zip = { version = "2", default-features = false, features = ["flate2"] }
 
 [features]
 console-subscriber = ["dep:console-subscriber"]
-default = ["matrix"]
+default = []
 matrix = ["dep:dirs", "dep:matrix-sdk"]
 mimalloc = ["dep:mimalloc"]
