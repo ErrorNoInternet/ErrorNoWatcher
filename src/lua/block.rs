@@ -1,6 +1,6 @@
-use azalea::blocks::{
-    Block as AzaleaBlock, BlockState,
-    properties::{ChestType, Facing, LightLevel},
+use azalea::block::{
+    BlockState, BlockTrait,
+    properties::{ChestKind, Facing, LightLevel},
 };
 use mlua::{Function, Lua, Result, Table};
 
@@ -21,7 +21,7 @@ pub fn get_block_from_state(lua: &Lua, state: u32) -> Result<Option<Table>> {
     let Ok(state) = BlockState::try_from(state) else {
         return Ok(None);
     };
-    let block: Box<dyn AzaleaBlock> = state.into();
+    let block: Box<dyn BlockTrait> = state.into();
     let behavior = block.behavior();
 
     let table = lua.create_table()?;
@@ -46,10 +46,10 @@ pub async fn get_block_states(
         for block in
             (u32::MIN..u32::MAX).map_while(|possible_id| BlockState::try_from(possible_id).ok())
         {
-            if block_name == Into::<Box<dyn AzaleaBlock>>::into(block).id()
+            if block_name == Into::<Box<dyn BlockTrait>>::into(block).id()
                 && (if let Some(filter_fn) = &filter_fn {
                     let table = lua.create_table()?;
-                    table.set("chest_type", block.property::<ChestType>().map(|v| v as u8))?;
+                    table.set("chest_kind", block.property::<ChestKind>().map(|v| v as u8))?;
                     table.set("facing", block.property::<Facing>().map(|v| v as u8))?;
                     table.set(
                         "light_level",
@@ -60,7 +60,7 @@ pub async fn get_block_states(
                     true
                 })
             {
-                matched.push(block.id);
+                matched.push(block.id());
             }
         }
     }

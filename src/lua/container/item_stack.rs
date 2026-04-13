@@ -1,5 +1,5 @@
 use azalea::inventory::{
-    self,
+    self, ItemStackData,
     components::{Consumable, CustomName, Damage, Food, MaxDamage},
 };
 use mlua::{UserData, UserDataFields, UserDataMethods};
@@ -14,8 +14,7 @@ impl UserData for ItemStack {
         f.add_field_method_get("kind", |_, this| Ok(this.0.kind().to_string()));
         f.add_field_method_get("custom_name", |_, this| {
             Ok(this.0.as_present().map(|data| {
-                data.components
-                    .get::<CustomName>()
+                data.get_component::<CustomName>()
                     .map(|c| c.name.to_string())
             }))
         });
@@ -23,13 +22,13 @@ impl UserData for ItemStack {
             Ok(this
                 .0
                 .as_present()
-                .map(|data| data.components.get::<Damage>().map(|d| d.amount)))
+                .map(|data| data.get_component::<Damage>().map(|d| d.amount)))
         });
         f.add_field_method_get("max_damage", |_, this| {
             Ok(this
                 .0
                 .as_present()
-                .map(|data| data.components.get::<MaxDamage>().map(|d| d.amount)))
+                .map(|data| data.get_component::<MaxDamage>().map(|d| d.amount)))
         });
 
         f.add_field_method_get("consumable", |lua, this| {
@@ -37,7 +36,7 @@ impl UserData for ItemStack {
                 if let Some(consumable) = this
                     .0
                     .as_present()
-                    .and_then(|data| data.components.get::<Consumable>())
+                    .and_then(ItemStackData::get_component::<Consumable>)
                 {
                     let table = lua.create_table()?;
                     table.set("animation", consumable.animation as u8)?;
@@ -55,13 +54,12 @@ impl UserData for ItemStack {
                 if let Some(food) = this
                     .0
                     .as_present()
-                    .and_then(|data| data.components.get::<Food>())
+                    .and_then(ItemStackData::get_component::<Food>)
                 {
                     let table = lua.create_table()?;
                     table.set("nutrition", food.nutrition)?;
                     table.set("saturation", food.saturation)?;
                     table.set("can_always_eat", food.can_always_eat)?;
-                    table.set("eat_seconds", food.eat_seconds)?;
                     Some(table)
                 } else {
                     None

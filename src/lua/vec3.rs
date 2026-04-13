@@ -28,8 +28,8 @@ impl From<azalea::Vec3> for Vec3 {
     }
 }
 
-impl From<&Position> for Vec3 {
-    fn from(p: &Position) -> Self {
+impl From<Position> for Vec3 {
+    fn from(p: Position) -> Self {
         Self {
             x: p.x,
             y: p.y,

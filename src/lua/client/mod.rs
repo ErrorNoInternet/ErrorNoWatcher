@@ -6,9 +6,9 @@ mod movement;
 mod state;
 mod world;
 
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
-use azalea::{Client as AzaleaClient, world::MinecraftEntityId};
+use azalea::{Client as AzaleaClient, core::entity_id::MinecraftEntityId};
 use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
 
 use super::{
@@ -28,18 +28,13 @@ impl Deref for Client {
     }
 }
 
-impl DerefMut for Client {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.0.as_mut().expect("should have received init event")
-    }
-}
-
 impl UserData for Client {
     fn add_fields<F: UserDataFields<Self>>(f: &mut F) {
         f.add_field_method_get("air_supply", state::air_supply);
         f.add_field_method_get("container", container::container);
         f.add_field_method_get("dimension", world::dimension);
         f.add_field_method_get("direction", movement::direction);
+        f.add_field_method_get("experience", state::experience);
         f.add_field_method_get("eye_position", movement::eye_position);
         f.add_field_method_get("go_to_reached", movement::go_to_reached);
         f.add_field_method_get("has_attack_cooldown", interaction::has_attack_cooldown);
@@ -52,7 +47,6 @@ impl UserData for Client {
         f.add_field_method_get("menu", container::menu);
         f.add_field_method_get("pathfinder", movement::pathfinder);
         f.add_field_method_get("position", movement::position);
-        f.add_field_method_get("score", state::score);
         f.add_field_method_get("tab_list", tab_list);
         f.add_field_method_get("username", username);
         f.add_field_method_get("uuid", uuid);
@@ -64,14 +58,11 @@ impl UserData for Client {
         m.add_async_method("find_entities", world::find::entities);
         m.add_async_method("find_players", world::find::players);
         m.add_async_method("go_to", movement::go_to);
-        m.add_async_method(
-            "go_to_wait_until_reached",
-            movement::go_to_wait_until_reached,
-        );
         m.add_async_method("mine", interaction::mine);
         m.add_async_method("open_container_at", container::open_container_at);
         m.add_async_method("set_client_information", state::set_client_information);
         m.add_async_method("start_go_to", movement::start_go_to);
+        m.add_async_method("wait_until_goal_reached", movement::wait_until_goal_reached);
         m.add_method("attack", interaction::attack);
         m.add_method("best_tool_for_block", world::best_tool_for_block);
         m.add_method("block_interact", interaction::block_interact);
@@ -92,9 +83,9 @@ impl UserData for Client {
         m.add_method("set_sneaking", movement::set_sneaking);
         m.add_method("sprint", movement::sprint);
         m.add_method("start_mining", interaction::start_mining);
+        m.add_method("start_use_item", interaction::start_use_item);
         m.add_method("stop_pathfinding", movement::stop_pathfinding);
         m.add_method("stop_sleeping", movement::stop_sleeping);
-        m.add_method("use_item", interaction::use_item);
         m.add_method("walk", movement::walk);
     }
 }
@@ -123,4 +114,13 @@ fn username(_lua: &Lua, client: &Client) -> Result<String> {
 
 fn uuid(_lua: &Lua, client: &Client) -> Result<String> {
     Ok(client.uuid().to_string())
+}
+
+#[macro_export]
+macro_rules! unpack {
+    ($client:ident) => {{
+        let inner = (**$client).clone();
+        drop($client);
+        inner
+    }};
 }

@@ -1,4 +1,4 @@
-use azalea::PlayerInfo;
+use azalea::player::PlayerInfo;
 use mlua::{IntoLua, Lua, Result, Value};
 
 #[derive(Clone)]

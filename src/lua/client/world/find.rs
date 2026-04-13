@@ -1,16 +1,16 @@
 use azalea::{
     BlockPos,
-    blocks::{BlockState, BlockStates},
+    block::{BlockState, BlockStates},
     ecs::query::{With, Without},
     entity::{
-        Dead, EntityKind, EntityUuid, LookDirection, Pose, Position as AzaleaPosition,
+        Dead, EntityKindComponent, EntityUuid, LookDirection, Pose, Position as AzaleaPosition,
         metadata::{CustomName, Owneruuid, Player},
     },
-    world::MinecraftEntityId,
 };
 use mlua::{Function, Lua, Result, Table, UserDataRef};
 
 use super::{Client, Direction, Vec3};
+use crate::{lua::client::MinecraftEntityId, unpack};
 
 pub fn blocks(
     _lua: &Lua,
@@ -28,7 +28,10 @@ pub fn blocks(
                 nearest_to.z as i32,
             ),
             &BlockStates {
-                set: block_states.iter().map(|&id| BlockState { id }).collect(),
+                set: block_states
+                    .into_iter()
+                    .flat_map(BlockState::try_from)
+                    .collect(),
             },
         )
         .map(Vec3::from)
@@ -36,6 +39,8 @@ pub fn blocks(
 }
 
 pub async fn all_entities(lua: Lua, client: UserDataRef<Client>, (): ()) -> Result<Vec<Table>> {
+    let client = unpack!(client);
+
     let mut matched = Vec::with_capacity(256);
     for (position, custom_name, kind, uuid, direction, id, owner_uuid, pose) in
         get_entities!(client)
@@ -62,6 +67,8 @@ pub async fn entities(
     client: UserDataRef<Client>,
     filter_fn: Function,
 ) -> Result<Vec<Table>> {
+    let client = unpack!(client);
+
     let mut matched = Vec::new();
     for (position, custom_name, kind, uuid, direction, id, owner_uuid, pose) in
         get_entities!(client)
@@ -86,6 +93,8 @@ pub async fn entities(
 }
 
 pub async fn all_players(lua: Lua, client: UserDataRef<Client>, (): ()) -> Result<Vec<Table>> {
+    let client = unpack!(client);
+
     let mut matched = Vec::new();
     for (id, uuid, kind, position, direction, pose) in get_players!(client) {
         let table = lua.create_table()?;
@@ -105,6 +114,8 @@ pub async fn players(
     client: UserDataRef<Client>,
     filter_fn: Function,
 ) -> Result<Vec<Table>> {
+    let client = unpack!(client);
+
     let mut matched = Vec::new();
     for (id, uuid, kind, position, direction, pose) in get_players!(client) {
         let table = lua.create_table()?;

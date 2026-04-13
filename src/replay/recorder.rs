@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Result;
 use azalea::{
-    buf::AzaleaWriteVar,
+    buf::AzBufVar,
     prelude::Resource,
     protocol::packets::{PROTOCOL_VERSION, ProtocolPacket, VERSION_NAME},
 };

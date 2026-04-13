@@ -1,15 +1,17 @@
 use azalea::{
-    BlockPos, BotClientExt,
+    BlockPos,
+    core::entity_id::MinecraftEntityId,
     protocol::packets::game::{ServerboundUseItem, s_interact::InteractionHand},
-    world::MinecraftEntityId,
 };
-use log::error;
 use mlua::{Lua, Result, UserDataRef};
 
 use super::{Client, Vec3};
+use crate::unpack;
 
 pub fn attack(_lua: &Lua, client: &Client, entity_id: i32) -> Result<()> {
-    client.attack(MinecraftEntityId(entity_id));
+    if let Some(entity) = client.entity_id_by_minecraft_id(MinecraftEntityId(entity_id)) {
+        client.attack(entity);
+    }
     Ok(())
 }
 
@@ -28,9 +30,10 @@ pub fn has_attack_cooldown(_lua: &Lua, client: &Client) -> Result<bool> {
 }
 
 pub async fn mine(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Result<()> {
+    let client = unpack!(client);
+
     #[allow(clippy::cast_possible_truncation)]
     client
-        .clone()
         .mine(BlockPos::new(
             position.x as i32,
             position.y as i32,
@@ -40,8 +43,8 @@ pub async fn mine(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Res
     Ok(())
 }
 
-pub fn set_mining(_lua: &Lua, client: &Client, mining: bool) -> Result<()> {
-    client.left_click_mine(mining);
+pub fn set_mining(_lua: &Lua, client: &Client, state: bool) -> Result<()> {
+    client.left_click_mine(state);
     Ok(())
 }
 
@@ -55,18 +58,16 @@ pub fn start_mining(_lua: &Lua, client: &Client, position: Vec3) -> Result<()> {
     Ok(())
 }
 
-pub fn use_item(_lua: &Lua, client: &Client, hand: Option<u8>) -> Result<()> {
+pub fn start_use_item(_lua: &Lua, client: &Client, hand: Option<u8>) -> Result<()> {
     let direction = client.direction();
-    if let Err(error) = client.write_packet(ServerboundUseItem {
+    client.write_packet(ServerboundUseItem {
         hand: match hand {
             Some(1) => InteractionHand::OffHand,
             _ => InteractionHand::MainHand,
         },
-        sequence: 0,
-        yaw: direction.0,
-        pitch: direction.1,
-    }) {
-        error!("failed to send UseItem packet: {error:?}");
-    }
+        seq: 0,
+        x_rot: direction.x_rot(),
+        y_rot: direction.y_rot(),
+    });
     Ok(())
 }

@@ -1,18 +1,19 @@
-use std::{net::SocketAddr, process::exit};
+use std::net::SocketAddr;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use azalea::{
-    brigadier::exceptions::BuiltInExceptions::DispatcherUnknownCommand, prelude::*,
-    protocol::packets::game::ClientboundGamePacket,
+    brigadier::errors::BuiltInError, prelude::*, protocol::packets::game::ClientboundGamePacket,
 };
 use hyper::{server::conn::http1, service::service_fn};
 use hyper_util::rt::TokioIo;
 use log::{debug, error, info, trace};
-use mlua::{Error, Function, IntoLuaMulti, Table};
+use mlua::{Function, IntoLuaMulti, Table};
 use ncr::utils::trim_header;
 use tokio::net::TcpListener;
 #[cfg(feature = "matrix")]
 use {crate::matrix, std::time::Duration, tokio::time::sleep};
+#[cfg(feature = "replay")]
+use {crate::replay::recorder::Recorder, anyhow::Context, mlua::Error, std::process::exit};
 
 use crate::{
     State,
@@ -20,7 +21,6 @@ use crate::{
     http::serve,
     lua::{client, direction::Direction, player::Player, vec3::Vec3},
     particle,
-    replay::recorder::Recorder,
 };
 
 #[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
@@ -35,6 +35,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             let uuid = message.sender_uuid().map(|uuid| uuid.to_string());
             let is_whisper = message.is_whisper();
             let text = message.message();
+            let html_text = text.to_html();
             let ansi_text = text.to_ansi();
             info!("{ansi_text}");
 
@@ -70,7 +71,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                         }
                         .into(),
                     )
-                    && error.type_ != DispatcherUnknownCommand
+                    && *error.kind() != BuiltInError::DispatcherUnknownCommand
                 {
                     CommandSource {
                         client,
@@ -86,6 +87,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                 let table = state.lua.create_table()?;
                 table.set("text", text.to_string())?;
                 table.set("ansi_text", ansi_text)?;
+                table.set("html_text", html_text)?;
                 table.set("sender", sender)?;
                 table.set("content", content)?;
                 table.set("uuid", uuid)?;
@@ -95,12 +97,16 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             })
             .await
         }
+        Event::ConnectionFailed(error) => {
+            call_listeners(&state, "connection_failed", || Ok(error.to_string())).await
+        }
         Event::Death(packet) => {
             if let Some(packet) = packet {
                 call_listeners(&state, "death", || {
                     let message_table = state.lua.create_table()?;
                     message_table.set("text", packet.message.to_string())?;
                     message_table.set("ansi_text", packet.message.to_ansi())?;
+                    message_table.set("html_text", packet.message.to_html())?;
                     let table = state.lua.create_table()?;
                     table.set("message", message_table)?;
                     table.set("player_id", packet.player_id.0)?;
@@ -117,6 +123,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
                     let table = state.lua.create_table()?;
                     table.set("text", message.to_string())?;
                     table.set("ansi_text", message.to_ansi())?;
+                    table.set("html_text", message.to_html())?;
                     Ok(table)
                 })
                 .await
@@ -125,7 +132,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             }
         }
         Event::KeepAlive(id) => call_listeners(&state, "keep_alive", || Ok(id)).await,
-        Event::Login => call_listeners(&state, "login", || Ok(())).await,
+        Event::ReceiveChunk(_) => Ok(()),
         Event::RemovePlayer(player_info) => {
             call_listeners(&state, "remove_player", || Ok(Player::from(player_info))).await
         }
@@ -183,8 +190,11 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             ClientboundGamePacket::SetPassengers(packet) => {
                 call_listeners(&state, "set_passengers", || {
                     let table = state.lua.create_table()?;
-                    table.set("vehicle", packet.vehicle)?;
-                    table.set("passengers", &*packet.passengers)?;
+                    table.set("vehicle", *packet.vehicle)?;
+                    table.set(
+                        "passengers",
+                        packet.passengers.iter().map(|id| id.0).collect::<Vec<_>>(),
+                    )?;
                     Ok(table)
                 })
                 .await
@@ -192,28 +202,32 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             ClientboundGamePacket::SetTime(packet) => {
                 call_listeners(&state, "set_time", || {
                     let table = state.lua.create_table()?;
-                    table.set("day_time", packet.day_time)?;
                     table.set("game_time", packet.game_time)?;
-                    table.set("tick_day_time", packet.tick_day_time)?;
                     Ok(table)
                 })
                 .await
             }
             _ => Ok(()),
         },
+        Event::Login => {
+            #[cfg(feature = "matrix")]
+            matrix_init(&client, state.clone());
+
+            call_listeners(&state, "login", || Ok(())).await
+        }
         Event::Init => {
             debug!("received init event");
 
-            let ecs = client.ecs.clone();
-            ctrlc::set_handler(move || {
-                ecs.lock()
-                    .remove_resource::<Recorder>()
-                    .map(Recorder::finish);
-                exit(0);
-            })?;
-
-            #[cfg(feature = "matrix")]
-            matrix_init(&client, state.clone());
+            #[cfg(feature = "replay")]
+            {
+                let ecs = client.ecs.clone();
+                ctrlc::set_handler(move || {
+                    ecs.write()
+                        .remove_resource::<Recorder>()
+                        .map(Recorder::finish);
+                    exit(0);
+                })?;
+            };
 
             let globals = state.lua.globals();
             lua_init(client, &state, &globals).await?;
@@ -262,18 +276,21 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
 }
 
 async fn lua_init(client: Client, state: &State, globals: &Table) -> Result<()> {
-    let ecs = client.ecs.clone();
-    globals.set(
-        "finish_replay_recording",
-        state.lua.create_function_mut(move |_, (): ()| {
-            ecs.lock()
-                .remove_resource::<Recorder>()
-                .context("recording not active")
-                .map_err(Error::external)?
-                .finish()
-                .map_err(Error::external)
-        })?,
-    )?;
+    #[cfg(feature = "replay")]
+    {
+        let ecs = client.ecs.clone();
+        globals.set(
+            "finish_replay_recording",
+            state.lua.create_function_mut(move |_, (): ()| {
+                ecs.write()
+                    .remove_resource::<Recorder>()
+                    .context("recording not active")
+                    .map_err(Error::external)?
+                    .finish()
+                    .map_err(Error::external)
+            })?,
+        )?;
+    }
     globals.set("client", client::Client(Some(client)))?;
     call_listeners(state, "init", || Ok(())).await
 }

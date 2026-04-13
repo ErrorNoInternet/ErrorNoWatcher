@@ -1,4 +1,3 @@
-#![feature(if_let_guard, let_chains)]
 #![warn(clippy::pedantic, clippy::nursery)]
 #![allow(clippy::significant_drop_tightening)]
 
@@ -6,14 +5,15 @@ mod arguments;
 mod build_info;
 mod commands;
 mod events;
-mod hacks;
 mod http;
 mod lua;
 mod particle;
-mod replay;
 
 #[cfg(feature = "matrix")]
 mod matrix;
+
+#[cfg(feature = "replay")]
+mod replay;
 
 use std::{
     collections::HashMap,
@@ -22,11 +22,12 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::Context;
+use anyhow::{Context, Result, bail};
 use arguments::Arguments;
 use azalea::{
-    DefaultBotPlugins, DefaultPlugins, brigadier::prelude::CommandDispatcher, prelude::*,
+    DefaultPlugins, bot::DefaultBotPlugins, brigadier::prelude::CommandDispatcher, prelude::*,
 };
+use azalea_hax::HaxPlugin;
 use bevy_app::PluginGroup;
 use bevy_log::{
     LogPlugin,
@@ -36,10 +37,13 @@ use clap::Parser;
 use commands::{CommandSource, register};
 use futures::lock::Mutex;
 use futures_locks::RwLock;
-use hacks::HacksPlugin;
 use log::debug;
-use mlua::{Function, Lua, Table};
-use replay::{plugin::RecordPlugin, recorder::Recorder};
+use mlua::{Function, Lua};
+#[cfg(feature = "replay")]
+use {
+    mlua::Table,
+    replay::{plugin::RecordPlugin, recorder::Recorder},
+};
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -55,7 +59,7 @@ struct State {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<()> {
     #[cfg(feature = "console-subscriber")]
     console_subscriber::init();
 
@@ -95,21 +99,25 @@ async fn main() -> anyhow::Result<()> {
         DefaultPlugins.set(LogPlugin {
             custom_layer: |_| {
                 env::var("LOG_FILE").ok().map(|path| {
-                    layer()
-                        .with_writer(
-                            OpenOptions::new()
-                                .append(true)
-                                .create(true)
-                                .open(&path)
-                                .expect(&(path + " should be accessible")),
-                        )
-                        .boxed()
+                    let file = OpenOptions::new()
+                        .append(true)
+                        .create(true)
+                        .open(&path)
+                        .expect(&(path + " should be accessible"));
+                    layer().with_writer(file).boxed()
                 })
             },
             ..Default::default()
         })
     };
-    let record_plugin = RecordPlugin {
+
+    let builder = ClientBuilder::new_without_plugins()
+        .add_plugins(default_plugins)
+        .add_plugins(DefaultBotPlugins)
+        .add_plugins(HaxPlugin);
+
+    #[cfg(feature = "replay")]
+    let builder = builder.add_plugins(RecordPlugin {
         recorder: Arc::new(parking_lot::Mutex::new(
             if let Ok(options) = globals.get::<Table>("ReplayRecordingOptions")
                 && let Ok(path) = options.get::<String>("path")
@@ -125,18 +133,15 @@ async fn main() -> anyhow::Result<()> {
                 None
             },
         )),
-    };
+    });
+
     let account = if username.contains('@') {
         Account::microsoft(&username).await?
     } else {
         Account::offline(&username)
     };
 
-    let Err(error) = ClientBuilder::new_without_plugins()
-        .add_plugins(DefaultBotPlugins)
-        .add_plugins(HacksPlugin)
-        .add_plugins(default_plugins)
-        .add_plugins(record_plugin)
+    if let AppExit::Error(code) = builder
         .set_handler(events::handle_event)
         .set_state(State {
             lua: Arc::new(lua),
@@ -144,8 +149,10 @@ async fn main() -> anyhow::Result<()> {
             commands: Arc::new(commands),
         })
         .start(account, server)
-        .await;
-    eprintln!("{error}");
+        .await
+    {
+        bail!("azalea exited with code {code}")
+    }
 
     Ok(())
 }
