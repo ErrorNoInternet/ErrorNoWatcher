@@ -21,7 +21,13 @@ A Minecraft bot with Lua scripting support, written in Rust with [azalea](https:
 $ git clone https://github.com/ErrorNoInternet/ErrorNoWatcher
 $ cd ErrorNoWatcher
 $ cargo build --release
-$ # ./target/release/errornowatcher
+$ ./target/release/errornowatcher
+```
+
+#### Nix
+
+```sh
+nix run github:ErrorNoInternet/ErrorNoWatcher
 ```
 
 Make sure the `Server` and `Username` globals are defined in `main.lua` before starting the bot.

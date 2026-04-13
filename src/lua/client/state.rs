@@ -2,11 +2,10 @@ use azalea::{
     ClientInformation, entity::metadata::AirSupply, pathfinder::debug::PathfinderDebugParticles,
     protocol::common::client_information::ModelCustomization,
 };
-use azalea_hax::AntiKnockback;
 use mlua::{Error, Lua, Result, Table, UserDataRef};
 
 use super::Client;
-use crate::unpack;
+use crate::{hacks::anti_knockback::AntiKnockback, unpack};
 
 pub fn air_supply(_lua: &Lua, client: &Client) -> Result<i32> {
     Ok(client.component::<AirSupply>().0)

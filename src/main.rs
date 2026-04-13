@@ -5,6 +5,7 @@ mod arguments;
 mod build_info;
 mod commands;
 mod events;
+mod hacks;
 mod http;
 mod lua;
 mod particle;
@@ -27,7 +28,6 @@ use arguments::Arguments;
 use azalea::{
     DefaultPlugins, bot::DefaultBotPlugins, brigadier::prelude::CommandDispatcher, prelude::*,
 };
-use azalea_hax::HaxPlugin;
 use bevy_app::PluginGroup;
 use bevy_log::{
     LogPlugin,
@@ -44,6 +44,8 @@ use {
     mlua::Table,
     replay::{plugin::RecordPlugin, recorder::Recorder},
 };
+
+use crate::hacks::HacksPlugin;
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -114,7 +116,7 @@ async fn main() -> Result<()> {
     let builder = ClientBuilder::new_without_plugins()
         .add_plugins(default_plugins)
         .add_plugins(DefaultBotPlugins)
-        .add_plugins(HaxPlugin);
+        .add_plugins(HacksPlugin);
 
     #[cfg(feature = "replay")]
     let builder = builder.add_plugins(RecordPlugin {
