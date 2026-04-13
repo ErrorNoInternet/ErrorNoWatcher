@@ -13,7 +13,7 @@ use tokio::net::TcpListener;
 #[cfg(feature = "matrix")]
 use {crate::matrix, std::time::Duration, tokio::time::sleep};
 #[cfg(feature = "replay")]
-use {crate::replay::recorder::Recorder, mlua::Error, std::process::exit};
+use {crate::replay::recorder::Recorder, anyhow::Context, mlua::Error, std::process::exit};
 
 use crate::{
     State,
@@ -97,6 +97,9 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             })
             .await
         }
+        Event::ConnectionFailed(error) => {
+            call_listeners(&state, "connection_failed", || Ok(error.to_string())).await
+        }
         Event::Death(packet) => {
             if let Some(packet) = packet {
                 call_listeners(&state, "death", || {
@@ -129,6 +132,7 @@ pub async fn handle_event(client: Client, event: Event, state: State) -> Result<
             }
         }
         Event::KeepAlive(id) => call_listeners(&state, "keep_alive", || Ok(id)).await,
+        Event::ReceiveChunk(_) => Ok(()),
         Event::RemovePlayer(player_info) => {
             call_listeners(&state, "remove_player", || Ok(Player::from(player_info))).await
         }

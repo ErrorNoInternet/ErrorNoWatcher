@@ -40,7 +40,10 @@ use futures_locks::RwLock;
 use log::debug;
 use mlua::{Function, Lua};
 #[cfg(feature = "replay")]
-use replay::{mlua::Table, plugin::RecordPlugin, recorder::Recorder};
+use {
+    mlua::Table,
+    replay::{plugin::RecordPlugin, recorder::Recorder},
+};
 
 #[cfg(feature = "mimalloc")]
 #[global_allocator]
@@ -96,15 +99,12 @@ async fn main() -> Result<()> {
         DefaultPlugins.set(LogPlugin {
             custom_layer: |_| {
                 env::var("LOG_FILE").ok().map(|path| {
-                    layer()
-                        .with_writer(
-                            OpenOptions::new()
-                                .append(true)
-                                .create(true)
-                                .open(&path)
-                                .expect(&(path + " should be accessible")),
-                        )
-                        .boxed()
+                    let file = OpenOptions::new()
+                        .append(true)
+                        .create(true)
+                        .open(&path)
+                        .expect(&(path + " should be accessible"));
+                    layer().with_writer(file).boxed()
                 })
             },
             ..Default::default()

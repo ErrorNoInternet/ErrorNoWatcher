@@ -3,7 +3,6 @@
 use std::sync::Arc;
 
 use azalea::{
-    ecs::event::EventReader,
     packet::{
         config::ReceiveConfigPacketEvent, game::ReceiveGamePacketEvent,
         login::ReceiveLoginPacketEvent,
@@ -11,7 +10,7 @@ use azalea::{
     protocol::packets::login::ClientboundLoginPacket,
 };
 use bevy_app::{App, First, Plugin};
-use bevy_ecs::system::ResMut;
+use bevy_ecs::{message::MessageReader, system::ResMut};
 use log::error;
 use parking_lot::Mutex;
 
@@ -35,7 +34,7 @@ impl Plugin for RecordPlugin {
 
 fn record_login_packets(
     recorder: Option<ResMut<Recorder>>,
-    mut events: EventReader<ReceiveLoginPacketEvent>,
+    mut events: MessageReader<ReceiveLoginPacketEvent>,
 ) {
     if let Some(mut recorder) = recorder {
         for event in events.read() {
@@ -54,7 +53,7 @@ fn record_login_packets(
 
 fn record_configuration_packets(
     recorder: Option<ResMut<Recorder>>,
-    mut events: EventReader<ReceiveConfigPacketEvent>,
+    mut events: MessageReader<ReceiveConfigPacketEvent>,
 ) {
     if let Some(mut recorder) = recorder {
         for event in events.read() {
@@ -67,7 +66,7 @@ fn record_configuration_packets(
 
 fn record_game_packets(
     recorder: Option<ResMut<Recorder>>,
-    mut events: EventReader<ReceiveGamePacketEvent>,
+    mut events: MessageReader<ReceiveGamePacketEvent>,
 ) {
     if let Some(mut recorder) = recorder {
         for event in events.read() {
