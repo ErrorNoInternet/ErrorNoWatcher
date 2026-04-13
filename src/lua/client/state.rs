@@ -6,6 +6,7 @@ use azalea_hax::AntiKnockback;
 use mlua::{Error, Lua, Result, Table, UserDataRef};
 
 use super::Client;
+use crate::unpack;
 
 pub fn air_supply(_lua: &Lua, client: &Client) -> Result<i32> {
     Ok(client.component::<AirSupply>().0)
@@ -37,6 +38,8 @@ pub async fn set_client_information(
     client: UserDataRef<Client>,
     info: Table,
 ) -> Result<()> {
+    let client = unpack!(client);
+
     let get_bool = |table: &Table, name| table.get(name).unwrap_or(true);
     client.set_client_information(ClientInformation {
         allows_listing: info.get("allows_listing")?,

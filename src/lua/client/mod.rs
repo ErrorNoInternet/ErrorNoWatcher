@@ -6,7 +6,7 @@ mod movement;
 mod state;
 mod world;
 
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 use azalea::{Client as AzaleaClient, core::entity_id::MinecraftEntityId};
 use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
@@ -25,12 +25,6 @@ impl Deref for Client {
 
     fn deref(&self) -> &Self::Target {
         self.0.as_ref().expect("should have received init event")
-    }
-}
-
-impl DerefMut for Client {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.0.as_mut().expect("should have received init event")
     }
 }
 
@@ -120,4 +114,13 @@ fn username(_lua: &Lua, client: &Client) -> Result<String> {
 
 fn uuid(_lua: &Lua, client: &Client) -> Result<String> {
     Ok(client.uuid().to_string())
+}
+
+#[macro_export]
+macro_rules! unpack {
+    ($client:ident) => {{
+        let inner = (**$client).clone();
+        drop($client);
+        inner
+    }};
 }

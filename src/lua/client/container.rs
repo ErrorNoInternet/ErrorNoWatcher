@@ -7,6 +7,7 @@ use azalea::{
 use mlua::{Lua, Result, UserDataRef, Value};
 
 use super::{Client, Container, ContainerRef, ItemStack, Vec3};
+use crate::unpack;
 
 pub fn container(_lua: &Lua, client: &Client) -> Result<ContainerRef> {
     Ok(ContainerRef(client.get_inventory()))
@@ -95,9 +96,10 @@ pub async fn open_container_at(
     client: UserDataRef<Client>,
     position: Vec3,
 ) -> Result<Option<Container>> {
+    let client = unpack!(client);
+
     #[allow(clippy::cast_possible_truncation)]
     Ok(client
-        .clone()
         .open_container_at(BlockPos::new(
             position.x as i32,
             position.y as i32,

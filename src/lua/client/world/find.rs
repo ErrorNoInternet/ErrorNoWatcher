@@ -10,7 +10,7 @@ use azalea::{
 use mlua::{Function, Lua, Result, Table, UserDataRef};
 
 use super::{Client, Direction, Vec3};
-use crate::lua::client::MinecraftEntityId;
+use crate::{lua::client::MinecraftEntityId, unpack};
 
 pub fn blocks(
     _lua: &Lua,
@@ -39,6 +39,8 @@ pub fn blocks(
 }
 
 pub async fn all_entities(lua: Lua, client: UserDataRef<Client>, (): ()) -> Result<Vec<Table>> {
+    let client = unpack!(client);
+
     let mut matched = Vec::with_capacity(256);
     for (position, custom_name, kind, uuid, direction, id, owner_uuid, pose) in
         get_entities!(client)
@@ -65,6 +67,8 @@ pub async fn entities(
     client: UserDataRef<Client>,
     filter_fn: Function,
 ) -> Result<Vec<Table>> {
+    let client = unpack!(client);
+
     let mut matched = Vec::new();
     for (position, custom_name, kind, uuid, direction, id, owner_uuid, pose) in
         get_entities!(client)
@@ -89,6 +93,8 @@ pub async fn entities(
 }
 
 pub async fn all_players(lua: Lua, client: UserDataRef<Client>, (): ()) -> Result<Vec<Table>> {
+    let client = unpack!(client);
+
     let mut matched = Vec::new();
     for (id, uuid, kind, position, direction, pose) in get_players!(client) {
         let table = lua.create_table()?;
@@ -108,6 +114,8 @@ pub async fn players(
     client: UserDataRef<Client>,
     filter_fn: Function,
 ) -> Result<Vec<Table>> {
+    let client = unpack!(client);
+
     let mut matched = Vec::new();
     for (id, uuid, kind, position, direction, pose) in get_players!(client) {
         let table = lua.create_table()?;

@@ -6,6 +6,7 @@ use azalea::{
 use mlua::{Lua, Result, UserDataRef};
 
 use super::{Client, Vec3};
+use crate::unpack;
 
 pub fn attack(_lua: &Lua, client: &Client, entity_id: i32) -> Result<()> {
     if let Some(entity) = client.entity_id_by_minecraft_id(MinecraftEntityId(entity_id)) {
@@ -29,9 +30,10 @@ pub fn has_attack_cooldown(_lua: &Lua, client: &Client) -> Result<bool> {
 }
 
 pub async fn mine(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Result<()> {
+    let client = unpack!(client);
+
     #[allow(clippy::cast_possible_truncation)]
     client
-        .clone()
         .mine(BlockPos::new(
             position.x as i32,
             position.y as i32,

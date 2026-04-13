@@ -1,5 +1,5 @@
 use azalea::{
-    BlockPos, SprintDirection, WalkDirection,
+    BlockPos, Client as AzaleaClient, SprintDirection, WalkDirection,
     core::{entity_id::MinecraftEntityId, hit_result::HitResult},
     entity::Position,
     interact::pick::HitResultComponent,
@@ -12,6 +12,7 @@ use azalea::{
 use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
 
 use super::{Client, Direction, Vec3};
+use crate::unpack;
 
 #[derive(Debug)]
 struct AnyGoal(Box<dyn Goal>);
@@ -27,7 +28,7 @@ impl Goal for AnyGoal {
 }
 
 #[allow(clippy::cast_possible_truncation)]
-fn to_goal(lua: &Lua, client: &Client, data: Table, kind: u8) -> Result<AnyGoal> {
+fn to_goal(lua: &Lua, client: &AzaleaClient, data: Table, kind: u8) -> Result<AnyGoal> {
     let goal: Box<dyn Goal> = match kind {
         1 => {
             let pos = Vec3::from_lua(data.get("position")?, lua)?;
@@ -68,6 +69,7 @@ pub fn go_to_reached(_lua: &Lua, client: &Client) -> Result<bool> {
 }
 
 pub async fn wait_until_goal_reached(_lua: Lua, client: UserDataRef<Client>, (): ()) -> Result<()> {
+    let client = unpack!(client);
     client.wait_until_goto_target_reached().await;
     Ok(())
 }
@@ -77,6 +79,8 @@ pub async fn go_to(
     client: UserDataRef<Client>,
     (data, metadata): (Table, Option<Table>),
 ) -> Result<()> {
+    let client = unpack!(client);
+
     let metadata = metadata.unwrap_or(lua.create_table()?);
     let options = metadata.get("options").unwrap_or(lua.create_table()?);
     let goal = to_goal(
@@ -85,12 +89,13 @@ pub async fn go_to(
         data,
         metadata.get("type").unwrap_or_default(),
     )?;
-    if options.get("without_mining").unwrap_or_default() {
-        client.start_goto_with_opts(goal, PathfinderOpts::new().allow_mining(false));
-        client.wait_until_goto_target_reached().await;
-    } else {
-        client.goto(goal).await;
-    }
+    client
+        .goto_with_opts(
+            goal,
+            PathfinderOpts::new().allow_mining(options.get("without_mining").unwrap_or_default()),
+        )
+        .await;
+
     Ok(())
 }
 
@@ -99,6 +104,8 @@ pub async fn start_go_to(
     client: UserDataRef<Client>,
     (data, metadata): (Table, Option<Table>),
 ) -> Result<()> {
+    let client = unpack!(client);
+
     let metadata = metadata.unwrap_or(lua.create_table()?);
     let options = metadata.get("options").unwrap_or(lua.create_table()?);
     let goal = to_goal(
