@@ -40,6 +40,7 @@ impl UserData for Client {
         f.add_field_method_get("container", container::container);
         f.add_field_method_get("dimension", world::dimension);
         f.add_field_method_get("direction", movement::direction);
+        f.add_field_method_get("experience", state::experience);
         f.add_field_method_get("eye_position", movement::eye_position);
         f.add_field_method_get("go_to_reached", movement::go_to_reached);
         f.add_field_method_get("has_attack_cooldown", interaction::has_attack_cooldown);
@@ -52,7 +53,6 @@ impl UserData for Client {
         f.add_field_method_get("menu", container::menu);
         f.add_field_method_get("pathfinder", movement::pathfinder);
         f.add_field_method_get("position", movement::position);
-        f.add_field_method_get("score", state::score);
         f.add_field_method_get("tab_list", tab_list);
         f.add_field_method_get("username", username);
         f.add_field_method_get("uuid", uuid);

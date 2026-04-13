@@ -1,7 +1,5 @@
 use azalea::{
-    ClientInformation,
-    entity::metadata::{AirSupply, Score},
-    pathfinder::debug::PathfinderDebugParticles,
+    ClientInformation, entity::metadata::AirSupply, pathfinder::debug::PathfinderDebugParticles,
     protocol::common::client_information::ModelCustomization,
 };
 use azalea_hax::AntiKnockback;
@@ -11,6 +9,15 @@ use super::Client;
 
 pub fn air_supply(_lua: &Lua, client: &Client) -> Result<i32> {
     Ok(client.component::<AirSupply>().0)
+}
+
+pub fn experience(lua: &Lua, client: &Client) -> Result<Table> {
+    let experience = client.experience();
+    let table = lua.create_table()?;
+    table.set("progress", experience.progress)?;
+    table.set("total", experience.total)?;
+    table.set("level", experience.level)?;
+    Ok(table)
 }
 
 pub fn health(_lua: &Lua, client: &Client) -> Result<f32> {
@@ -23,10 +30,6 @@ pub fn hunger(lua: &Lua, client: &Client) -> Result<Table> {
     table.set("food", hunger.food)?;
     table.set("saturation", hunger.saturation)?;
     Ok(table)
-}
-
-pub fn score(_lua: &Lua, client: &Client) -> Result<i32> {
-    Ok(client.component::<Score>().0)
 }
 
 pub async fn set_client_information(
