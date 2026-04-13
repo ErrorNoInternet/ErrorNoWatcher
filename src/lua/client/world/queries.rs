@@ -2,7 +2,7 @@
 macro_rules! get_entities {
     ($client:ident) => {{
         let ecs = $client.ecs.read();
-        if let Some(mut query) = ecs.try_query::<(
+        ecs.try_query::<(
             &AzaleaPosition,
             &CustomName,
             &EntityKindComponent,
@@ -11,7 +11,8 @@ macro_rules! get_entities {
             &MinecraftEntityId,
             Option<&Owneruuid>,
             &Pose,
-        )>() {
+        )>()
+        .map(|mut query| {
             query
                 .iter(&ecs)
                 .map(
@@ -29,9 +30,8 @@ macro_rules! get_entities {
                     },
                 )
                 .collect::<Vec<_>>()
-        } else {
-            Vec::new()
-        }
+        })
+        .unwrap_or_default()
     }};
 }
 
@@ -39,7 +39,7 @@ macro_rules! get_entities {
 macro_rules! get_players {
     ($client:ident) => {{
         let ecs = $client.ecs.read();
-        if let Some(mut query) = ecs.try_query_filtered::<(
+        ecs.try_query_filtered::<(
             &MinecraftEntityId,
             &EntityUuid,
             &EntityKindComponent,
@@ -47,22 +47,21 @@ macro_rules! get_players {
             &LookDirection,
             &Pose,
         ), (With<Player>, Without<Dead>)>()
-        {
-            query
-                .iter(&ecs)
-                .map(|(id, uuid, kind, position, direction, pose)| {
-                    (
-                        id.0,
-                        uuid.to_string(),
-                        kind.to_string(),
-                        Vec3::from(*position),
-                        Direction::from(direction),
-                        *pose as u8,
-                    )
-                })
-                .collect::<Vec<_>>()
-        } else {
-            Vec::new()
-        }
+            .map(|mut query| {
+                query
+                    .iter(&ecs)
+                    .map(|(id, uuid, kind, position, direction, pose)| {
+                        (
+                            id.0,
+                            uuid.to_string(),
+                            kind.to_string(),
+                            Vec3::from(*position),
+                            Direction::from(direction),
+                            *pose as u8,
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
     }};
 }
