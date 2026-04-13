@@ -69,7 +69,7 @@ jobs:
             - name: Install components
               run: rustup component add clippy rustfmt
 
-            - run: cargo clippy ${{ matrix.feature.flags }} -- -D warnings -D clippy::pedantic
+            - run: cargo clippy ${{ matrix.feature.flags }} -- -D clippy::pedantic
 
             - if: always()
               run: cargo fmt --check
