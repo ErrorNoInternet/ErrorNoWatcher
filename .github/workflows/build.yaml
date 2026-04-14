@@ -46,7 +46,7 @@ jobs:
             - run: cargo build --release ${{ matrix.feature.flags }}
 
             - name: Upload build artifacts
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: errornowatcher_${{ matrix.feature.name }}_${{ matrix.os }}
                   path: target/release/errornowatcher
