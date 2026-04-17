@@ -92,7 +92,8 @@ pub async fn go_to(
     client
         .goto_with_opts(
             goal,
-            PathfinderOpts::new().allow_mining(options.get("without_mining").unwrap_or_default()),
+            PathfinderOpts::new()
+                .allow_mining(!options.get::<bool>("without_mining").unwrap_or_default()),
         )
         .await;
 
@@ -116,7 +117,8 @@ pub async fn start_go_to(
     )?;
     client.start_goto_with_opts(
         goal,
-        PathfinderOpts::new().allow_mining(options.get("without_mining").unwrap_or_default()),
+        PathfinderOpts::new()
+            .allow_mining(!options.get::<bool>("without_mining").unwrap_or_default()),
     );
     let _ = client.get_tick_broadcaster().recv().await;
 
