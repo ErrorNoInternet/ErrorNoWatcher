@@ -15,6 +15,14 @@ codegen-units = 1
 lto = true
 strip = true
 
+[profile.release-no-lto]
+inherits = "release"
+lto = false
+
+[profile.small]
+inherits = "release"
+opt-level = "z"
+
 [build-dependencies]
 built = { version = "0", features = ["git2"] }
 
