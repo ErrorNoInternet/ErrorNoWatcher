@@ -43,7 +43,11 @@ pub async fn mine(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Res
     Ok(())
 }
 
-pub fn set_mining(_lua: &Lua, client: &Client, state: bool) -> Result<()> {
+pub fn get_mining(_lua: &Lua, client: &Client) -> Result<bool> {
+    Ok(client.is_mining())
+}
+
+pub fn set_mining(_lua: &Lua, client: &mut Client, state: bool) -> Result<()> {
     client.left_click_mine(state);
     Ok(())
 }

@@ -6,7 +6,7 @@ function hold_items_in_hotbar(target_kinds, inventory)
 		if index >= 37 and index <= 45 and table.contains(target_kinds, item.kind) then
 			inventory = nil
 			sleep(500)
-			client:set_held_slot(index - 37)
+			client.held_slot = index - 37
 			return true
 		end
 	end
@@ -35,7 +35,7 @@ end
 function steal(item_name)
 	for _, chest_pos in ipairs(client:find_blocks(client.position, get_block_states({ "chest" }))) do
 		client:go_to({ position = chest_pos, radius = 3 }, { type = RADIUS_GOAL })
-		client:look_at(chest_pos)
+		client.looking_at = chest_pos
 
 		local container = client:open_container_at(chest_pos)
 		for index, item in ipairs(container.contents) do

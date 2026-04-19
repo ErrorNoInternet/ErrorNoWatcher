@@ -141,7 +141,7 @@ function interact_bed()
 	end
 
 	client:go_to({ position = bed, radius = 2 }, { type = RADIUS_GOAL, options = { without_mining = true } })
-	client:look_at(bed)
+	client.looking_at = bed
 	client:block_interact(bed)
 end
 

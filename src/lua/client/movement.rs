@@ -125,12 +125,17 @@ pub async fn start_go_to(
     Ok(())
 }
 
-pub fn direction(_lua: &Lua, client: &Client) -> Result<Direction> {
+pub fn get_direction(_lua: &Lua, client: &Client) -> Result<Direction> {
     let direction = client.direction();
     Ok(Direction {
         y: direction.y_rot(),
         x: direction.x_rot(),
     })
+}
+
+pub fn set_direction(_lua: &Lua, client: &mut Client, direction: Direction) -> Result<()> {
+    client.set_direction(direction.y, direction.x);
+    Ok(())
 }
 
 pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
@@ -142,7 +147,7 @@ pub fn jump(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
     Ok(())
 }
 
-pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
+pub fn get_looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
     Ok(
         if let HitResult::Block(ref result) = **client.component::<HitResultComponent>() {
             let table = lua.create_table()?;
@@ -158,7 +163,7 @@ pub fn looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
     )
 }
 
-pub fn look_at(_lua: &Lua, client: &Client, position: Vec3) -> Result<()> {
+pub fn set_looking_at(_lua: &Lua, client: &mut Client, position: Vec3) -> Result<()> {
     client.look_at(azalea::Vec3::new(position.x, position.y, position.z));
     Ok(())
 }
@@ -189,21 +194,20 @@ pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
     Ok(table)
 }
 
-pub fn position(_lua: &Lua, client: &Client) -> Result<Vec3> {
+pub fn get_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
     Ok(Vec3::from(*client.component::<Position>()))
 }
 
-pub fn set_direction(_lua: &Lua, client: &Client, direction: Direction) -> Result<()> {
-    client.set_direction(direction.y, direction.x);
-    Ok(())
+pub fn get_jumping(_lua: &Lua, client: &Client) -> Result<bool> {
+    Ok(client.jumping())
 }
 
-pub fn set_jumping(_lua: &Lua, client: &Client, jumping: bool) -> Result<()> {
+pub fn set_jumping(_lua: &Lua, client: &mut Client, jumping: bool) -> Result<()> {
     client.set_jumping(jumping);
     Ok(())
 }
 
-pub fn set_position(_lua: &Lua, client: &Client, new_pos: Vec3) -> Result<()> {
+pub fn set_position(_lua: &Lua, client: &mut Client, new_pos: Vec3) -> Result<()> {
     client.query_self::<&mut Position, _>(|mut pos| {
         pos.x = new_pos.x;
         pos.y = new_pos.y;
@@ -212,7 +216,11 @@ pub fn set_position(_lua: &Lua, client: &Client, new_pos: Vec3) -> Result<()> {
     Ok(())
 }
 
-pub fn set_sneaking(_lua: &Lua, client: &Client, sneaking: bool) -> Result<()> {
+pub fn get_sneaking(_lua: &Lua, client: &Client) -> Result<bool> {
+    Ok(client.crouching())
+}
+
+pub fn set_sneaking(_lua: &Lua, client: &mut Client, sneaking: bool) -> Result<()> {
     client.set_crouching(sneaking);
     Ok(())
 }

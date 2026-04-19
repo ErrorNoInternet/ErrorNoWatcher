@@ -99,7 +99,7 @@ function attack_entities(target_kind, minimum)
 			pos.y = pos.y + 1.5
 
 			hold_sword()
-			client:look_at(pos)
+			client.looking_at = pos
 			client:attack(e.id)
 			while client.has_attack_cooldown do
 				sleep(100)

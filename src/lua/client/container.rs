@@ -17,7 +17,7 @@ pub fn held_item(_lua: &Lua, client: &Client) -> Result<ItemStack> {
     Ok(ItemStack(client.get_held_item()))
 }
 
-pub fn held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
+pub fn get_held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
     Ok(client.component::<Inventory>().selected_hotbar_slot)
 }
 
@@ -113,7 +113,7 @@ pub fn open_inventory(_lua: &Lua, client: &Client, (): ()) -> Result<Option<Cont
     Ok(client.open_inventory().map(Container))
 }
 
-pub fn set_held_slot(_lua: &Lua, client: &Client, slot: u8) -> Result<()> {
+pub fn set_held_slot(_lua: &Lua, client: &mut Client, slot: u8) -> Result<()> {
     if slot > 8 {
         return Ok(());
     }
