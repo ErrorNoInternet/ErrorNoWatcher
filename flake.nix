@@ -52,6 +52,7 @@
             nativeBuildInputs = [ pkgs.pkg-config ];
             buildInputs = [ pkgs.taplo ];
 
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             RUST_BACKTRACE = 1;
           };
 
