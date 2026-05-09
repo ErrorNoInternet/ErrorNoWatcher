@@ -1,19 +1,15 @@
 {
-  lib,
+  craneLib,
   pkgs,
-  rust,
-  self,
 }:
-pkgs.rustPlatform.buildRustPackage {
+craneLib.buildPackage {
   pname = "errornowatcher";
-  version = self.shortRev or self.dirtyShortRev;
+  version = "0.2.0";
 
-  cargoLock.lockFile = ./Cargo.lock;
-  src = lib.cleanSource ./.;
+  src = craneLib.cleanCargoSource ./.;
 
   nativeBuildInputs = with pkgs; [
-    rust
-
+    clang
     mold
     pkg-config
   ];

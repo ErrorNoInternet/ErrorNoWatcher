@@ -1,21 +1,22 @@
 {
   inputs = {
+    crane.url = "github:ipetkov/crane";
+
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =
     {
+      crane,
+      fenix,
       flake-parts,
-      nixpkgs,
-      rust-overlay,
-      self,
       ...
     }@inputs:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -32,19 +33,9 @@
           ...
         }:
         let
-          rust = pkgs.rust-bin.nightly.latest.default.override {
-            extensions = [
-              "rust-src"
-              "rust-analyzer-preview"
-            ];
-          };
+          craneLib = (crane.mkLib pkgs).overrideToolchain fenix.packages.${system}.complete.toolchain;
         in
         {
-          _module.args.pkgs = import nixpkgs {
-            inherit system;
-            overlays = [ rust-overlay.overlays.default ];
-          };
-
           devShells.default = pkgs.mkShell {
             name = "errornowatcher";
 
@@ -58,7 +49,7 @@
 
           packages = rec {
             default = errornowatcher;
-            errornowatcher = pkgs.callPackage ./. { inherit rust self; };
+            errornowatcher = pkgs.callPackage ./. { inherit craneLib; };
           };
         };
     };
