@@ -36,7 +36,7 @@
           craneLib = (crane.mkLib pkgs).overrideToolchain fenix.packages.${system}.complete.toolchain;
         in
         {
-          devShells.default = pkgs.mkShell {
+          devShells.default = craneLib.devShell {
             name = "errornowatcher";
 
             inputsFrom = [ self'.packages.default ];
