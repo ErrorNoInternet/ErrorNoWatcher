@@ -99,6 +99,13 @@ async fn main() -> Result<()> {
         DefaultPlugins.build().disable::<LogPlugin>()
     } else {
         DefaultPlugins.set(LogPlugin {
+            fmt_layer: |_| {
+                Some(Box::new(
+                    layer()
+                        .with_ansi_sanitization(false)
+                        .with_writer(std::io::stderr),
+                ))
+            },
             custom_layer: |_| {
                 env::var("LOG_FILE").ok().map(|path| {
                     let file = OpenOptions::new()
