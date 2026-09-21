@@ -9,9 +9,9 @@ use azalea::{
     },
     protocol::packets::game::{ServerboundPlayerCommand, s_player_command::Action},
 };
-use mlua::{FromLua, Lua, Result, Table, UserDataRef, Value};
+use mlua::{Error, FromLua, Lua, Result, Table, UserDataRef, Value};
 
-use super::{Client, Direction, Vec3};
+use super::{Client, Direction, Vec3, from_azalea};
 use crate::unpack;
 
 #[derive(Debug)]
@@ -43,7 +43,12 @@ fn to_goal(lua: &Lua, client: &AzaleaClient, data: Table, kind: u8) -> Result<An
             Box::new(ReachBlockPosGoal::new_with_distance(
                 BlockPos::new(pos.x as i32, pos.y as i32, pos.z as i32),
                 distance,
-                client.world().read().chunks.clone(),
+                client
+                    .world()
+                    .map_err(Error::external)?
+                    .read()
+                    .chunks
+                    .clone(),
             ))
         }
         3 => Box::new(XZGoal {
@@ -126,7 +131,7 @@ pub async fn start_go_to(
 }
 
 pub fn get_direction(_lua: &Lua, client: &Client) -> Result<Direction> {
-    let direction = client.direction();
+    let direction = from_azalea(client.direction())?;
     Ok(Direction {
         y: direction.y_rot(),
         x: direction.x_rot(),
@@ -134,12 +139,12 @@ pub fn get_direction(_lua: &Lua, client: &Client) -> Result<Direction> {
 }
 
 pub fn set_direction(_lua: &Lua, client: &mut Client, direction: Direction) -> Result<()> {
-    client.set_direction(direction.y, direction.x);
+    from_azalea(client.set_direction(direction.y, direction.x))?;
     Ok(())
 }
 
 pub fn eye_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
-    Ok(Vec3::from(client.eye_position()))
+    Ok(Vec3::from(from_azalea(client.eye_position())?))
 }
 
 pub fn jump(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
@@ -149,7 +154,9 @@ pub fn jump(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
 
 pub fn get_looking_at(lua: &Lua, client: &Client) -> Result<Option<Table>> {
     Ok(
-        if let HitResult::Block(ref result) = **client.component::<HitResultComponent>() {
+        if let HitResult::Block(ref result) =
+            **from_azalea(client.component::<HitResultComponent>())?
+        {
             let table = lua.create_table()?;
             table.set("direction", Vec3::from(result.direction.normal()))?;
             table.set("inside", result.inside)?;
@@ -172,11 +179,11 @@ pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
     let table = lua.create_table()?;
     table.set(
         "is_calculating",
-        client.component::<Pathfinder>().is_calculating,
+        from_azalea(client.component::<Pathfinder>())?.is_calculating,
     )?;
     table.set(
         "is_executing",
-        if let Some(pathfinder) = client.get_component::<ExecutingPath>() {
+        if let Ok(pathfinder) = client.component::<ExecutingPath>() {
             table.set(
                 "last_reached_node",
                 Vec3::from(pathfinder.last_reached_node),
@@ -195,7 +202,7 @@ pub fn pathfinder(lua: &Lua, client: &Client) -> Result<Table> {
 }
 
 pub fn get_position(_lua: &Lua, client: &Client) -> Result<Vec3> {
-    Ok(Vec3::from(*client.component::<Position>()))
+    Ok(Vec3::from(*from_azalea(client.component::<Position>())?))
 }
 
 pub fn get_jumping(_lua: &Lua, client: &Client) -> Result<bool> {
@@ -203,16 +210,16 @@ pub fn get_jumping(_lua: &Lua, client: &Client) -> Result<bool> {
 }
 
 pub fn set_jumping(_lua: &Lua, client: &mut Client, jumping: bool) -> Result<()> {
-    client.set_jumping(jumping);
+    from_azalea(client.set_jumping(jumping))?;
     Ok(())
 }
 
 pub fn set_position(_lua: &Lua, client: &mut Client, new_pos: Vec3) -> Result<()> {
-    client.query_self::<&mut Position, _>(|mut pos| {
+    from_azalea(client.query_self::<&mut Position, _>(|mut pos| {
         pos.x = new_pos.x;
         pos.y = new_pos.y;
         pos.z = new_pos.z;
-    });
+    }))?;
     Ok(())
 }
 
@@ -221,7 +228,7 @@ pub fn get_sneaking(_lua: &Lua, client: &Client) -> Result<bool> {
 }
 
 pub fn set_sneaking(_lua: &Lua, client: &mut Client, sneaking: bool) -> Result<()> {
-    client.set_crouching(sneaking);
+    from_azalea(client.set_crouching(sneaking))?;
     Ok(())
 }
 
@@ -241,7 +248,7 @@ pub fn stop_pathfinding(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
 
 pub fn stop_sleeping(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
     client.write_packet(ServerboundPlayerCommand {
-        id: *client.component::<MinecraftEntityId>(),
+        id: *from_azalea(client.component::<MinecraftEntityId>())?,
         action: Action::StopSleeping,
         data: 0,
     });

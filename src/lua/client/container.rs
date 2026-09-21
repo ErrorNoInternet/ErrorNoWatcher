@@ -4,21 +4,21 @@ use azalea::{
     inventory::{Menu, Player, SlotList},
     protocol::packets::game::ServerboundSetCarriedItem,
 };
-use mlua::{Lua, Result, UserDataRef, Value};
+use mlua::{Error, Lua, Result, UserDataRef, Value};
 
-use super::{Client, Container, ContainerRef, ItemStack, Vec3};
+use super::{Client, Container, ContainerRef, ItemStack, Vec3, from_azalea};
 use crate::unpack;
 
 pub fn container(_lua: &Lua, client: &Client) -> Result<ContainerRef> {
-    Ok(ContainerRef(client.get_inventory()))
+    Ok(ContainerRef(from_azalea(client.get_inventory())?))
 }
 
 pub fn held_item(_lua: &Lua, client: &Client) -> Result<ItemStack> {
-    Ok(ItemStack(client.get_held_item()))
+    Ok(ItemStack(from_azalea(client.get_held_item())?))
 }
 
 pub fn get_held_slot(_lua: &Lua, client: &Client) -> Result<u8> {
-    Ok(client.component::<Inventory>().selected_hotbar_slot)
+    Ok(from_azalea(client.component::<Inventory>())?.selected_hotbar_slot)
 }
 
 #[allow(clippy::too_many_lines)]
@@ -31,7 +31,7 @@ pub fn menu(lua: &Lua, client: &Client) -> Result<Value> {
     }
 
     let table = lua.create_table()?;
-    match client.menu() {
+    match from_azalea(client.menu())? {
         Menu::Player(Player {
             craft_result,
             craft,
@@ -106,11 +106,12 @@ pub async fn open_container_at(
             position.z as i32,
         ))
         .await
+        .map_err(Error::external)?
         .map(Container))
 }
 
 pub fn open_inventory(_lua: &Lua, client: &Client, (): ()) -> Result<Option<Container>> {
-    Ok(client.open_inventory().map(Container))
+    Ok(from_azalea(client.open_inventory())?.map(Container))
 }
 
 pub fn set_held_slot(_lua: &Lua, client: &mut Client, slot: u8) -> Result<()> {
@@ -118,11 +119,11 @@ pub fn set_held_slot(_lua: &Lua, client: &mut Client, slot: u8) -> Result<()> {
         return Ok(());
     }
 
-    client.query_self::<&mut Inventory, _>(|mut inventory| {
+    from_azalea(client.query_self::<&mut Inventory, _>(|mut inventory| {
         if inventory.selected_hotbar_slot != slot {
             inventory.selected_hotbar_slot = slot;
         }
-    });
+    }))?;
     client.write_packet(ServerboundSetCarriedItem {
         slot: u16::from(slot),
     });

@@ -4,15 +4,15 @@ use azalea::{
 };
 use mlua::{Error, Lua, Result, Table, UserDataRef};
 
-use super::Client;
+use super::{Client, from_azalea};
 use crate::{hacks::anti_knockback::AntiKnockback, unpack};
 
 pub fn air_supply(_lua: &Lua, client: &Client) -> Result<i32> {
-    Ok(client.component::<AirSupply>().0)
+    Ok(from_azalea(client.component::<AirSupply>())?.0)
 }
 
 pub fn experience(lua: &Lua, client: &Client) -> Result<Table> {
-    let experience = client.experience();
+    let experience = from_azalea(client.experience())?;
     let table = lua.create_table()?;
     table.set("progress", experience.progress)?;
     table.set("total", experience.total)?;
@@ -21,11 +21,11 @@ pub fn experience(lua: &Lua, client: &Client) -> Result<Table> {
 }
 
 pub fn health(_lua: &Lua, client: &Client) -> Result<f32> {
-    Ok(client.health())
+    from_azalea(client.health())
 }
 
 pub fn hunger(lua: &Lua, client: &Client) -> Result<Table> {
-    let hunger = client.hunger();
+    let hunger = from_azalea(client.hunger())?;
     let table = lua.create_table()?;
     table.set("food", hunger.food)?;
     table.set("saturation", hunger.saturation)?;
@@ -40,24 +40,23 @@ pub async fn set_client_information(
     let client = unpack!(client);
 
     let get_bool = |table: &Table, name| table.get(name).unwrap_or(true);
-    client.set_client_information(ClientInformation {
+    from_azalea(client.set_client_information(ClientInformation {
         allows_listing: info.get("allows_listing")?,
-        model_customization: info
-            .get::<Table>("model_customization")
-            .as_ref()
-            .map(|t| ModelCustomization {
-                cape: get_bool(t, "cape"),
-                jacket: get_bool(t, "jacket"),
-                left_sleeve: get_bool(t, "left_sleeve"),
-                right_sleeve: get_bool(t, "right_sleeve"),
-                left_pants: get_bool(t, "left_pants"),
-                right_pants: get_bool(t, "right_pants"),
-                hat: get_bool(t, "hat"),
-            })
-            .unwrap_or_default(),
+        model_customization: match info.get::<Table>("model_customization") {
+            Ok(t) => ModelCustomization {
+                cape: get_bool(&t, "cape"),
+                jacket: get_bool(&t, "jacket"),
+                left_sleeve: get_bool(&t, "left_sleeve"),
+                right_sleeve: get_bool(&t, "right_sleeve"),
+                left_pants: get_bool(&t, "left_pants"),
+                right_pants: get_bool(&t, "right_pants"),
+                hat: get_bool(&t, "hat"),
+            },
+            Err(_) => ModelCustomization::default(),
+        },
         view_distance: info.get("view_distance").unwrap_or(8),
         ..ClientInformation::default()
-    });
+    }))?;
     Ok(())
 }
 

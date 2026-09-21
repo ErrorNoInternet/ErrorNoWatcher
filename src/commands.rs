@@ -1,4 +1,4 @@
-use azalea::{brigadier::prelude::*, chat::ChatPacket, prelude::*};
+use azalea::{brigadier::prelude::*, client_chat::ChatPacket, prelude::*};
 use futures::lock::Mutex;
 use mlua::{Error, Result, Table, UserDataRef};
 use ncr::{

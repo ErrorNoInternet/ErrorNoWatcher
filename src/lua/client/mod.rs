@@ -9,7 +9,7 @@ mod world;
 use std::ops::Deref;
 
 use azalea::{Client as AzaleaClient, core::entity_id::MinecraftEntityId};
-use mlua::{Lua, Result, UserData, UserDataFields, UserDataMethods};
+use mlua::{Error, Lua, Result, UserData, UserDataFields, UserDataMethods};
 
 use super::{
     container::{Container, ContainerRef, item_stack::ItemStack},
@@ -19,6 +19,10 @@ use super::{
 };
 
 pub struct Client(pub Option<AzaleaClient>);
+
+pub fn from_azalea<T>(result: azalea::Result<T>) -> Result<T> {
+    result.map_err(Error::external)
+}
 
 impl Deref for Client {
     type Target = AzaleaClient;
@@ -104,11 +108,14 @@ fn disconnect(_lua: &Lua, client: &Client, (): ()) -> Result<()> {
 }
 
 fn id(_lua: &Lua, client: &Client) -> Result<i32> {
-    Ok(client.component::<MinecraftEntityId>().0)
+    Ok(from_azalea(client.component::<MinecraftEntityId>())?.0)
 }
 
 fn tab_list(_lua: &Lua, client: &Client) -> Result<Vec<Player>> {
-    Ok(client.tab_list().into_values().map(Player::from).collect())
+    Ok(from_azalea(client.tab_list())?
+        .into_values()
+        .map(Player::from)
+        .collect())
 }
 
 fn username(_lua: &Lua, client: &Client) -> Result<String> {

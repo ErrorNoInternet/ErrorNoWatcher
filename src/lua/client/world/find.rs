@@ -9,7 +9,7 @@ use azalea::{
 };
 use mlua::{Function, Lua, Result, Table, UserDataRef};
 
-use super::{Client, Direction, Vec3};
+use super::{Client, Direction, Vec3, from_azalea};
 use crate::{lua::client::MinecraftEntityId, unpack};
 
 pub fn blocks(
@@ -18,8 +18,7 @@ pub fn blocks(
     (nearest_to, block_states): (Vec3, Vec<u16>),
 ) -> Result<Vec<Vec3>> {
     #[allow(clippy::cast_possible_truncation)]
-    Ok(client
-        .world()
+    Ok(from_azalea(client.world())?
         .read()
         .find_blocks(
             BlockPos::new(

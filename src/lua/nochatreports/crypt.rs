@@ -9,7 +9,7 @@ macro_rules! crypt {
                     2 => $algo::<Base64rEncoding>::$op($text, &key),
                     _ => $algo::<NewBase64rEncoding>::$op($text, &key),
                 }
-                .map_err(|error| Error::external(error.to_string()))?
+                .unwrap()
             }};
         }
 

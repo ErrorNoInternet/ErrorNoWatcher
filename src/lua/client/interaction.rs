@@ -5,11 +5,13 @@ use azalea::{
 };
 use mlua::{Lua, Result, UserDataRef};
 
-use super::{Client, Vec3};
+use super::{Client, Vec3, from_azalea};
 use crate::unpack;
 
 pub fn attack(_lua: &Lua, client: &Client, entity_id: i32) -> Result<()> {
-    if let Some(entity) = client.entity_id_by_minecraft_id(MinecraftEntityId(entity_id)) {
+    if let Some(entity) =
+        from_azalea(client.entity_id_by_minecraft_id(MinecraftEntityId(entity_id)))?
+    {
         client.attack(entity);
     }
     Ok(())
@@ -63,7 +65,7 @@ pub fn start_mining(_lua: &Lua, client: &Client, position: Vec3) -> Result<()> {
 }
 
 pub fn start_use_item(_lua: &Lua, client: &Client, hand: Option<u8>) -> Result<()> {
-    let direction = client.direction();
+    let direction = from_azalea(client.direction())?;
     client.write_packet(ServerboundUseItem {
         hand: match hand {
             Some(1) => InteractionHand::OffHand,

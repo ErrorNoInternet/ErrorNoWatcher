@@ -1,5 +1,5 @@
 use azalea::block::{
-    BlockState, BlockTrait,
+    BlockState,
     properties::{ChestKind, Facing, LightLevel},
 };
 use mlua::{Function, Lua, Result, Table};
@@ -21,7 +21,7 @@ pub fn get_block_from_state(lua: &Lua, state: u32) -> Result<Option<Table>> {
     let Ok(state) = BlockState::try_from(state) else {
         return Ok(None);
     };
-    let block: Box<dyn BlockTrait> = state.into();
+    let block = state.to_trait();
     let behavior = block.behavior();
 
     let table = lua.create_table()?;
@@ -46,7 +46,7 @@ pub async fn get_block_states(
         for block in
             (u32::MIN..u32::MAX).map_while(|possible_id| BlockState::try_from(possible_id).ok())
         {
-            if block_name == Into::<Box<dyn BlockTrait>>::into(block).id()
+            if block_name == block.to_trait().id()
                 && (if let Some(filter_fn) = &filter_fn {
                     let table = lua.create_table()?;
                     table.set("chest_kind", block.property::<ChestKind>().map(|v| v as u8))?;

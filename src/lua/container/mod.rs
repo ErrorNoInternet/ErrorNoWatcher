@@ -4,7 +4,7 @@ pub mod item_stack;
 use azalea::container::{ContainerHandle, ContainerHandleRef};
 use click::operation_from_table;
 use item_stack::ItemStack;
-use mlua::{Table, UserData, UserDataFields, UserDataMethods};
+use mlua::{Error, Table, UserData, UserDataFields, UserDataMethods};
 
 pub struct Container(pub ContainerHandle);
 
@@ -13,7 +13,10 @@ impl UserData for Container {
         f.add_field_method_get("id", |_, this| Ok(this.0.id()));
 
         f.add_field_method_get("menu", |_, this| {
-            Ok(this.0.menu().map(|m| format!("{m:?}")))
+            this.0
+                .menu()
+                .map(|m| format!("{m:?}"))
+                .map_err(Error::external)
         });
 
         f.add_field_method_get("contents", |_, this| {
@@ -44,7 +47,10 @@ impl UserData for ContainerRef {
         f.add_field_method_get("id", |_, this| Ok(this.0.id()));
 
         f.add_field_method_get("menu", |_, this| {
-            Ok(this.0.menu().map(|m| format!("{m:?}")))
+            this.0
+                .menu()
+                .map(|m| format!("{m:?}"))
+                .map_err(Error::external)
         });
 
         f.add_field_method_get("contents", |_, this| {

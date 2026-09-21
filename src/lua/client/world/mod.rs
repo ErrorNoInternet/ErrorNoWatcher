@@ -5,13 +5,13 @@ pub mod find;
 use azalea::{BlockPos, block::BlockState, world::WorldName};
 use mlua::{Lua, Result, Table, Value};
 
-use super::{Client, Direction, Vec3};
+use super::{Client, Direction, Vec3, from_azalea};
 
 pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Result<Value> {
     let Ok(block) = BlockState::try_from(block_state) else {
         return Ok(Value::Nil);
     };
-    let result = client.best_tool_in_hotbar_for_block(block);
+    let result = from_azalea(client.best_tool_in_hotbar_for_block(block))?;
     let table = lua.create_table()?;
     table.set("index", result.index)?;
     table.set("percentage_per_tick", result.percentage_per_tick)?;
@@ -19,13 +19,12 @@ pub fn best_tool_for_block(lua: &Lua, client: &Client, block_state: u16) -> Resu
 }
 
 pub fn dimension(_lua: &Lua, client: &Client) -> Result<String> {
-    Ok(client.component::<WorldName>().to_string())
+    Ok(from_azalea(client.component::<WorldName>())?.to_string())
 }
 
 pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Option<u16>> {
     #[allow(clippy::cast_possible_truncation)]
-    Ok(client
-        .world()
+    Ok(from_azalea(client.world())?
         .read()
         .get_block_state(BlockPos::new(
             position.x as i32,
@@ -37,11 +36,13 @@ pub fn get_block_state(_lua: &Lua, client: &Client, position: Vec3) -> Result<Op
 
 #[allow(clippy::cast_possible_truncation)]
 pub fn get_fluid_state(lua: &Lua, client: &Client, position: Vec3) -> Result<Option<Table>> {
-    let fluid_state = client.world().read().get_fluid_state(BlockPos::new(
-        position.x as i32,
-        position.y as i32,
-        position.z as i32,
-    ));
+    let fluid_state = from_azalea(client.world())?
+        .read()
+        .get_fluid_state(BlockPos::new(
+            position.x as i32,
+            position.y as i32,
+            position.z as i32,
+        ));
     Ok(if let Some(state) = fluid_state {
         let table = lua.create_table()?;
         table.set("kind", state.kind as u8)?;
