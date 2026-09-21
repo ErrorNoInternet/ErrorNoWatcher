@@ -1,6 +1,9 @@
-use azalea::block::{
-    BlockState,
-    properties::{ChestKind, Facing, LightLevel},
+use azalea::{
+    block::{
+        BlockState,
+        properties::{ChestKind, Facing, LightLevel},
+    },
+    physics::collision::BlockWithShape,
 };
 use mlua::{Function, Lua, Result, Table};
 
@@ -25,11 +28,14 @@ pub fn get_block_from_state(lua: &Lua, state: u32) -> Result<Option<Table>> {
     let behavior = block.behavior();
 
     let table = lua.create_table()?;
-    table.set("id", block.id())?;
-    table.set("friction", behavior.friction)?;
-    table.set("jump_factor", behavior.jump_factor)?;
     table.set("destroy_time", behavior.destroy_time)?;
     table.set("explosion_resistance", behavior.explosion_resistance)?;
+    table.set("friction", behavior.friction)?;
+    table.set("id", block.id())?;
+    table.set("is_air", state.is_air())?;
+    table.set("is_collision_shape_empty", state.is_collision_shape_empty())?;
+    table.set("is_collision_shape_full", state.is_collision_shape_full())?;
+    table.set("jump_factor", behavior.jump_factor)?;
     table.set(
         "requires_correct_tool_for_drops",
         behavior.requires_correct_tool_for_drops,
