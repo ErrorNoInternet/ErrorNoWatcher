@@ -42,8 +42,9 @@ pub async fn set_client_information(
     let get_bool = |table: &Table, name| table.get(name).unwrap_or(true);
     from_azalea(client.set_client_information(ClientInformation {
         allows_listing: info.get("allows_listing")?,
-        model_customization: match info.get::<Table>("model_customization") {
-            Ok(t) => ModelCustomization {
+        model_customization: info.get::<Table>("model_customization").map_or_else(
+            |_| ModelCustomization::default(),
+            |t| ModelCustomization {
                 cape: get_bool(&t, "cape"),
                 jacket: get_bool(&t, "jacket"),
                 left_sleeve: get_bool(&t, "left_sleeve"),
@@ -52,8 +53,7 @@ pub async fn set_client_information(
                 right_pants: get_bool(&t, "right_pants"),
                 hat: get_bool(&t, "hat"),
             },
-            Err(_) => ModelCustomization::default(),
-        },
+        ),
         view_distance: info.get("view_distance").unwrap_or(8),
         ..ClientInformation::default()
     }))?;
