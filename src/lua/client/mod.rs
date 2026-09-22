@@ -73,6 +73,7 @@ impl UserData for Client {
         m.add_async_method("find_players", world::find::players);
         m.add_async_method("go_to", movement::go_to);
         m.add_async_method("mine", interaction::mine);
+        m.add_async_method("mine_with_auto_tool", interaction::mine_with_auto_tool);
         m.add_async_method("open_container_at", container::open_container_at);
         m.add_async_method("set_client_information", state::set_client_information);
         m.add_async_method("start_go_to", movement::start_go_to);

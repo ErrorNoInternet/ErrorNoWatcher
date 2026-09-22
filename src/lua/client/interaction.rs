@@ -45,6 +45,25 @@ pub async fn mine(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Res
     Ok(())
 }
 
+pub async fn mine_with_auto_tool(
+    _lua: Lua,
+    client: UserDataRef<Client>,
+    position: Vec3,
+) -> Result<()> {
+    let client = unpack!(client);
+
+    #[allow(clippy::cast_possible_truncation)]
+    from_azalea(
+        client
+            .mine_with_auto_tool(BlockPos::new(
+                position.x as i32,
+                position.y as i32,
+                position.z as i32,
+            ))
+            .await,
+    )
+}
+
 pub fn get_mining(_lua: &Lua, client: &Client) -> Result<bool> {
     Ok(client.is_mining())
 }
