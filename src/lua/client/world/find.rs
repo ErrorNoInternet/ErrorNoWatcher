@@ -1,7 +1,7 @@
 use azalea::{
     BlockPos,
     block::{BlockState, BlockStates},
-    ecs::query::{With, Without},
+    ecs::{entity::Entity, query::With},
     entity::{
         Dead, EntityKindComponent, EntityUuid, LookDirection, Pose, Position as AzaleaPosition,
         metadata::{CustomName, Owneruuid, Player},
@@ -51,10 +51,7 @@ pub async fn all_entities(lua: Lua, client: UserDataRef<Client>, (): ()) -> Resu
         table.set("uuid", uuid)?;
         table.set("direction", direction)?;
         table.set("id", id)?;
-        table.set(
-            "owner_uuid",
-            owner_uuid.and_then(|v| *v).map(|v| v.to_string()),
-        )?;
+        table.set("owner_uuid", owner_uuid.map(|v| v.to_string()))?;
         table.set("pose", pose)?;
         matched.push(table);
     }
@@ -79,10 +76,7 @@ pub async fn entities(
         table.set("uuid", uuid)?;
         table.set("direction", direction)?;
         table.set("id", id)?;
-        table.set(
-            "owner_uuid",
-            owner_uuid.and_then(|v| *v).map(|v| v.to_string()),
-        )?;
+        table.set("owner_uuid", owner_uuid.map(|v| v.to_string()))?;
         table.set("pose", pose)?;
         if filter_fn.call_async::<bool>(&table).await? {
             matched.push(table);
