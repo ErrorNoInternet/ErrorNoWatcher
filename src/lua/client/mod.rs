@@ -43,6 +43,7 @@ impl UserData for Client {
         f.add_field_method_get("eye_position", movement::eye_position);
         f.add_field_method_get("go_to_reached", movement::go_to_reached);
         f.add_field_method_get("has_attack_cooldown", interaction::has_attack_cooldown);
+        f.add_field_method_get("attack_cooldown_ticks", interaction::attack_cooldown_ticks);
         f.add_field_method_get("health", state::health);
         f.add_field_method_get("held_item", container::held_item);
         f.add_field_method_get("held_slot", container::get_held_slot);

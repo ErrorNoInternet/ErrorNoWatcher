@@ -31,6 +31,10 @@ pub fn has_attack_cooldown(_lua: &Lua, client: &Client) -> Result<bool> {
     Ok(client.has_attack_cooldown())
 }
 
+pub fn attack_cooldown_ticks(_lua: &Lua, client: &Client) -> Result<usize> {
+    Ok(client.attack_cooldown_remaining_ticks())
+}
+
 pub async fn mine(_lua: Lua, client: UserDataRef<Client>, position: Vec3) -> Result<()> {
     let client = unpack!(client);
 
