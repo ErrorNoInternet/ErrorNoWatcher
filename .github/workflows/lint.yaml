@@ -25,7 +25,7 @@ jobs:
 
             - name: Run taplo fmt
               if: always()
-              run: taplo fmt --check Cargo.toml
+              run: taplo fmt --check --option=align_entries=true Cargo.toml
 
     rust:
         name: Rust (${{ matrix.feature.name }})
