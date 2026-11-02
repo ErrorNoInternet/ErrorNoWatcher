@@ -1,8 +1,8 @@
 [package]
-name = "errornowatcher"
+name    = "errornowatcher"
 version = "0.2.0"
 edition = "2024"
-build = "build.rs"
+build   = "build.rs"
 
 [profile.dev]
 opt-level = 1
@@ -12,15 +12,15 @@ opt-level = 3
 
 [profile.release]
 codegen-units = 1
-lto = true
-strip = true
+lto           = true
+strip         = true
 
 [profile.release-no-lto]
 inherits = "release"
-lto = false
+lto      = false
 
 [profile.small]
-inherits = "release"
+inherits  = "release"
 opt-level = "z"
 
 [build-dependencies]
@@ -29,9 +29,9 @@ built = { version = "0", features = ["git2"] }
 [dependencies]
 anyhow = "1"
 azalea = { git = "https://github.com/azalea-rs/azalea" }
-bevy_app = "0.19"
-bevy_ecs = "0.19"
-bevy_log = "0.19"
+bevy_app = "0.20"
+bevy_ecs = "0.20"
+bevy_log = "0.20"
 clap = { version = "4", features = ["derive", "string"] }
 console-subscriber = { version = "0", optional = true }
 ctrlc = "3"
@@ -46,17 +46,17 @@ matrix-sdk = { version = "0", features = ["anyhow"], optional = true }
 mimalloc = { version = "0", optional = true }
 mlua = { version = "0", features = ["async", "luajit", "send"] }
 ncr = { version = "0", features = ["cfb8", "ecb", "gcm"] }
-parking_lot = "0"
+parking_lot = { version = "0", optional = true }
 serde = "1"
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
-zip = { version = "8", default-features = false, features = [
+zip = { version = "9", default-features = false, features = [
   "deflate",
 ], optional = true }
 
 [features]
 console-subscriber = ["dep:console-subscriber"]
-default = []
-matrix = ["dep:dirs", "dep:matrix-sdk"]
-mimalloc = ["dep:mimalloc"]
-replay = ["dep:zip"]
+default            = []
+matrix             = ["dep:dirs", "dep:matrix-sdk"]
+mimalloc           = ["dep:mimalloc"]
+replay             = ["dep:parking_lot", "dep:zip"]
